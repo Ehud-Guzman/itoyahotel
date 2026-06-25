@@ -2,7 +2,7 @@
 
 const rooms = [
   {
-    img: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=1200&q=80",
+    img: "/sitting1.jpeg",
     tag: "Comfort",
     title: "Standard Room",
     description:
@@ -17,7 +17,7 @@ const rooms = [
   },
 
   {
-    img: "https://images.unsplash.com/photo-1591088398332-8a7791972843?w=1200&q=80",
+    img: "/beedroom1.webp",
     tag: "Featured",
     title: "Deluxe Room",
 
@@ -35,7 +35,7 @@ const rooms = [
   },
 
   {
-    img: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1200&q=80",
+    img: "/conference2.webp",
     tag: "Premium",
     title: "Executive Room",
 

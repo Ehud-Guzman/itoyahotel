@@ -2,7 +2,7 @@
 
 const venues = [
   {
-    img: '/conference-1.jpg',
+    img: '/conference2.webp',
     capacity: 'Flexible Setup',
     title: 'Conference Hall',
     description:
@@ -16,7 +16,7 @@ const venues = [
   },
 
   {
-    img: '/conference-2.jpg',
+    img: '/lounge1.webp',
     capacity: 'Private Sessions',
     title: 'Executive Meeting Space',
     description:
@@ -31,17 +31,17 @@ const venues = [
   },
 
   {
-    img: '/conference-3.jpg',
-    capacity: 'Custom Events',
-    title: 'Events & Celebrations',
+    img: '/food1.webp',
+    capacity: 'Dining Experience',
+    title: 'Culinary Celebrations',
     description:
-      'Suitable for memorable gatherings and tailored event experiences.',
+      'Designed for exquisite dining experiences, bespoke catering, and memorable food-focused gatherings.',
 
     features: [
-      'Flexible Setup',
-      'Dining Options',
-      'Event Support',
-      'Custom Arrangements',
+      'Seasonal Menus',
+      'Custom Catering',
+      'Farm-to-Table Ingredients',
+      'Private Dining',
     ],
   },
 ]

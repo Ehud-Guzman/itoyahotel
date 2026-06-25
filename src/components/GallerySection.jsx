@@ -6,23 +6,23 @@ const galleryImages = [
     alt: 'Hotel Exterior',
   },
   {
-    src: 'https://images.unsplash.com/photo-1615460549969-36fa19521a4f?w=900&q=80',
+    src: '/lobby1.webp',
     alt: 'Lobby Experience',
   },
   {
-    src: 'https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=900&q=80',
+    src: '/conference2.webp',
     alt: 'Conference Space',
   },
   {
-    src: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=900&q=80',
+    src: '/sitting1.jpeg',
     alt: 'Guest Rooms',
   },
   {
-    src: 'https://images.unsplash.com/photo-1612293928213-7ef1b2289e28?w=900&q=80',
+    src: '/food1.webp',
     alt: 'Dining Experience',
   },
   {
-    src: 'https://images.unsplash.com/photo-1455587734955-081b22074882?w=900&q=80',
+    src: '/events1.webp',
     alt: 'Events',
   },
 ]
