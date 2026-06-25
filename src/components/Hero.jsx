@@ -49,10 +49,6 @@ export default function Hero() {
         {/* Hero Copy */}
         <div className="max-w-2xl fade-in">
 
-          <p className="section-label text-gold-light mb-6 tracking-[0.25em]">
-            Where hospitality meets value
-          </p>
-
           <h1 className="font-serif font-medium text-white leading-[0.95] mb-8 text-5xl md:text-6xl lg:text-7xl xl:text-8xl drop-shadow-xl">
             Stay. Meet.
             <br />

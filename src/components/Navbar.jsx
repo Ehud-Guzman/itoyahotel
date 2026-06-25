@@ -53,7 +53,7 @@ export default function Navbar() {
                   Hotel Itoya
                 </p>
                 <p className="text-[11px] text-ink/70">
-                  Refined stays, dining, and meetings in Busia.
+                  Where hospitality meets value
                 </p>
               </div>
             </div>
