@@ -11,7 +11,7 @@ export default function AboutSection() {
   ]
 
   return (
-    <section id="about" className="bg-cream py-24 lg:py-32">
+    <section id="about" className="bg-cream py-16 lg:py-20">
 
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
 

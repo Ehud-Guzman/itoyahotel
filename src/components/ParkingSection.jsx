@@ -1,6 +1,6 @@
 export default function ParkingSection() {
   return (
-    <section id="parking" className="bg-white py-20">
+    <section id="parking" className="bg-white py-12 lg:py-16">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
         <div className="text-center mb-8">
           <p className="section-label mb-2">Guest Services</p>
