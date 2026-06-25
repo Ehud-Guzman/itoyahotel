@@ -78,17 +78,17 @@ export default function ContactSection() {
                   </p>
 
                   <a
-                    href="tel:+254700000000"
+                    href="tel:+254 765-50400"
                     className="block text-white hover:text-gold transition"
                   >
-                    +254 700 000 000
+                    +254 765-50400
                   </a>
 
                   <a
-                    href="tel:+254711000000"
+                    href="tel:+254  765-50400"
                     className="block text-white/60 hover:text-gold transition"
                   >
-                    +254 711 000 000
+                    +254  765-50400
                   </a>
                 </div>
 
