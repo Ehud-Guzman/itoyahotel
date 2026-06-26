@@ -133,7 +133,7 @@ export default function ChatBot() {
           {/* Header */}
           <div className="flex items-center justify-between bg-ink px-6 py-4">
             <div>
-              <h3 className="font-serif text-lg text-white">Itoya Concierge</h3>
+              <h3 className="font-serif text-lg text-white">Itoya Help BOT</h3>
               <p className="text-[10px] uppercase tracking-[0.2em] text-gold">Online</p>
             </div>
             <button onClick={() => setIsOpen(false)} className="text-white/60 hover:text-white transition-colors">
