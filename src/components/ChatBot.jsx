@@ -25,7 +25,7 @@ const faq = [
   },
   {
     keywords: ['price', 'prices', 'cost', 'rate', 'how much', 'booking', 'book', 'reserve', 'availability'],
-    answer: 'For room rates, availability, or to make a booking, please visit our booking page or call reception at +254 700 123456. We’d be happy to offer you the best available rate.',
+    answer: 'For room rates, availability, or to make a booking, please visit our booking page or call reception at +254 714 302 777. We’d be happy to offer you the best available rate.',
   },
   {
     keywords: ['conference', 'meeting', 'event', 'hall', 'delegate', 'conference room'],
