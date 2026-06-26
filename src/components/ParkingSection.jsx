@@ -1,8 +1,20 @@
+import { useState } from 'react';
 export default function ParkingSection() {
+  // --- Image Arrays (for thumbnails) ---
+  const parkingImages = ['/parking1.jpeg', '/parking2.jpeg'];
+  const kitchenImages = [
+    '/mobilekitchenequipment1.jpeg',
+    '/mobilekitcheninterior1.jpeg',
+    '/mobilekitchenexterior.jpeg',
+  ];
+
+  const [parkingIndex, setParkingIndex] = useState(0);
+  const [kitchenIndex, setKitchenIndex] = useState(0);
+
   return (
     <section id="parking" className="py-16 lg:py-24 bg-white">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
-        {/* Section Intro — neutral & refined */}
+        {/* Section Intro */}
         <div className="text-center mb-12 lg:mb-16">
           <p className="text-gold text-[11px] uppercase tracking-[0.3em] font-sans font-medium">
             Guest Services
@@ -14,22 +26,34 @@ export default function ParkingSection() {
         </div>
 
         {/* --- ROW 1: PARKING & VALET --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 rounded-2xl overflow-hidden shadow-2xl shadow-black/5 border border-stone/100 mb-8 lg:mb-12">
-          {/* Left: Image */}
-          <div className="relative overflow-hidden group min-h-[300px] md:min-h-[480px]">
-            <img
-              src="/parking1.jpeg"
-              alt="Valet parking at Hotel Itoya"
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
-            <div className="absolute bottom-6 left-6 bg-gold text-ink px-4 py-1.5 text-[10px] uppercase tracking-[0.2em] font-semibold rounded-sm">
-              Premium Service
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 rounded-2xl overflow-hidden shadow-2xl shadow-black/5 border border-stone/100 mb-8 lg:mb-12">
+          {/* Left: Image (static, with thumbnails below) */}
+          <div className="bg-black/5 p-4">
+            <div className="relative overflow-hidden rounded-lg aspect-[4/3]">
+              <img
+                src={parkingImages[parkingIndex]}
+                alt="Parking"
+                className="w-full h-full object-cover transition-opacity duration-300"
+              />
+            </div>
+            {/* Thumbnail strip */}
+            <div className="flex gap-2 mt-3 justify-center">
+              {parkingImages.map((src, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setParkingIndex(idx)}
+                  className={`w-14 h-14 rounded-md overflow-hidden border-2 transition-all ${
+                    idx === parkingIndex ? 'border-gold' : 'border-transparent'
+                  }`}
+                >
+                  <img src={src} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
             </div>
           </div>
 
           {/* Right: Content */}
-          <div className="flex flex-col justify-center p-8 lg:p-12 xl:p-16 bg-mist/50">
+          <div className="flex flex-col justify-center p-8 lg:p-12 xl:p-16">
             <span className="text-gold text-[11px] uppercase tracking-[0.3em] font-sans font-medium">
               Parking &amp; Valet
             </span>
@@ -65,9 +89,9 @@ export default function ParkingSection() {
         </div>
 
         {/* --- ROW 2: MOBILE KITCHEN --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 rounded-2xl overflow-hidden shadow-2xl shadow-black/5 border border-stone/100">
-          {/* Left: Content (swapped order) */}
-          <div className="flex flex-col justify-center p-8 lg:p-12 xl:p-16 bg-mist/50 order-2 md:order-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 rounded-2xl overflow-hidden shadow-2xl shadow-black/5 border border-stone/100">
+          {/* Left: Content */}
+          <div className="flex flex-col justify-center p-8 lg:p-12 xl:p-16 order-2 md:order-1">
             <span className="text-gold text-[11px] uppercase tracking-[0.3em] font-sans font-medium">
               Culinary Excellence
             </span>
@@ -101,16 +125,28 @@ export default function ParkingSection() {
             </a>
           </div>
 
-          {/* Right: Image (swapped order) */}
-          <div className="relative overflow-hidden group min-h-[300px] md:min-h-[480px] order-1 md:order-2">
-            <img
-              src="/mobilekitcheninterior1.jpeg"
-              alt="Mobile kitchen setup"
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-l from-black/40 via-transparent to-transparent" />
-            <div className="absolute bottom-6 right-6 bg-gold text-ink px-4 py-1.5 text-[10px] uppercase tracking-[0.2em] font-semibold rounded-sm">
-              Tailored Experiences
+          {/* Right: Image */}
+          <div className="bg-black/5 p-4 order-1 md:order-2">
+            <div className="relative overflow-hidden rounded-lg aspect-[4/3]">
+              <img
+                src={kitchenImages[kitchenIndex]}
+                alt="Mobile kitchen"
+                className="w-full h-full object-cover transition-opacity duration-300"
+              />
+            </div>
+            {/* Thumbnail strip */}
+            <div className="flex gap-2 mt-3 justify-center">
+              {kitchenImages.map((src, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setKitchenIndex(idx)}
+                  className={`w-14 h-14 rounded-md overflow-hidden border-2 transition-all ${
+                    idx === kitchenIndex ? 'border-gold' : 'border-transparent'
+                  }`}
+                >
+                  <img src={src} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
             </div>
           </div>
         </div>

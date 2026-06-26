@@ -46,39 +46,53 @@ export default function Navbar() {
         ${scrolled ? 'shadow-sm' : ''}
       `}
     >
-      {/* --- PARTNERSHIP BANNER — deep brown text with gold accents --- */}
+      {/* --- PARTNERSHIP BANNER — pill container like floating trust strip --- */}
       <div
         className={`
           hidden lg:block border-b border-stone/100
           transition-all duration-300 overflow-hidden
-          ${scrolled ? 'max-h-0 opacity-0' : 'max-h-12 opacity-100'}
+          ${scrolled ? 'max-h-0 opacity-0' : 'max-h-16 opacity-100'}
         `}
       >
-        <div className="h-12 bg-white flex items-center overflow-hidden">
-          <div className="relative w-full overflow-hidden">
-            <div className="flex whitespace-nowrap animate-marquee">
-              <span className="inline-block px-8 font-serif text-sm tracking-[0.2em] text-ink font-semibold">
-                <span className="text-gold mr-3">✦</span>
-                In partnership with Homeland Itoya Events
-                <span className="text-gold mx-3">◆</span>
-                Elevating events &amp; outside catering with distinction
-                <span className="text-gold ml-3">✦</span>
-              </span>
-              <span className="inline-block px-8 font-serif text-sm tracking-[0.2em] text-ink font-semibold">
-                <span className="text-gold mr-3">✦</span>
-                In partnership with Homeland Itoya Events
-                <span className="text-gold mx-3">◆</span>
-                Elevating events &amp; outside catering with distinction
-                <span className="text-gold ml-3">✦</span>
-              </span>
-              <span className="inline-block px-8 font-serif text-sm tracking-[0.2em] text-ink font-semibold">
-                <span className="text-gold mr-3">✦</span>
-                In partnership with Homeland Itoya Events
-                <span className="text-gold mx-3">◆</span>
-                Elevating events &amp; outside catering with distinction
-                <span className="text-gold ml-3">✦</span>
-              </span>
-            </div>
+        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-2">
+          <div className="
+            relative overflow-hidden 
+            bg-forest/95 backdrop-blur-sm 
+            border border-white/15 
+            rounded-full 
+            shadow-xl shadow-black/20
+            px-6 py-2.5
+          ">
+{/* Text Container — marquee inside the pill */}
+<div className="relative w-full overflow-hidden">
+  <div className="flex whitespace-nowrap animate-marquee">
+    <span className="inline-block px-8 font-serif text-sm tracking-[0.2em] text-white font-medium">
+      <span className="text-gold mr-3">✦</span>
+      In partnership with Homeland Itoya Events
+      <span className="text-gold mx-3">◆</span>
+      Elevating events &amp; outside catering with distinction
+      <span className="text-gold ml-3">✦</span>
+    </span>
+    <span className="inline-block px-8 font-serif text-sm tracking-[0.2em] text-white font-medium">
+      <span className="text-gold mr-3">✦</span>
+      In partnership with Homeland Itoya Events
+      <span className="text-gold mx-3">◆</span>
+      Elevating events &amp; outside catering with distinction
+      <span className="text-gold ml-3">✦</span>
+    </span>
+    <span className="inline-block px-8 font-serif text-sm tracking-[0.2em] text-white font-medium">
+      <span className="text-gold mr-3">✦</span>
+      In partnership with Homeland Itoya Events
+      <span className="text-gold mx-3">◆</span>
+      Elevating events &amp; outside catering with distinction
+      <span className="text-gold ml-3">✦</span>
+    </span>
+  </div>
+</div>
+
+            {/* Subtle gold glow accent */}
+            <div className="absolute -bottom-6 -left-6 h-16 w-16 rounded-full bg-gold/5 blur-xl pointer-events-none" />
+            <div className="absolute -top-6 -right-6 h-16 w-16 rounded-full bg-gold/5 blur-xl pointer-events-none" />
           </div>
         </div>
       </div>
