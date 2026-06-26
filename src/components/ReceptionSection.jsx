@@ -50,16 +50,7 @@ export default function ReceptionSection() {
             </div>
           </div>
 
-          {/* Top-left badge */}
-          <div className="absolute top-6 left-6 bg-ink/80 backdrop-blur-sm border border-white/10 rounded-full px-5 py-2 flex items-center gap-3">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
-            </span>
-            <span className="text-white text-[10px] uppercase tracking-[0.2em] font-sans font-light">
-              24/7 Concierge
-            </span>
-          </div>
+        
         </div>
 
         {/* Three Service Pillars */}

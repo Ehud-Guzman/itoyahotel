@@ -59,21 +59,21 @@ export default function Navbar() {
             <div className="flex whitespace-nowrap animate-marquee">
               <span className="inline-block px-8 font-serif text-sm tracking-[0.2em] text-ink font-semibold">
                 <span className="text-gold mr-3">✦</span>
-                In partnership with Homeland Itoya
+                In partnership with Homeland Itoya Events
                 <span className="text-gold mx-3">◆</span>
                 Elevating events &amp; outside catering with distinction
                 <span className="text-gold ml-3">✦</span>
               </span>
               <span className="inline-block px-8 font-serif text-sm tracking-[0.2em] text-ink font-semibold">
                 <span className="text-gold mr-3">✦</span>
-                In partnership with Homeland Itoya
+                In partnership with Homeland Itoya Events
                 <span className="text-gold mx-3">◆</span>
                 Elevating events &amp; outside catering with distinction
                 <span className="text-gold ml-3">✦</span>
               </span>
               <span className="inline-block px-8 font-serif text-sm tracking-[0.2em] text-ink font-semibold">
                 <span className="text-gold mr-3">✦</span>
-                In partnership with Homeland Itoya
+                In partnership with Homeland Itoya Events
                 <span className="text-gold mx-3">◆</span>
                 Elevating events &amp; outside catering with distinction
                 <span className="text-gold ml-3">✦</span>
