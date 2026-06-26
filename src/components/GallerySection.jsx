@@ -31,6 +31,12 @@ const galleryImages = [
     alt: 'Lounge Area',
     span: 'row-span-1',
   },
+  {
+    src: '/parking1.jpeg',
+    alt: 'Parking Area',
+    span: 'row-span-1',
+  },
+  
 ];
 
 export default function GallerySection() {
