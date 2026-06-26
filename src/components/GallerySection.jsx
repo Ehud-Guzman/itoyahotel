@@ -35,19 +35,19 @@ const galleryImages = [
 
 export default function GallerySection() {
   return (
-    <section id="gallery" className="bg-mist py-24 lg:py-32">
+    <section id="gallery" className="bg-mist py-20 lg:py-24">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
 
-        {/* Header — unchanged, still elegant */}
-        <div className="text-center mb-16">
-          <p className="section-label mb-4">Visual Journey</p>
-          <div className="gold-divider mx-auto mb-8" />
-          <h2 className="section-heading mb-5">
+        {/* Header — tighter, cleaner spacing */}
+        <div className="text-center mb-12">
+          <p className="section-label mb-3">Visual Journey</p>
+          <div className="gold-divider mx-auto mb-6" />
+          <h2 className="section-heading mb-4">
             Discover
             <br />
             <em>Hotel Itoya</em>
           </h2>
-          <p className="text-ink/60 max-w-lg mx-auto leading-relaxed">
+          <p className="text-ink/60 max-w-xl mx-auto leading-relaxed">
             Explore spaces designed around comfort,
             hospitality, and memorable experiences.
           </p>
