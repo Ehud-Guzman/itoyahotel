@@ -22,7 +22,8 @@ export default function Hero() {
     '/parking1.jpeg',
     '/parking2.jpeg',
     '/food1.webp',
-    '/conference2.webp'
+    '/conference2.webp',
+    '/layout1.jpeg',
 
   ]
 
@@ -82,8 +83,8 @@ export default function Hero() {
             key={src}
             src={src}
             alt={`Hero slide ${i + 1}`}
-            className={`absolute inset-0 w-full h-full object-cover transform-gpu transition-all duration-1500 ease-in-out will-change-transform will-change-opacity ${
-              currentSlide === i ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+            className={`absolute inset-0 w-full h-full object-cover transform-gpu transition duration-[1400ms] ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform will-change-opacity ${
+              currentSlide === i ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-105 -translate-y-3'
             }`}
             loading={currentSlide === i ? 'eager' : 'lazy'}
           />
