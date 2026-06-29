@@ -59,7 +59,7 @@ export default function Hero() {
   }, [])
 
   return (
-    <section id="home" className="relative min-h-screen flex flex-col overflow-hidden mx-1.5">
+    <section id="home" className="relative min-h-[100svh] max-h-[100svh] sm:max-h-none sm:min-h-screen flex flex-col overflow-hidden mx-1.5">
 
       {/* Background slideshow */}
       <div className="absolute inset-0 z-0">
