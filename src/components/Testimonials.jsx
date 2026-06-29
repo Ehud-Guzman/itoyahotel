@@ -48,7 +48,7 @@ function StarRating() {
 
 export default function Testimonials() {
   return (
-    <section className="bg-[#a4733c] py-16 lg:py-24">
+    <section className="bg-primary py-16 lg:py-24">
 
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
 

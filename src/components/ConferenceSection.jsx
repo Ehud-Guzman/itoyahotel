@@ -2,7 +2,7 @@
 
 const venues = [
   {
-    img: '/roundtableconference1.jpeg',
+    img: '/images/conference/round-table-1.webp',
     capacity: 'Flexible Setup',
     title: 'Conference Hall',
     description:
@@ -16,7 +16,7 @@ const venues = [
   },
 
   {
-    img: '/lounge1.webp',
+    img: '/images/conference/conference-green-1.webp',
     capacity: 'Private Sessions',
     title: 'Executive Meeting Space',
     description:
@@ -31,7 +31,7 @@ const venues = [
   },
 
   {
-    img: '/food1.webp',
+    img: '/images/dining/food-1.webp',
     capacity: 'Dining Experience',
     title: 'Culinary Celebrations',
     description:
@@ -55,7 +55,7 @@ const highlights = [
 
 export default function ConferenceSection() {
   return (
-    <section id="conference" className="bg-gradient-to-b from-cream to-white py-24 lg:py-32">
+    <section id="conference" className="bg-gradient-to-b from-cream to-white py-16 lg:py-24">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
 
         {/* Section header — editorial, strong */}
@@ -84,7 +84,7 @@ export default function ConferenceSection() {
 
             <a
               href="#contact"
-              className="inline-block border border-[#a4733c] text-[#a4733c] hover:bg-[#a4733c] hover:text-white font-sans font-medium tracking-widest uppercase text-xs px-8 py-3.5 transition-colors duration-200"
+              className="inline-block border border-primary text-primary hover:bg-primary hover:text-white font-sans font-medium tracking-widest uppercase text-xs px-8 py-3.5 transition-colors duration-200"
             >
               Plan Your Event
             </a>
@@ -94,7 +94,7 @@ export default function ConferenceSection() {
         </div>
 
         {/* Stats bar — now using brown */}
-        <div className="bg-[#a4733c] mb-12">
+        <div className="bg-primary mb-12">
           <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/10">
             {highlights.map((h) => (
               <div key={h.label} className="px-8 py-6 text-center">
@@ -120,7 +120,7 @@ export default function ConferenceSection() {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-[#a4733c]/30 group-hover:bg-[#a4733c]/40 transition-colors duration-200" />
+                <div className="absolute inset-0 bg-primary/30 group-hover:bg-primary/40 transition-colors duration-200" />
 
                 {/* Capacity badge */}
                 <div className="absolute top-4 right-4 bg-gold text-white font-sans text-xs tracking-widest uppercase px-3 py-1">
@@ -147,7 +147,7 @@ export default function ConferenceSection() {
 
                 <a
                   href="#contact"
-                  className="font-sans font-medium tracking-widest uppercase text-xs border border-[#a4733c] text-[#a4733c] py-3 px-6 inline-block hover:bg-[#a4733c] hover:text-white transition-colors duration-200"
+                  className="font-sans font-medium tracking-widest uppercase text-xs border border-primary text-primary py-3 px-6 inline-block hover:bg-primary hover:text-white transition-colors duration-200"
                 >
                   Enquire Now
                 </a>
@@ -157,7 +157,7 @@ export default function ConferenceSection() {
         </div>
 
         {/* Bottom CTA strip — now using brown */}
-        <div className="mt-12 bg-[#a4733c] p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="mt-12 bg-primary p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
             <p className="font-serif text-xl md:text-2xl text-white font-medium mb-2">
               Planning a Corporate Event?
@@ -166,12 +166,12 @@ export default function ConferenceSection() {
               Our events team will handle every detail. Tell us about your requirements.
             </p>
           </div>
-          <div className="flex gap-4 flex-shrink-0">
+          <div className="flex gap-4 flex-shrink-0 flex-wrap justify-center md:justify-start">
             <a href="#contact" className="bg-gold text-white font-sans font-medium tracking-widest uppercase text-xs px-8 py-4 hover:bg-gold-dark transition-colors duration-200">
               Plan Your Event
             </a>
             <a
-              href="#contact"
+              href="https://wa.me/254714302777"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 border border-white/30 text-white font-sans font-medium tracking-widest uppercase text-xs px-6 py-4 hover:border-white transition-colors duration-200"

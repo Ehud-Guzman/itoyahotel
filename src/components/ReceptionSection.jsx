@@ -22,7 +22,7 @@ export default function ReceptionSection() {
           {/* Hero Image */}
           <div className="relative h-[320px] md:h-[420px] lg:h-[520px]">
             <img
-              src="/reception2.jpeg"
+              src="/images/reception/reception-2.webp"
               alt="Hotel Itoya Reception and Lobby"
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />

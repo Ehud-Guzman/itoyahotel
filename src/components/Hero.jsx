@@ -2,33 +2,24 @@
 import { useEffect, useRef, useState } from 'react'
 
 export default function Hero() {
-  const [footerNear, setFooterNear] = useState(false)
-  const [trustMode, setTrustMode] = useState('full')
+  const [stripVisible, setStripVisible] = useState(true)
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const lastScroll = useRef(0)
   const isFirstRun = useRef(true)
 
-  const trustItems = [
-    { value: 'Premium', label: 'Accommodation' },
-    { value: 'Conference', label: 'Facilities' },
-    { value: 'Business', label: 'Hospitality' },
-    { value: 'Refined', label: 'Guest Experience' },
-  ]
-
   const slides = [
-    '/hotelitoyagpt1.png',
-    '/lobby2.jpeg',
-    '/lounge1.webp',
-    '/lobby1.webp',
-    '/sitting1.jpeg',
-    '/parking1.jpeg',
-    '/parking2.jpeg',
-    '/food1.webp',
-    '/layout1.jpeg',
-    '/events1.jpeg',
-    '/events3.jpeg',
-    '/homeland1.jpeg',
-    '/homelandsetup.jpeg'
+    '/images/exterior/hotel-exterior-1.webp',
+    '/images/lobby/lobby-2.webp',
+    '/images/lounge/lounge-1.webp',
+    '/images/lobby/lobby-1.webp',
+    '/images/rooms/sitting-area-1.webp',
+    '/images/parking/parking-1.webp',
+    '/images/parking/parking-2.webp',
+    '/images/dining/food-1.webp',
+    '/images/exterior/layout-1.webp',
+    '/images/events/events-1.webp',
+    '/images/events/events-3.webp',
+    '/images/events/homeland-1.webp',
+    '/images/events/homeland-setup.webp',
   ]
 
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -55,46 +46,22 @@ export default function Hero() {
       isFirstRun.current = false
       return
     }
-
     setIsTransitioning(true)
-    const timer = setTimeout(() => {
-      setIsTransitioning(false)
-    }, 1400) // Matches image transition duration
-
+    const timer = setTimeout(() => setIsTransitioning(false), 1400)
     return () => clearTimeout(timer)
   }, [currentSlide])
 
-  // Scroll behavior for trust strip
+  // Strip fades out once user scrolls past the hero view
   useEffect(() => {
-    const handleScroll = () => {
-      const footer = document.querySelector('footer')
-      if (footer) {
-        const footerRect = footer.getBoundingClientRect()
-        setFooterNear(footerRect.top <= window.innerHeight + 48)
-      }
-
-      const currentScroll = window.scrollY
-      const isScrollingDown = currentScroll > lastScroll.current
-      lastScroll.current = currentScroll
-
-      if (currentScroll <= 220) {
-        setTrustMode('full')
-      } else if (isScrollingDown) {
-        setTrustMode('hidden')
-      } else {
-        setTrustMode('compact')
-      }
-    }
-
+    const handleScroll = () => setStripVisible(window.scrollY <= 180)
     window.addEventListener('scroll', handleScroll, { passive: true })
-    handleScroll()
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   return (
-    <section id="home" className="relative min-h-screen flex flex-col overflow-hidden">
+    <section id="home" className="relative min-h-screen flex flex-col overflow-hidden mx-1.5">
 
-      {/* Background slideshow — with object-center to prevent distortion */}
+      {/* Background slideshow */}
       <div className="absolute inset-0 z-0">
         {slides.map((src, i) => (
           <img
@@ -110,30 +77,30 @@ export default function Hero() {
         <div className="absolute inset-0 bg-black/25 pointer-events-none" />
       </div>
 
-      {/* Main Content — Ultra-Premium Cinematic (Option 3) */}
+      {/* Main Content */}
       <div className="relative z-10 flex-1 flex flex-col max-w-7xl mx-auto px-6 lg:px-10 pt-40 pb-32 w-full">
         <div
           className={`
-            max-w-2xl 
+            max-w-2xl
             transition-all duration-[1500ms] ease-[cubic-bezier(0.4,0,0.2,1)]
-            ${isTransitioning 
-              ? 'opacity-0 scale-[0.95] blur-[4px] -rotate-[1deg] translate-y-2' 
+            ${isTransitioning
+              ? 'opacity-0 scale-[0.95] blur-[4px] -rotate-[1deg] translate-y-2'
               : 'opacity-100 scale-100 blur-0 rotate-0 translate-y-0'
             }
           `}
         >
-          {/* Gold accent line — expands from centre */}
+          {/* Gold accent line */}
           <div className="relative flex justify-center mb-6">
-            <div 
+            <div
               className={`
                 h-[2px] bg-gold/80 transition-all duration-[1400ms] ease-[cubic-bezier(0.4,0,0.2,1)]
                 ${isTransitioning ? 'w-0 opacity-0' : 'w-16 opacity-100'}
-              `} 
+              `}
             />
           </div>
 
           <h1 className="font-serif font-light text-white leading-[1.15] mb-3 text-4xl sm:text-5xl md:text-6xl lg:text-6xl xl:text-7xl tracking-wide drop-shadow-lg text-center">
-            <span 
+            <span
               className={`
                 block transition-all duration-[1200ms] ease-[cubic-bezier(0.4,0,0.2,1)] delay-100
                 ${isTransitioning ? 'opacity-0 -translate-y-6' : 'opacity-100 translate-y-0'}
@@ -141,17 +108,17 @@ export default function Hero() {
             >
               Where Hospitality
             </span>
-            <span 
+            <span
               className={`
                 block font-normal text-gold-light transition-all duration-[1200ms] ease-[cubic-bezier(0.4,0,0.2,1)] delay-250
                 ${isTransitioning ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}
               `}
             >
-              Meets value
+              Meets Value
             </span>
           </h1>
 
-          <p 
+          <p
             className={`
               text-white/90 text-[10px] sm:text-[11px] tracking-[0.35em] uppercase font-sans font-light mt-6 text-center
               transition-all duration-[1000ms] ease-[cubic-bezier(0.4,0,0.2,1)] delay-400
@@ -163,89 +130,49 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* === RED TRUST STRIP — all text now white for contrast === */}
+      {/* TRUST STRIP — full-width rectangle, bottom of hero, fades on scroll */}
       <div
         className={`
-          floating-panel fixed z-40 transition-all duration-500 ease-out
-          hidden md:block
-          ${trustMode === 'compact' 
-            ? 'bottom-6 right-6 left-auto w-auto max-w-xs opacity-100' 
-            : trustMode === 'hidden' 
-              ? 'opacity-0 pointer-events-none' 
-              : 'left-1/2 w-[min(92vw,56rem)] max-w-6xl -translate-x-1/2 opacity-100 ' + (footerNear ? 'bottom-20' : 'bottom-6')
-          }
+          absolute bottom-0 inset-x-0 z-20
+          transition-all duration-500
+          ${stripVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}
         `}
       >
-        <div
-          className={`
-            relative overflow-hidden border border-white/15 shadow-2xl shadow-black/40
-            ${trustMode === 'compact' 
-              ? 'rounded-full px-5 py-2 bg-[#ff020a]' 
-              : 'rounded-full px-2 py-3 sm:px-4 bg-[#ff020a]/95 backdrop-blur-sm'
-            }
-          `}
-        >
-          {trustMode === 'compact' ? (
-            // --- COMPACT BADGE: red background with white text ---
-            <div className="flex items-center justify-center gap-3">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/60" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+        <div className="
+          relative overflow-hidden
+          bg-gradient-to-b from-[#ff020a]/30 to-[#ff020a]/90
+          border-t border-white/10
+          py-3
+        ">
+          {/* Left fade mask */}
+          <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-[#c80008] to-transparent z-10 pointer-events-none" />
+          {/* Right fade mask */}
+          <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-[#c80008] to-transparent z-10 pointer-events-none" />
+          <div className="flex whitespace-nowrap animate-scroll-trust">
+            {[0, 1, 2].map(i => (
+              <span key={i} className="inline-flex items-center gap-6 px-10 font-serif text-xs tracking-[0.22em] text-white">
+                <span className="text-gold">✦</span>
+                Premium Accommodation
+                <span className="text-white/30">·</span>
+                Conference Facilities
+                <span className="text-white/30">·</span>
+                Business Hospitality
+                <span className="text-white/30">·</span>
+                Refined Guest Experience
+                <span className="text-gold">✦</span>
               </span>
-              <span className="font-serif text-sm tracking-[0.15em] text-white whitespace-nowrap">
-                Hotel Itoya
-              </span>
-            </div>
-          ) : (
-            // --- FULL STRIP: infinite scrolling marquee with white text ---
-            <div className="flex overflow-hidden">
-              <div className="flex animate-scroll-trust gap-8 sm:gap-12 md:gap-16">
-                {/* First set */}
-                {trustItems.map((item) => (
-                  <div key={`${item.value}-1`} className="flex items-center gap-3 sm:gap-4">
-                    <div className="flex items-baseline gap-2 whitespace-nowrap">
-                      <span className="font-serif text-sm sm:text-base md:text-lg text-white font-medium tracking-wide">
-                        {item.value}
-                      </span>
-                      <span className="text-[9px] sm:text-[10px] md:text-xs uppercase tracking-[0.2em] text-white/70">
-                        {item.label}
-                      </span>
-                    </div>
-                    <span className="w-px h-5 md:h-6 bg-white/20" />
-                  </div>
-                ))}
-                {/* Second set (duplicate for seamless looping) */}
-                {trustItems.map((item) => (
-                  <div key={`${item.value}-2`} className="flex items-center gap-3 sm:gap-4">
-                    <div className="flex items-baseline gap-2 whitespace-nowrap">
-                      <span className="font-serif text-sm sm:text-base md:text-lg text-white font-medium tracking-wide">
-                        {item.value}
-                      </span>
-                      <span className="text-[9px] sm:text-[10px] md:text-xs uppercase tracking-[0.2em] text-white/70">
-                        {item.label}
-                      </span>
-                    </div>
-                    <span className="w-px h-5 md:h-6 bg-white/20" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* CSS Animation for scrolling */}
       <style>{`
         @keyframes scrollTrust {
           0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+          100% { transform: translateX(-33.333%); }
         }
         .animate-scroll-trust {
           animation: scrollTrust 22s linear infinite;
-        }
-        /* Optional: pause animation on hover for better readability */
-        .floating-panel:hover .animate-scroll-trust {
-          animation-play-state: paused;
         }
       `}</style>
 

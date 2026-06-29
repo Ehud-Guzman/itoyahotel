@@ -5,10 +5,12 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 
   body {
     @apply bg-cream text-ink font-sans antialiased;
+    overflow-x: hidden;
   }
 
   * {
@@ -24,11 +26,11 @@
   }
 
   .btn-outline {
-    @apply inline-flex items-center justify-center border border-white text-white font-sans font-medium tracking-widest uppercase text-xs px-8 py-4 transition-all duration-200 hover:bg-white hover:text-forest;
+    @apply inline-flex items-center justify-center border border-white text-white font-sans font-medium tracking-widest uppercase text-xs px-8 py-4 transition-all duration-200 hover:bg-white hover:text-primary;
   }
 
   .btn-outline-dark {
-    @apply inline-flex items-center justify-center border border-forest text-forest font-sans font-medium tracking-widest uppercase text-xs px-8 py-4 transition-all duration-200 hover:bg-forest hover:text-white;
+    @apply inline-flex items-center justify-center border border-primary text-primary font-sans font-medium tracking-widest uppercase text-xs px-8 py-4 transition-all duration-200 hover:bg-primary hover:text-white;
   }
 
   /* Section label */
@@ -64,7 +66,7 @@
 
 /* Image placeholder shimmer */
 .img-placeholder {
-  background: linear-gradient(135deg, #1a3d2e 0%, #16352B 50%, #0f2920 100%);
+  background: linear-gradient(135deg, #c48940 0%, #a4733c 50%, #8c5f2e 100%);
   position: relative;
   overflow: hidden;
 }
@@ -73,7 +75,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(199,165,107,0.08) 0%, transparent 60%);
+  background: linear-gradient(135deg, rgba(199,165,107,0.12) 0%, transparent 60%);
 }
 
 .floating-panel {

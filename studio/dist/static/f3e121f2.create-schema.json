@@ -1,0 +1,517 @@
+[
+  {
+    "fields": [
+      {
+        "options": {
+          "hotspot": true
+        },
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error",
+            "message": "Please upload an image."
+          }
+        ],
+        "name": "image",
+        "type": "image"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error",
+            "message": "Caption is required for accessibility."
+          }
+        ],
+        "description": "Describe what is shown (e.g. \"Hotel Lobby\", \"Deluxe Room View\").",
+        "name": "alt",
+        "type": "string",
+        "title": "Caption / Alt Text"
+      },
+      {
+        "options": {
+          "list": [
+            {
+              "title": "Hotel Spaces",
+              "value": "spaces"
+            },
+            {
+              "title": "Rooms",
+              "value": "rooms"
+            },
+            {
+              "title": "Dining",
+              "value": "dining"
+            },
+            {
+              "title": "Conference",
+              "value": "conference"
+            },
+            {
+              "title": "Events",
+              "value": "events"
+            }
+          ],
+          "layout": "radio"
+        },
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "valid",
+                "constraint": [
+                  "spaces",
+                  "rooms",
+                  "dining",
+                  "conference",
+                  "events"
+                ]
+              },
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error",
+            "message": "Please select a category."
+          }
+        ],
+        "name": "category",
+        "type": "string"
+      },
+      {
+        "initialValue": 99,
+        "description": "Lower number appears first. Leave blank to add at the end.",
+        "name": "order",
+        "type": "number",
+        "title": "Display Order"
+      }
+    ],
+    "name": "galleryImage",
+    "type": "document"
+  },
+  {
+    "fields": [
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "description": "e.g. \"Sleeping\", \"In-Room\", \"Bathroom\", \"Services\"",
+        "name": "label",
+        "type": "string",
+        "title": "Group Label"
+      },
+      {
+        "description": "List the individual amenities (e.g. \"King Bed\", \"Free Wi-Fi\").",
+        "of": [
+          {
+            "type": "string"
+          }
+        ],
+        "name": "items",
+        "type": "array",
+        "title": "Amenity Items"
+      }
+    ],
+    "name": "amenityGroup",
+    "type": "object"
+  },
+  {
+    "fields": [
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "description": "e.g. \"Standard Room\", \"Deluxe Room\", \"Executive Room\"",
+        "name": "title",
+        "type": "string",
+        "title": "Room Name"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "description": "Short label on the room card (e.g. \"Standard\", \"Deluxe\").",
+        "name": "tag",
+        "type": "string",
+        "title": "Badge Label"
+      },
+      {
+        "rows": 2,
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              },
+              {
+                "flag": "max",
+                "constraint": 220
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "description": "One or two lines shown on the room card. Keep it concise.",
+        "name": "description",
+        "type": "text",
+        "title": "Short Description"
+      },
+      {
+        "rows": 4,
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "description": "Longer text shown in the room detail popup.",
+        "name": "longDescription",
+        "type": "text",
+        "title": "Full Description"
+      },
+      {
+        "description": "Nightly rate in Kenyan Shillings. Leave blank to hide price.",
+        "name": "pricePerNight",
+        "type": "number",
+        "title": "Price Per Night (KES)"
+      },
+      {
+        "initialValue": false,
+        "description": "Highlight this room with a gold border on the website.",
+        "name": "featured",
+        "type": "boolean",
+        "title": "Featured Room"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              },
+              {
+                "flag": "min",
+                "constraint": 1
+              }
+            ],
+            "level": "error",
+            "message": "At least one room image is required."
+          }
+        ],
+        "description": "First image is the main card image. Add more for the room gallery popup.",
+        "of": [
+          {
+            "options": {
+              "hotspot": true
+            },
+            "type": "image"
+          }
+        ],
+        "name": "images",
+        "type": "array",
+        "title": "Room Images"
+      },
+      {
+        "description": "Short tags shown on the card (e.g. \"King Bed\", \"Free Wi-Fi\", \"Sea View\").",
+        "of": [
+          {
+            "type": "string"
+          }
+        ],
+        "name": "features",
+        "type": "array",
+        "title": "Feature Tags"
+      },
+      {
+        "description": "Grouped amenity lists shown in the room detail popup.",
+        "of": [
+          {
+            "type": "amenityGroup"
+          }
+        ],
+        "name": "amenities",
+        "type": "array"
+      },
+      {
+        "initialValue": 99,
+        "description": "Controls the order rooms appear. 1 = first on the page.",
+        "name": "order",
+        "type": "number",
+        "title": "Display Order"
+      }
+    ],
+    "name": "room",
+    "type": "document"
+  },
+  {
+    "fields": [
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "name",
+        "type": "string",
+        "title": "Dish Name"
+      },
+      {
+        "rows": 2,
+        "description": "Brief description of the dish. Optional.",
+        "name": "description",
+        "type": "text"
+      },
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              },
+              {
+                "flag": "min",
+                "constraint": 0
+              }
+            ],
+            "level": "error",
+            "message": "Price must be a positive number."
+          }
+        ],
+        "description": "Price in Kenyan Shillings.",
+        "name": "price",
+        "type": "number",
+        "title": "Price (KES)"
+      },
+      {
+        "options": {
+          "list": [
+            {
+              "title": "Breakfast",
+              "value": "Breakfast"
+            },
+            {
+              "title": "Lunch",
+              "value": "Lunch"
+            },
+            {
+              "title": "Dinner",
+              "value": "Dinner"
+            },
+            {
+              "title": "Drinks & Beverages",
+              "value": "Drinks"
+            },
+            {
+              "title": "Desserts",
+              "value": "Desserts"
+            }
+          ],
+          "layout": "radio"
+        },
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "valid",
+                "constraint": [
+                  "Breakfast",
+                  "Lunch",
+                  "Dinner",
+                  "Drinks",
+                  "Desserts"
+                ]
+              },
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "category",
+        "type": "string",
+        "title": "Menu Category"
+      },
+      {
+        "options": {
+          "hotspot": true
+        },
+        "description": "Optional photo of the dish.",
+        "name": "image",
+        "type": "image",
+        "title": "Dish Photo"
+      },
+      {
+        "initialValue": true,
+        "description": "Uncheck to temporarily hide this item from the menu without deleting it.",
+        "name": "available",
+        "type": "boolean",
+        "title": "Currently Available"
+      },
+      {
+        "initialValue": 99,
+        "description": "Controls order within the category. Lower = appears first.",
+        "name": "order",
+        "type": "number",
+        "title": "Display Order"
+      }
+    ],
+    "name": "menuItem",
+    "type": "document"
+  },
+  {
+    "fields": [
+      {
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "title",
+        "type": "string",
+        "title": "Event Title"
+      },
+      {
+        "options": {
+          "dateFormat": "MMMM D, YYYY"
+        },
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error"
+          }
+        ],
+        "name": "date",
+        "type": "date",
+        "title": "Event Date"
+      },
+      {
+        "rows": 3,
+        "description": "Brief description of the event. Optional.",
+        "name": "description",
+        "type": "text",
+        "title": "Event Description"
+      },
+      {
+        "options": {
+          "list": [
+            {
+              "title": "Wedding Reception",
+              "value": "Wedding"
+            },
+            {
+              "title": "Corporate Event",
+              "value": "Corporate"
+            },
+            {
+              "title": "Cultural Celebration",
+              "value": "Cultural"
+            },
+            {
+              "title": "Outside Catering",
+              "value": "Catering"
+            },
+            {
+              "title": "Other",
+              "value": "Other"
+            }
+          ],
+          "layout": "radio"
+        },
+        "name": "category",
+        "type": "string",
+        "title": "Event Type"
+      },
+      {
+        "options": {
+          "hotspot": true
+        },
+        "validation": [
+          {
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ],
+            "level": "error",
+            "message": "An event photo is required."
+          }
+        ],
+        "name": "image",
+        "type": "image",
+        "title": "Event Photo"
+      },
+      {
+        "initialValue": true,
+        "description": "Uncheck to hide this event without deleting it.",
+        "name": "active",
+        "type": "boolean",
+        "title": "Show on Website"
+      }
+    ],
+    "name": "specialEvent",
+    "type": "document"
+  }
+]

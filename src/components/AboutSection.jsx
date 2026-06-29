@@ -1,115 +1,97 @@
-/* About Section — refined premium hotel positioning */
+/* About Section — Hotel Itoya brand story and positioning */
+
+const stats = [
+  { value: '60+', label: 'Rooms & Suites' },
+  { value: '24/7', label: 'Reception & Service' },
+  { value: 'Ayoti', label: 'Group Property' },
+]
 
 export default function AboutSection() {
-  const features = [
-    'Premium Rooms',
-    'Conference Facilities',
-    'Dining Experience',
-    'Business Friendly',
-    'Comfort Focused',
-    'Professional Service',
-  ]
-
   return (
-    <section id="about" className="bg-cream py-16 lg:py-20">
-
+    <section id="about" className="bg-cream py-16 lg:py-24">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
 
-          {/* Left — Image */}
-          <div className="relative">
-
-            <div className="aspect-[5/6] rounded-md overflow-hidden">
-
-              <img
-                src="/hotelitoyagpt1.png"
-                alt="Hotel interior"
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-
-            </div>
-
-            {/* Floating positioning card */}
-            <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-sm px-6 py-5 shadow-lg max-w-[260px]">
-
-              <p className="font-serif text-xl text-forest font-medium">
-                Designed for Business & Comfort
-              </p>
-
-              <div className="gold-divider mt-3 mb-3" />
-
-              <p className="font-sans text-xs text-ink/60 leading-relaxed">
-                Premium accommodation, conferences and hospitality experiences.
-              </p>
-
-            </div>
-
-          </div>
-
-          {/* Right */}
+          {/* Left — Copy */}
           <div>
-
-            <p className="section-label mb-4">
-              About Hotel Itoya
-            </p>
-
+            <p className="section-label mb-4">About Hotel Itoya</p>
             <div className="gold-divider mb-8" />
 
             <h2 className="section-heading mb-8">
-              Where Business Class
+              Busia's Premier
               <br />
-              <em>Meets Genuine Warmth</em>
+              <em>Hotel &amp; Event Venue</em>
             </h2>
 
             <p className="font-sans font-light text-ink/70 leading-relaxed text-base mb-6">
-              Thoughtfully designed for business travel, conferences,
-              and comfortable stays, Hotel Itoya offers a refined
-              hospitality experience in Busia.
+              Positioned in the heart of Busia — one of East Africa's busiest border
+              towns — Hotel Itoya is the region's landmark hospitality destination.
+              A proud property of the Ayoti Group, we blend professional standards
+              with warm, genuine service that keeps guests returning.
             </p>
 
             <p className="font-sans font-light text-ink/70 leading-relaxed text-base mb-10">
-              From elegant accommodation to professional event spaces,
-              every experience is designed with comfort, reliability,
-              and convenience in mind.
+              From 60 well-appointed rooms and versatile conference facilities to
+              full-service dining and our partnership with Homeland Itoya Events,
+              we are equipped to serve business travellers, corporate delegations,
+              and event planners with equal care and precision.
             </p>
 
-            {/* Features */}
-            <div className="grid grid-cols-2 gap-y-5 gap-x-6 mb-12">
-
-              {features.map((item) => (
-
-                <div
-                  key={item}
-                  className="flex items-center gap-3"
-                >
-
-                  <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />
-
-                  <span className="font-sans text-sm text-ink/75">
-                    {item}
-                  </span>
-
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-6 py-8 border-t border-b border-stone/60 mb-10">
+              {stats.map((s) => (
+                <div key={s.label}>
+                  <p className="font-serif text-2xl text-primary font-medium">{s.value}</p>
+                  <p className="font-sans text-[10px] uppercase tracking-[0.2em] text-ink/45 mt-1">{s.label}</p>
                 </div>
-
               ))}
-
             </div>
 
-            <a
-              href="#rooms"
-              className="btn-outline-dark"
-            >
-              Discover Our Rooms
-            </a>
+            {/* CTAs */}
+            <div className="flex flex-wrap gap-3">
+              <a href="#rooms" className="btn-outline-dark">
+                Explore Rooms
+              </a>
+              <a
+                href="#contact"
+                className="inline-flex items-center justify-center bg-primary text-white font-sans font-medium tracking-widest uppercase text-xs px-8 py-4 hover:bg-primary-dark transition-colors duration-200"
+              >
+                Make Enquiry
+              </a>
+            </div>
+          </div>
 
+          {/* Right — Image with floating stat card */}
+          <div className="relative order-first lg:order-last">
+            <div className="aspect-[5/6] rounded-md overflow-hidden img-placeholder">
+              <img
+                src="/images/exterior/hotel-exterior-1.webp"
+                alt="Hotel Itoya exterior — Busia, Kenya"
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+            </div>
+
+            {/* Floating stat card — anchored to bottom-left of image */}
+            <div className="absolute bottom-6 left-6 bg-white px-6 py-5 shadow-xl max-w-[260px]">
+              <div className="mb-4">
+                <p className="font-serif text-4xl text-primary font-medium">60+</p>
+                <p className="font-sans text-[10px] uppercase tracking-[0.22em] text-ink/65 mt-0.5">Rooms &amp; Suites</p>
+              </div>
+              <div className="gold-divider mb-3" />
+              <p className="font-sans text-[10px] uppercase tracking-[0.28em] text-ink/50 leading-relaxed">
+                Busia, Kenya
+                <br />
+                An Ayoti Group Property
+              </p>
+            </div>
           </div>
 
         </div>
 
       </div>
-
     </section>
   )
 }

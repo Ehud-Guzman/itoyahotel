@@ -4,15 +4,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        forest: '#16352B',
+        primary: '#a4733c',
+        'primary-dark': '#8c5f2e',
         gold: '#C7A56B',
-        cream: '#FAFAF8',
-        ink: '#1E1E1E',
-        'forest-light': '#1d4535',
         'gold-light': '#d4b882',
         'gold-dark': '#a8863a',
-        stone: '#E8E4DC',
+        cream: '#FAFAF8',
         mist: '#F4F2EE',
+        stone: '#E8E4DC',
+        ink: '#1E1E1E',
       },
       fontFamily: {
         serif: ['"Playfair Display"', 'Georgia', 'serif'],

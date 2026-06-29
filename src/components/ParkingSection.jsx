@@ -1,11 +1,11 @@
 import { useState } from 'react';
 export default function ParkingSection() {
   // --- Image Arrays (for thumbnails) ---
-  const parkingImages = ['/parking1.jpeg', '/parking2.jpeg'];
+  const parkingImages = ['/images/parking/parking-1.webp', '/images/parking/parking-2.webp'];
   const kitchenImages = [
-    '/mobilekitchenequipment1.jpeg',
-    '/mobilekitcheninterior1.jpeg',
-    '/mobilekitchenexterior.jpeg',
+    '/images/events/mobile-kitchen-equipment.webp',
+    '/images/events/mobile-kitchen-interior.webp',
+    '/images/events/mobile-kitchen-exterior.webp',
   ];
 
   const [parkingIndex, setParkingIndex] = useState(0);

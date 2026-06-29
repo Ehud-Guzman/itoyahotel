@@ -55,7 +55,7 @@ const experiences = [
 
 export default function SignatureExperiences() {
   return (
-    <section className="bg-[#a4733c] py-20">
+    <section className="bg-primary py-16 lg:py-24">
 
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
 
@@ -89,7 +89,7 @@ export default function SignatureExperiences() {
 
             <div
               key={exp.title}
-              className="group bg-[#a4733c] p-6 hover:bg-[#8c5f2e] transition duration-300"
+              className="group bg-primary p-6 hover:bg-primary-dark transition duration-300"
             >
 
               {/* Icon remains gold */}
