@@ -3,7 +3,7 @@ import { FaComments, FaTimes, FaPaperPlane, FaWhatsapp } from 'react-icons/fa';
 
 const PHONE_1 = '+254 714 302 777';
 const PHONE_2 = '+254 714 666 222';
-const EMAIL = 'hotel.itoya@ayotigroup.com';
+const EMAIL = 'info@hotelitoya.co.ke';
 const WA_URL = 'https://wa.me/254714302777';
 
 const getGreeting = () => {

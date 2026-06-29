@@ -12,8 +12,8 @@ const details = [
   },
   {
     label: 'Email',
-    value: 'hotel.itoya@ayotigroup.com',
-    href: 'mailto:hotel.itoya@ayotigroup.com',
+    value: 'info@hotelitoya.co.ke',
+    href: 'mailto:info@hotelitoya.co.ke',
   },
   {
     label: 'Border Crossing',
@@ -22,9 +22,9 @@ const details = [
 ]
 
 const directions = [
-  { from: 'From Nairobi', via: 'A104 via Nakuru & Eldoret — approx. 6 hrs' },
-  { from: 'From Kisumu', via: 'A1 via Busia Road — approx. 1.5 hrs' },
-  { from: 'From Kampala', via: 'A109 via Busia Border — approx. 3.5 hrs' },
+  { from: 'Nairobi', via: 'A104 via Nakuru & Eldoret', time: '~8–9 hrs' },
+  { from: 'Kisumu',  via: 'A1 Busia Road',              time: '~3 hrs'   },
+  { from: 'Kampala', via: 'A109 via Busia Border',       time: '~4 hrs 20 min' },
 ]
 
 export default function LocationSection() {
@@ -54,7 +54,7 @@ export default function LocationSection() {
           <div className="lg:col-span-3 overflow-hidden rounded-sm border border-stone shadow-lg shadow-black/5 aspect-[16/10]">
             <iframe
               title="Hotel Itoya Location"
-              src="https://maps.google.com/maps?q=Hotel+Itoya+Busia+Kenya&t=&z=15&ie=UTF8&iwloc=&output=embed"
+              src="https://maps.google.com/maps?q=-0.4612,34.1117&t=&z=17&ie=UTF8&iwloc=&output=embed"
               width="100%"
               height="100%"
               style={{ border: 0, display: 'block' }}
@@ -95,11 +95,14 @@ export default function LocationSection() {
             {/* Directions */}
             <div>
               <p className="font-sans text-[9px] uppercase tracking-[0.35em] text-gold mb-5">Getting Here</p>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {directions.map((d) => (
-                  <div key={d.from} className="bg-mist rounded-sm p-4">
-                    <p className="font-sans text-xs font-medium text-ink/80 mb-1">{d.from}</p>
-                    <p className="font-sans text-xs text-ink/50">{d.via}</p>
+                  <div key={d.from} className="bg-mist border-l-2 border-gold/40 pl-4 pr-4 py-3.5 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-sans text-xs font-semibold text-ink/80 mb-0.5">From {d.from}</p>
+                      <p className="font-sans text-[11px] text-ink/45">{d.via}</p>
+                    </div>
+                    <span className="font-sans text-xs font-medium text-primary whitespace-nowrap shrink-0">{d.time}</span>
                   </div>
                 ))}
               </div>
@@ -107,7 +110,7 @@ export default function LocationSection() {
 
             {/* CTA */}
             <a
-              href="https://maps.google.com/?q=Hotel+Itoya+Busia+Kenya"
+              href="https://maps.google.com/?q=-0.4612,34.1117"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 border border-primary text-primary hover:bg-primary hover:text-white font-sans font-medium tracking-widest uppercase text-xs px-6 py-3.5 transition-colors duration-200 w-fit"
