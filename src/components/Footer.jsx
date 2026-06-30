@@ -2,8 +2,10 @@
 
 const footerLinks = {
   Hotel: ['About Us', 'Rooms & Suites', 'Dining', 'Gallery', 'Contact'],
-  Services: ['Conference Facilities', 'Events Planning'],
+  Services: ['Conference Facilities', 'Events Planning', 'Mobile Kitchen'],
 }
+
+const noLink = new Set(['Mobile Kitchen'])
 
 export default function Footer() {
   const year = new Date().getFullYear()
@@ -96,9 +98,10 @@ export default function Footer() {
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link}>
-                    <a href="#" className="font-sans font-light text-sm text-white hover:text-gold transition-colors duration-150">
-                      {link}
-                    </a>
+                    {noLink.has(link)
+                      ? <span className="font-sans font-light text-sm text-white/60">{link}</span>
+                      : <a href="#" className="font-sans font-light text-sm text-white hover:text-gold transition-colors duration-150">{link}</a>
+                    }
                   </li>
                 ))}
               </ul>
