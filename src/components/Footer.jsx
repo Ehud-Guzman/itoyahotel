@@ -2,8 +2,7 @@
 
 const footerLinks = {
   Hotel: ['About Us', 'Rooms & Suites', 'Dining', 'Gallery', 'Contact'],
-  Services: ['Conference Facilities', , 'Events Planning'],
-  Info: ['Reservations Policy', 'Privacy Policy', 'Terms of Use', 'Accessibility', 'Careers'],
+  Services: ['Conference Facilities', 'Events Planning'],
 }
 
 export default function Footer() {
@@ -105,6 +104,31 @@ export default function Footer() {
               </ul>
             </div>
           ))}
+
+          {/* Contact column */}
+          <div>
+            <p className="font-sans text-xs tracking-widest uppercase text-white mb-5">Contact</p>
+            <div className="space-y-5">
+              <div>
+                <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Phone</p>
+                <a href="tel:+254714302777" className="block font-sans font-light text-sm text-white hover:text-gold transition-colors duration-150">+254 714 302 777</a>
+                <a href="tel:+254714666222" className="block font-sans font-light text-sm text-white/80 hover:text-gold transition-colors duration-150 mt-0.5">+254 714 666 222</a>
+              </div>
+              <div>
+                <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Email</p>
+                <a href="mailto:info@hotelitoya.co.ke" className="font-sans font-light text-sm text-white hover:text-gold transition-colors duration-150 break-all">info@hotelitoya.co.ke</a>
+              </div>
+              <div>
+                <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Location</p>
+                <p className="font-sans font-light text-sm text-white leading-relaxed">Town Centre Road<br />Busia, Kenya</p>
+              </div>
+              <div>
+                <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Hours</p>
+                <p className="font-sans font-light text-sm text-white">Reservations · Daily 7 AM – 10 PM</p>
+                <p className="font-sans font-light text-sm text-white/80 mt-0.5">Front Desk · 24 Hours</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
