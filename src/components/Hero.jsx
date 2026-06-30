@@ -32,13 +32,12 @@ export default function Hero() {
     return () => clearInterval(id)
   }, [])
 
-  // Preload slides
+  // Preload the next slide only to avoid flooding bandwidth at startup
   useEffect(() => {
-    slides.forEach((src) => {
-      const img = new Image()
-      img.src = src
-    })
-  }, [])
+    const next = (currentSlide + 1) % slides.length
+    const img = new Image()
+    img.src = slides[next]
+  }, [currentSlide])
 
   // Trigger cinematic text transition on slide change
   useEffect(() => {
@@ -71,7 +70,8 @@ export default function Hero() {
             className={`absolute inset-0 w-full h-full object-cover object-center transform-gpu transition duration-[1400ms] ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform will-change-opacity ${
               currentSlide === i ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-105 -translate-y-3'
             }`}
-            loading={currentSlide === i ? 'eager' : 'lazy'}
+            loading={i === 0 ? 'eager' : 'lazy'}
+            fetchPriority={i === 0 ? 'high' : 'low'}
           />
         ))}
         <div className="absolute inset-0 bg-black/25 pointer-events-none" />

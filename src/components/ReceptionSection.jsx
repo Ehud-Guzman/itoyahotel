@@ -25,6 +25,7 @@ export default function ReceptionSection() {
               src="/images/reception/reception-2.webp"
               alt="Hotel Itoya Reception and Lobby"
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              loading="lazy"
             />
             {/* Gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />

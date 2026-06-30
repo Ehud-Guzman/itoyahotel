@@ -53,9 +53,11 @@ export default function EventsSection() {
               <div className="flex items-center gap-3">
                 <div className="bg-white/95 rounded-full p-2 border border-white/20 shadow-lg">
                   <img
-                    src="/logos/homeland-logo.png"
+                    src="/logos/homeland-logo.webp"
                     alt="Homeland Itoya"
                     className="h-10 w-auto object-contain"
+                    width="200" height="90"
+                    loading="lazy"
                   />
                 </div>
                 <div className="text-left">

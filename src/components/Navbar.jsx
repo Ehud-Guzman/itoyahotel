@@ -67,9 +67,10 @@ export default function Navbar({ onBookNow }) {
           ">
             <div className="flex-shrink-0 bg-white/95 rounded-full p-1 border border-white/30 shadow-sm">
               <img
-                src="/logos/homeland-logo.png"
+                src="/logos/homeland-logo.webp"
                 alt="Homeland Itoya"
                 className="h-9 w-auto object-contain"
+                width="200" height="90"
               />
             </div>
             <div className="relative w-full overflow-hidden flex-1">
@@ -101,7 +102,7 @@ export default function Navbar({ onBookNow }) {
           {/* Logo */}
           <a href="#home" className="flex items-center gap-3.5 shrink-0 group">
             <img
-              src="/logos/hotel-itoya-logo.png"
+              src="/logos/hotel-itoya-logo.webp"
               alt="Hotel Itoya"
               className={`
                 w-auto object-contain
@@ -109,6 +110,7 @@ export default function Navbar({ onBookNow }) {
                 group-hover:opacity-75
                 ${scrolled ? 'h-10' : 'h-[3.25rem]'}
               `}
+              width="260" height="156"
             />
             <div className="hidden sm:flex flex-col leading-none">
               <div className="h-px w-full bg-gold/50 mb-1.5" />

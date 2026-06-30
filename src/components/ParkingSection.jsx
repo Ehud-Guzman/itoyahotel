@@ -7,6 +7,11 @@ export default function ParkingSection() {
     '/images/events/mobile-kitchen-interior.webp',
     '/images/events/mobile-kitchen-exterior.webp',
   ];
+  const kitchenThumbs = [
+    '/images/events/mobile-kitchen-equipment-thumb.webp',
+    '/images/events/mobile-kitchen-interior-thumb.webp',
+    '/images/events/mobile-kitchen-exterior-thumb.webp',
+  ];
 
   const [parkingIndex, setParkingIndex] = useState(0);
   const [kitchenIndex, setKitchenIndex] = useState(0);
@@ -34,6 +39,7 @@ export default function ParkingSection() {
                 src={parkingImages[parkingIndex]}
                 alt="Parking"
                 className="w-full h-full object-cover transition-opacity duration-300"
+                loading="lazy"
               />
             </div>
             {/* Thumbnail strip */}
@@ -46,7 +52,7 @@ export default function ParkingSection() {
                     idx === parkingIndex ? 'border-gold' : 'border-transparent'
                   }`}
                 >
-                  <img src={src} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                  <img src={src} alt={`Thumb ${idx}`} className="w-full h-full object-cover" loading="lazy" width="56" height="56" />
                 </button>
               ))}
             </div>
@@ -132,6 +138,7 @@ export default function ParkingSection() {
                 src={kitchenImages[kitchenIndex]}
                 alt="Mobile kitchen"
                 className="w-full h-full object-cover transition-opacity duration-300"
+                loading="lazy"
               />
             </div>
             {/* Thumbnail strip */}
@@ -144,7 +151,7 @@ export default function ParkingSection() {
                     idx === kitchenIndex ? 'border-gold' : 'border-transparent'
                   }`}
                 >
-                  <img src={src} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                  <img src={kitchenThumbs[idx]} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" width="56" height="56" />
                 </button>
               ))}
             </div>
