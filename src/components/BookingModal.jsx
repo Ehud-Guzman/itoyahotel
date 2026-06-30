@@ -653,8 +653,12 @@ function Label({ children }) {
 function Field({ label, error, children }) {
   return (
     <div>
-      {label && <Label>{label}</Label>}
-      {children}
+      {label ? (
+        <label className="block">
+          <span className="block text-[10px] tracking-[0.28em] uppercase text-ink/50 mb-2">{label}</span>
+          {children}
+        </label>
+      ) : children}
       {error && <Err>{error}</Err>}
     </div>
   )

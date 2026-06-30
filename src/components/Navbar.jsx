@@ -136,8 +136,8 @@ export default function Navbar({ onBookNow }) {
                     after:transition-all after:duration-300
                     transition-colors duration-300
                     ${isActive
-                      ? 'text-gold after:w-4/5'
-                      : 'text-ink/60 after:w-0 hover:text-ink hover:after:w-4/5'
+                      ? 'text-ink after:w-4/5'
+                      : 'text-ink/70 after:w-0 hover:text-ink hover:after:w-4/5'
                     }
                   `}
                 >
@@ -158,7 +158,7 @@ export default function Navbar({ onBookNow }) {
               className="
                 hidden lg:inline-flex
                 px-7 py-2.5
-                border border-gold text-gold
+                border border-gold text-ink
                 uppercase tracking-[0.22em] text-[10px] font-medium
                 transition-all duration-300
                 hover:bg-gold hover:text-white hover:-translate-y-px
@@ -172,7 +172,7 @@ export default function Navbar({ onBookNow }) {
               onClick={onBookNow}
               className="
                 lg:hidden px-4 py-2
-                border border-gold text-gold text-[10px] uppercase tracking-[0.18em]
+                border border-gold text-ink text-[10px] uppercase tracking-[0.18em]
                 hover:bg-gold hover:text-white transition-all duration-300
               "
             >
@@ -214,7 +214,7 @@ export default function Navbar({ onBookNow }) {
                   py-4 border-b border-stone/40
                   uppercase tracking-[0.28em] text-[11px] font-medium
                   transition-all duration-300
-                  ${isActive ? 'text-gold' : 'text-ink/55 hover:text-gold hover:tracking-[0.32em]'}
+                  ${isActive ? 'text-ink font-semibold' : 'text-ink/70 hover:text-ink hover:tracking-[0.32em]'}
                 `}
               >
                 {link.label}
@@ -225,7 +225,7 @@ export default function Navbar({ onBookNow }) {
             onClick={() => { setMenuOpen(false); onBookNow() }}
             className="
               mt-8 w-full text-center
-              border border-gold text-gold py-4
+              border border-gold text-ink py-4
               uppercase tracking-[0.28em] text-[11px] font-medium
               hover:bg-gold hover:text-white transition-all duration-300
             "
