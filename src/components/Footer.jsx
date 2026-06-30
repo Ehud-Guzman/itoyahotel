@@ -2,7 +2,7 @@
 
 const footerLinks = {
   Hotel: ['About Us', 'Rooms & Suites', 'Dining', 'Gallery', 'Contact'],
-  Services: ['Conference Facilities', 'Concierge', 'Events Planning'],
+  Services: ['Conference Facilities', , 'Events Planning'],
   Info: ['Reservations Policy', 'Privacy Policy', 'Terms of Use', 'Accessibility', 'Careers'],
 }
 
