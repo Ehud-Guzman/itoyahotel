@@ -93,15 +93,7 @@ export default function ReceptionSection() {
           </div>
         </div>
 
-        {/* CTA Link */}
-        <div className="text-center mt-12">
-          <a
-            href="#contact"
-            className="inline-flex items-center gap-3 font-sans text-[11px] uppercase tracking-[0.25em] text-primary hover:text-primary-dark border-b border-primary/30 hover:border-primary transition-colors pb-1.5"
-          >
-            Speak with our concierge team →
-          </a>
-        </div>
+  
       </div>
     </section>
   );

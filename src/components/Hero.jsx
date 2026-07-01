@@ -18,7 +18,7 @@ export default function Hero() {
     '/images/exterior/layout-1.webp',
     '/images/events/events-1.webp',
     '/images/events/events-3.webp',
-    '/images/exterior/itoya-1.webp',
+    
     '/images/events/homeland-1.webp',
     '/images/events/homeland-setup.webp',
   ]
@@ -72,12 +72,12 @@ export default function Hero() {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 flex-1 flex flex-col max-w-7xl mx-auto px-6 lg:px-10 pt-20 lg:pt-40 pb-16 w-full">
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center w-full px-6 lg:px-10">
 
         {/* Motto — appears only after slide has fully settled */}
         <div
           className={`
-            max-w-2xl
+            max-w-2xl w-full
             transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]
             ${showMotto
               ? 'opacity-100 translate-y-0'
