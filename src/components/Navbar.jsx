@@ -102,23 +102,23 @@ export default function Navbar({ onBookNow }) {
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
           <div
             className={`
-              grid grid-cols-3 items-center
+              flex items-center justify-between lg:grid lg:grid-cols-3
               transition-all duration-500
-              ${scrolled ? 'h-14' : 'h-[2.75rem]'}
+              ${scrolled ? 'h-14' : 'h-12'}
             `}
           >
-            {/* Col 1 — logo fades in when scrolled */}
+            {/* Col 1 — always visible on mobile, fades in on desktop when scrolled */}
             <div
               className={`
                 flex items-center transition-all duration-500
-                ${scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+                ${scrolled ? '' : 'lg:opacity-0 lg:pointer-events-none'}
               `}
             >
               <a href="#home" className="group shrink-0">
                 <img
                   src="/logos/hotel-itoya-logo.webp"
                   alt="Hotel Itoya"
-                  className="h-10 w-auto object-contain group-hover:opacity-75 transition-opacity duration-300"
+                  className="h-9 lg:h-10 w-auto object-contain group-hover:opacity-75 transition-opacity duration-300"
                   width="260" height="156"
                 />
               </a>
