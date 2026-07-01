@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { FiCalendar, FiUsers, FiChevronDown, FiBriefcase } from 'react-icons/fi'
 
 const ROOMS = [
@@ -29,34 +29,53 @@ function tomorrowStr() {
 
 export default function BookingBar({ onBookNow }) {
   const [visible,  setVisible]  = useState(false)
+  const [active,   setActive]   = useState(false)
   const [checkIn,  setCheckIn]  = useState(todayStr())
   const [checkOut, setCheckOut] = useState(tomorrowStr())
   const [roomId,   setRoomId]   = useState(ROOMS[0].id)
   const [guests,   setGuests]   = useState(GUEST_OPTIONS[0])
 
-  const selectedRoom = ROOMS.find(r => r.id === roomId)
+  const selectedRoom  = ROOMS.find(r => r.id === roomId)
+  const idleTimer     = useRef(null)
+
+  const shown = visible && active
 
   useEffect(() => {
-    const handle = () => {
+    const wakeUp = () => {
+      setActive(true)
+      clearTimeout(idleTimer.current)
+      idleTimer.current = setTimeout(() => setActive(false), 4000)
+    }
+
+    const handleScroll = () => {
       const nearFooter = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 220
       setVisible(window.scrollY > 80 && !nearFooter)
+      wakeUp()
     }
-    window.addEventListener('scroll', handle, { passive: true })
-    return () => window.removeEventListener('scroll', handle)
+
+    window.addEventListener('scroll',    handleScroll, { passive: true })
+    window.addEventListener('mousemove', wakeUp,       { passive: true })
+    return () => {
+      window.removeEventListener('scroll',    handleScroll)
+      window.removeEventListener('mousemove', wakeUp)
+      clearTimeout(idleTimer.current)
+    }
   }, [])
 
   return (
     <div
       role="complementary"
       aria-label="Quick booking"
+      onMouseEnter={() => { setActive(true); clearTimeout(idleTimer.current) }}
+      onMouseLeave={() => { idleTimer.current = setTimeout(() => setActive(false), 4000) }}
       className={`
         fixed bottom-0 inset-x-0 z-40
         hidden lg:block
-        transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]
-        ${visible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}
+        transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]
+        ${shown ? 'translate-y-0' : 'translate-y-full pointer-events-none'}
       `}
     >
-      <div className="bg-white border-t-2 border-[#ff020a] shadow-[0_-8px_40px_rgba(0,0,0,0.18)]">
+      <div className="bg-white border-t-2 border-[#ff020a] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
         <div className="max-w-7xl mx-auto px-6 lg:px-10 py-4">
           <div className="flex items-end gap-3">
 

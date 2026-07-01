@@ -10,20 +10,23 @@ export default function Hero() {
     '/images/lounge/lounge-1.webp',
     '/images/lobby/lobby-1.webp',
     '/images/rooms/sitting-area-1.webp',
-    '/images/parking/parking-1.webp',
-    '/images/parking/parking-2.webp',
+    '/images/rooms/executive-room-1.webp',
+    '/images/dining/restaurant-1.webp',
+    '/images/reception/reception-2.webp',
     '/images/dining/food-1.webp',
+    '/images/conference/conference-1.webp',
     '/images/exterior/layout-1.webp',
     '/images/events/events-1.webp',
     '/images/events/events-3.webp',
+    '/images/exterior/itoya-1.webp',
     '/images/events/homeland-1.webp',
     '/images/events/homeland-setup.webp',
   ]
 
   const [currentSlide, setCurrentSlide] = useState(0)
 
-  // Motto visible on every 3rd slide (index 2, 5, 8, 11, …)
-  const showMotto = currentSlide % 3 === 2
+  // Motto visible only after the slide transition has fully settled
+  const showMotto = currentSlide % 3 === 2 && !isTransitioning
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -71,62 +74,30 @@ export default function Hero() {
       {/* Main Content */}
       <div className="relative z-10 flex-1 flex flex-col max-w-7xl mx-auto px-6 lg:px-10 pt-20 lg:pt-40 pb-16 w-full">
 
-        {/* Motto — fades in/out on every 3rd slide */}
+        {/* Motto — appears only after slide has fully settled */}
         <div
           className={`
             max-w-2xl
-            transition-opacity duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]
-            ${showMotto ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+            transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]
+            ${showMotto
+              ? 'opacity-100 translate-y-0'
+              : 'opacity-0 translate-y-3 pointer-events-none'
+            }
           `}
         >
-          <div
-            className={`
-              transition-all duration-[1500ms] ease-[cubic-bezier(0.4,0,0.2,1)]
-              ${isTransitioning
-                ? 'opacity-0 scale-[0.95] blur-[4px] -rotate-[1deg] translate-y-2'
-                : 'opacity-100 scale-100 blur-0 rotate-0 translate-y-0'
-              }
-            `}
-          >
-            {/* Gold accent line */}
-            <div className="relative flex justify-center mb-6">
-              <div
-                className={`
-                  h-[2px] bg-gold/80 transition-all duration-[1400ms] ease-[cubic-bezier(0.4,0,0.2,1)]
-                  ${isTransitioning ? 'w-0 opacity-0' : 'w-16 opacity-100'}
-                `}
-              />
-            </div>
-
-            <h1 className="font-serif font-light text-white leading-[1.15] mb-3 text-4xl sm:text-5xl md:text-6xl lg:text-6xl xl:text-7xl tracking-wide drop-shadow-lg text-center">
-              <span
-                className={`
-                  block transition-all duration-[1200ms] ease-[cubic-bezier(0.4,0,0.2,1)] delay-100
-                  ${isTransitioning ? 'opacity-0 -translate-y-6' : 'opacity-100 translate-y-0'}
-                `}
-              >
-                Where Hospitality
-              </span>
-              <span
-                className={`
-                  block font-normal text-gold-light transition-all duration-[1200ms] ease-[cubic-bezier(0.4,0,0.2,1)] delay-250
-                  ${isTransitioning ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}
-                `}
-              >
-                Meets Value
-              </span>
-            </h1>
-
-            <p
-              className={`
-                text-white/90 text-[10px] sm:text-[11px] tracking-[0.35em] uppercase font-sans font-light mt-6 text-center
-                transition-all duration-[1000ms] ease-[cubic-bezier(0.4,0,0.2,1)] delay-400
-                ${isTransitioning ? 'opacity-0 -translate-y-3' : 'opacity-100 translate-y-0'}
-              `}
-            >
-              Hotel Itoya · Busia, Kenya
-            </p>
+          {/* Gold accent line */}
+          <div className="flex justify-center mb-6">
+            <div className="h-[2px] w-16 bg-gold/80" />
           </div>
+
+          <h1 className="font-serif font-light text-white leading-[1.15] mb-3 text-4xl sm:text-5xl md:text-6xl lg:text-6xl xl:text-7xl tracking-wide drop-shadow-lg text-center">
+            <span className="block">Where Hospitality</span>
+            <span className="block font-normal text-gold-light">Meets Value</span>
+          </h1>
+
+          <p className="text-white/90 text-[10px] sm:text-[11px] tracking-[0.35em] uppercase font-sans font-light mt-6 text-center">
+            Hotel Itoya · Busia, Kenya
+          </p>
         </div>
       </div>
 
