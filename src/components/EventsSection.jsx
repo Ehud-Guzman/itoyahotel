@@ -38,7 +38,7 @@ export default function EventsSection() {
         {/* Header */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end mb-16">
           <div>
-            <p className="font-sans text-[10px] uppercase tracking-[0.35em] text-gold mb-4">Events & Outside Catering</p>
+            <p className="font-sans text-[10px] uppercase tracking-[0.35em] text-gold mb-4">Events & Occasions</p>
             <div className="w-10 h-px bg-gold mb-8" />
             <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-white font-light leading-[1.1]">
               Events That
@@ -62,13 +62,13 @@ export default function EventsSection() {
                 </div>
                 <div className="text-left">
                   <p className="font-serif text-white text-lg">Homeland Itoya</p>
-                  <p className="font-sans text-[10px] uppercase tracking-[0.2em] text-gold">Events &amp; Catering</p>
+                  <p className="font-sans text-[10px] uppercase tracking-[0.2em] text-gold">Events &amp; Occasions</p>
                 </div>
               </div>
             </div>
             <p className="font-sans font-light text-white/90 leading-relaxed mb-6 max-w-md lg:ml-auto text-sm">
               Through our partnership with Homeland Itoya Events, we bring world-class
-              outside catering and event management to any location — from intimate
+              event management and exceptional experiences to any location — from intimate
               gatherings to grand celebrations.
             </p>
             <div className="flex gap-3 flex-wrap justify-start lg:justify-end">

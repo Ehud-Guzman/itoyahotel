@@ -190,7 +190,7 @@ export default function ContactSection() {
                       >
                         <option value="accommodation">Accommodation</option>
                         <option value="conference">Conference &amp; Meetings</option>
-                        <option value="events">Events &amp; Catering</option>
+                        <option value="events">Events &amp; Occasions</option>
                         <option value="corporate">Corporate Booking</option>
                         <option value="dining">Dining Reservation</option>
                         <option value="other">General Enquiry</option>

@@ -74,7 +74,7 @@ export default function Navbar({ onBookNow }) {
                 <div className="flex-1 h-px bg-gradient-to-l from-transparent to-gold/60" />
               </div>
               <p className="text-[7.5px] uppercase tracking-[0.38em] text-ink/60 font-sans text-center">
-                Luxury Accommodation &nbsp;·&nbsp; Events &amp; Outside Catering
+                Luxury Accommodation &nbsp;·&nbsp; Events &amp; Occasions
               </p>
             </div>
 
@@ -87,7 +87,7 @@ export default function Navbar({ onBookNow }) {
                 width="200" height="90"
               />
               <span className="text-[8px] tracking-[0.38em] uppercase text-ink/45 font-sans pr-0.5">
-                Events &amp; Catering
+                Events &amp; Occasions
               </span>
             </div>
 

@@ -68,7 +68,7 @@ export default function Footer() {
                     Homeland Itoya
                   </p>
                   <p className="text-white/90 text-[10px] uppercase tracking-[0.15em]">
-                    Events &amp; Catering
+                    Events &amp; Occasions
                   </p>
                 </div>
               </a>
