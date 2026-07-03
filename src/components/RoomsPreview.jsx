@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import RoomModal from './RoomModal'
 import { useSanity, imgUrl } from '../lib/sanity'
+import { srcSet } from '../lib/responsive'
 
 const ROOMS_QUERY = `*[_type == "room"] | order(order asc) {
   _id, title, tag, description, longDescription,
@@ -141,6 +142,8 @@ export default function RoomsPreview({ onBookRoom }) {
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img
                     src={room.img}
+                    srcSet={srcSet(room.img)}
+                    sizes="(min-width: 1024px) 31vw, (min-width: 640px) 61vw, 122vw"
                     alt={room.title}
                     loading="lazy"
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"

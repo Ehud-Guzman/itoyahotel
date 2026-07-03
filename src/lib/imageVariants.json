@@ -1,0 +1,296 @@
+{
+  "/images/conference/conference-1.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/conference/conference-2.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/conference/conference-4.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/conference/conference-green-1.webp": {
+    "w": 1152,
+    "h": 864,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/conference/conference-green-2.webp": {
+    "w": 1040,
+    "h": 780,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/conference/long-table-1.webp": {
+    "w": 960,
+    "h": 720,
+    "widths": [
+      640
+    ]
+  },
+  "/images/conference/meeting-1.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/conference/round-table-1.webp": {
+    "w": 1080,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/conference/round-table-2.webp": {
+    "w": 1040,
+    "h": 780,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/dining/food-1.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/dining/restaurant-1.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/events/events-1.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/events/events-2.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/events/events-3.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/events/homeland-1.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/events/homeland-setup.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/events/mobile-kitchen-equipment-thumb.webp": {
+    "w": 120,
+    "h": 120,
+    "widths": []
+  },
+  "/images/events/mobile-kitchen-equipment.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/events/mobile-kitchen-exterior-thumb.webp": {
+    "w": 120,
+    "h": 120,
+    "widths": []
+  },
+  "/images/events/mobile-kitchen-exterior.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/events/mobile-kitchen-interior-thumb.webp": {
+    "w": 120,
+    "h": 120,
+    "widths": []
+  },
+  "/images/events/mobile-kitchen-interior.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/exterior/hotel-exterior-1.webp": {
+    "w": 1254,
+    "h": 878,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/exterior/layout-1.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/exterior/private-1.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/lobby/lobby-1.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/lobby/lobby-2.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/lounge/lounge-1.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/parking/parking-1.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/parking/parking-2.webp": {
+    "w": 1280,
+    "h": 720,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/reception/reception-1.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/reception/reception-2.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/bedroom-1.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/deluxe-room-1.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/executive-room-1.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/sitting-area-1.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/standard-room-1.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/super-deluxe-room-1.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  }
+}

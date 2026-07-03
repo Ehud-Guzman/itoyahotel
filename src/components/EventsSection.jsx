@@ -1,5 +1,6 @@
 /* Events & Homeland Itoya — with upcoming special events from Sanity CMS */
 import { useSanity, imgUrl } from '../lib/sanity'
+import { srcSet } from '../lib/responsive'
 
 const EVENTS_QUERY = `*[_type == "specialEvent" && active == true] | order(date asc) {
   _id, title, date, description, category,
@@ -155,6 +156,8 @@ export default function EventsSection() {
           <div className="col-span-2 md:row-span-2 relative overflow-hidden rounded-sm img-placeholder group">
             <img
               src="/images/events/homeland-1.webp"
+              srcSet={srcSet('/images/events/homeland-1.webp')}
+              sizes="(min-width: 768px) 64vw, 94vw"
               alt="Homeland Itoya Event"
               loading="lazy"
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -174,6 +177,8 @@ export default function EventsSection() {
             >
               <img
                 src={img.src}
+                srcSet={srcSet(img.src)}
+                sizes="(min-width: 768px) 33vw, 95vw"
                 alt={img.alt}
                 loading="lazy"
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"

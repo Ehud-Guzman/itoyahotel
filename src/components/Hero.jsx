@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { srcSet } from '../lib/responsive'
 
 export default function Hero() {
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -93,6 +94,10 @@ export default function Hero() {
           <img
             key={src}
             src={src}
+            srcSet={srcSet(src)}
+            /* full-screen cover: portrait phones need width = height × 16/9,
+               so 178vh keeps them on the sharpest available file */
+            sizes="(orientation: portrait) 178vh, 100vw"
             alt={`Hero slide ${i + 1}`}
             className={`absolute inset-0 w-full h-full object-cover object-center transform-gpu transition duration-[1400ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
               currentSlide === i ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-105 -translate-y-3'

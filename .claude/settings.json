@@ -6,7 +6,11 @@
       "Bash(node -e ' *)",
       "Bash(npx --yes lighthouse http://localhost:4173 --only-categories=performance --output=json --output-path=\"C:\\\\Users\\\\nyamu\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-nyamu-Desktop-GlimmerInk-Creations-2026-Portfolio-Websites-Itoya-hotel-itoya-production-hotel-itoya\\\\fa2a8fd8-4d84-4691-a814-c22beb3c991e\\\\scratchpad\\\\lh-fixed.json\" --chrome-flags=\"--headless --no-sandbox --disable-gpu\" --quiet)",
       "Bash(VITE_SANITY_PROJECT_ID= npx vite build)",
-      "Bash(npx --yes lighthouse http://localhost:4173 --only-categories=performance --output=json --output-path=\"C:\\\\Users\\\\nyamu\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-nyamu-Desktop-GlimmerInk-Creations-2026-Portfolio-Websites-Itoya-hotel-itoya-production-hotel-itoya\\\\fa2a8fd8-4d84-4691-a814-c22beb3c991e\\\\scratchpad\\\\lh-nosanity.json\" --chrome-flags=\"--headless --no-sandbox --disable-gpu\" --quiet)"
+      "Bash(npx --yes lighthouse http://localhost:4173 --only-categories=performance --output=json --output-path=\"C:\\\\Users\\\\nyamu\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-nyamu-Desktop-GlimmerInk-Creations-2026-Portfolio-Websites-Itoya-hotel-itoya-production-hotel-itoya\\\\fa2a8fd8-4d84-4691-a814-c22beb3c991e\\\\scratchpad\\\\lh-nosanity.json\" --chrome-flags=\"--headless --no-sandbox --disable-gpu\" --quiet)",
+      "Bash(node \"C:\\\\Users\\\\nyamu\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-nyamu-Desktop-GlimmerInk-Creations-2026-Portfolio-Websites-Itoya-hotel-itoya-production-hotel-itoya\\\\fa2a8fd8-4d84-4691-a814-c22beb3c991e\\\\scratchpad\\\\inventory.mjs\")",
+      "Bash(npm run *)",
+      "Bash(rm public/images/reception/reception-2.webp.tmp)",
+      "Bash(npx vite *)"
     ]
   }
 }

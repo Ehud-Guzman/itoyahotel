@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { srcSet } from '../lib/responsive';
+
 export default function ParkingSection() {
   // --- Image Arrays (for thumbnails) ---
   const parkingImages = ['/images/parking/parking-1.webp', '/images/parking/parking-2.webp'];
@@ -37,6 +39,8 @@ export default function ParkingSection() {
             <div className="relative overflow-hidden rounded-lg aspect-[4/3]">
               <img
                 src={parkingImages[parkingIndex]}
+                srcSet={srcSet(parkingImages[parkingIndex])}
+                sizes="(min-width: 768px) 61vw, 122vw"
                 alt="Parking"
                 className="w-full h-full object-cover transition-opacity duration-300"
                 loading="lazy"
@@ -136,6 +140,8 @@ export default function ParkingSection() {
             <div className="relative overflow-hidden rounded-lg aspect-[4/3]">
               <img
                 src={kitchenImages[kitchenIndex]}
+                srcSet={srcSet(kitchenImages[kitchenIndex])}
+                sizes="(min-width: 768px) 61vw, 122vw"
                 alt="Mobile kitchen"
                 className="w-full h-full object-cover transition-opacity duration-300"
                 loading="lazy"

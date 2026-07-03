@@ -104,8 +104,15 @@
     }
     </script>
 
-    <!-- Preload first hero image for fast LCP -->
-    <link rel="preload" as="image" href="/images/exterior/hotel-exterior-1.webp" fetchpriority="high" />
+    <!-- Preload first hero image for fast LCP — srcset/sizes must mirror the Hero <img> -->
+    <link
+      rel="preload"
+      as="image"
+      href="/images/exterior/hotel-exterior-1.webp"
+      imagesrcset="/images/exterior/hotel-exterior-1-640w.webp 640w, /images/exterior/hotel-exterior-1-960w.webp 960w, /images/exterior/hotel-exterior-1.webp 1254w"
+      imagesizes="(orientation: portrait) 178vh, 100vw"
+      fetchpriority="high"
+    />
 
     <!-- Sanity CMS API — queries fire right after hydration -->
     <link rel="preconnect" href="https://yd71nxev.apicdn.sanity.io" crossorigin />

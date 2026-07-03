@@ -1,6 +1,7 @@
 /* Dining & Restaurant section — with live menu from Sanity CMS */
 import { useState } from 'react'
 import { useSanity, imgUrl } from '../lib/sanity'
+import { srcSet } from '../lib/responsive'
 
 const MENU_QUERY = `*[_type == "menuItem" && available == true] | order(category asc, order asc) {
   _id, name, description, price, category,
@@ -70,6 +71,8 @@ export default function DiningSection() {
           <div className="lg:col-span-3 relative overflow-hidden rounded-sm aspect-[16/10] lg:aspect-auto lg:min-h-[440px] img-placeholder">
             <img
               src="/images/dining/restaurant-1.webp"
+              srcSet={srcSet('/images/dining/restaurant-1.webp')}
+              sizes="(min-width: 1024px) 62vw, 100vw"
               alt="Hotel Itoya Restaurant"
               className="w-full h-full object-cover"
               loading="lazy"
@@ -86,6 +89,8 @@ export default function DiningSection() {
             <div className="relative overflow-hidden rounded-sm flex-1 aspect-[4/3] lg:aspect-auto img-placeholder">
               <img
                 src="/images/dining/food-1.webp"
+                srcSet={srcSet('/images/dining/food-1.webp')}
+                sizes="(min-width: 1024px) 39vw, 125vw"
                 alt="Freshly Prepared Cuisine"
                 className="w-full h-full object-cover"
                 loading="lazy"

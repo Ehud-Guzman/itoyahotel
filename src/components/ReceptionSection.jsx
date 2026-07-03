@@ -1,3 +1,5 @@
+import { srcSet } from '../lib/responsive'
+
 export default function ReceptionSection() {
   return (
     <section id="reception" className="py-16 lg:py-24 bg-mist/50">
@@ -23,6 +25,9 @@ export default function ReceptionSection() {
           <div className="relative h-[320px] md:h-[420px] lg:h-[520px]">
             <img
               src="/images/reception/reception-2.webp"
+              srcSet={srcSet('/images/reception/reception-2.webp')}
+              /* fixed-height cover banner: needed width = height × 16/9 per breakpoint */
+              sizes="(min-width: 1024px) 926px, (min-width: 768px) 748px, 570px"
               alt="Hotel Itoya Reception and Lobby"
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               loading="lazy"

@@ -1,4 +1,5 @@
 /* Conference & Events — HIGH PRIORITY section, visually dominant */
+import { srcSet } from '../lib/responsive'
 
 const venues = [
   {
@@ -116,6 +117,8 @@ export default function ConferenceSection() {
               <div className="aspect-[16/10] overflow-hidden img-placeholder relative">
                 <img
                   src={venue.img}
+                  srcSet={srcSet(venue.img)}
+                  sizes="(min-width: 1024px) 29vw, 100vw"
                   alt={venue.title}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
