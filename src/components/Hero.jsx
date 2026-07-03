@@ -115,27 +115,26 @@ export default function Hero() {
         {/* Shared text area — Motto defines the space, Welcome overlays it */}
         <div className="relative max-w-2xl w-full">
 
-          {/* Welcome — desktop only, overlays the motto's space */}
+          {/* Welcome — brief overlay on all breakpoints, timed with the motto */}
           <div
             className={`
-              hidden lg:flex flex-col items-center justify-center
+              flex flex-col items-center justify-center
               absolute inset-0
               transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]
               ${showWelcome ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'}
             `}
           >
-            <p className="font-serif italic font-light text-white/85 text-5xl xl:text-6xl tracking-[0.2em] text-center drop-shadow-lg">
+            <p className="font-serif italic font-light text-white/85 text-3xl sm:text-4xl md:text-5xl xl:text-6xl tracking-[0.15em] sm:tracking-[0.2em] text-center drop-shadow-lg">
               Welcome
             </p>
             <div className="h-px w-8 bg-gold/65 mt-5" />
           </div>
 
-          {/* Motto — always on mobile, timed on desktop */}
+          {/* Motto — timed on all breakpoints, yields briefly to Welcome */}
           <div
             className={`
               transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]
-              opacity-100 translate-y-0
-              ${showMotto ? '' : 'lg:opacity-0 lg:translate-y-3 lg:pointer-events-none'}
+              ${showMotto || !isTextSlide ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'}
             `}
           >
             <div className="flex justify-center mb-6">
