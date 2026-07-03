@@ -22,46 +22,45 @@ function tomorrowStr() {
 }
 
 export default function BookingBar({ onBookNow }) {
-  const [visible,  setVisible]  = useState(false)
-  const [active,   setActive]   = useState(false)
+  const [visible,      setVisible]      = useState(false)
+  const [hiddenByScroll, setHiddenByScroll] = useState(false)
+  const [hovering,     setHovering]     = useState(false)
   const [checkIn,  setCheckIn]  = useState(todayStr())
   const [checkOut, setCheckOut] = useState(tomorrowStr())
   const [roomId,   setRoomId]   = useState(ROOMS[0].id)
   const [guests,   setGuests]   = useState(GUEST_OPTIONS[0])
 
   const selectedRoom  = ROOMS.find(r => r.id === roomId)
-  const idleTimer     = useRef(null)
+  const lastScrollY   = useRef(0)
 
-  const shown = visible && active
+  // Visible once scrolled past the hero, hidden near the footer, and — while
+  // in that range — tucked away while scrolling down (reading) and revealed
+  // again on scrolling up, so it never sits over content you're trying to read.
+  const shown = visible && (!hiddenByScroll || hovering)
 
   useEffect(() => {
-    const wakeUp = () => {
-      setActive(true)
-      clearTimeout(idleTimer.current)
-      idleTimer.current = setTimeout(() => setActive(false), 4000)
-    }
-
     const handleScroll = () => {
-      const nearFooter = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 220
-      setVisible(window.scrollY > 80 && !nearFooter)
-      wakeUp()
+      const currentY = window.scrollY
+      const nearFooter = currentY + window.innerHeight >= document.documentElement.scrollHeight - 220
+      setVisible(currentY > 80 && !nearFooter)
+
+      const delta = currentY - lastScrollY.current
+      if (delta > 4) setHiddenByScroll(true)
+      else if (delta < -4) setHiddenByScroll(false)
+      lastScrollY.current = currentY
     }
 
-    window.addEventListener('scroll',    handleScroll, { passive: true })
-    window.addEventListener('mousemove', wakeUp,       { passive: true })
-    return () => {
-      window.removeEventListener('scroll',    handleScroll)
-      window.removeEventListener('mousemove', wakeUp)
-      clearTimeout(idleTimer.current)
-    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll()
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   return (
     <div
       role="complementary"
       aria-label="Quick booking"
-      onMouseEnter={() => { setActive(true); clearTimeout(idleTimer.current) }}
-      onMouseLeave={() => { idleTimer.current = setTimeout(() => setActive(false), 4000) }}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
       className={`
         fixed bottom-0 inset-x-0 z-40
         hidden lg:block
