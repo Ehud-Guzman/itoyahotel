@@ -1,0 +1,17 @@
+name: Keep booking server warm
+
+# Render's free/starter tier spins the backend down after ~15 minutes idle,
+# which stalls a guest's first booking attempt (cold start can take 20-50s).
+# Pinging every 10 minutes keeps it warm. This is a stopgap — an always-on
+# Render plan is the real fix if cold starts still happen.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: curl -sf https://itoyahotel.onrender.com/health || echo "Health check failed — server may be cold-starting"

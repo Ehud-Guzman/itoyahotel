@@ -3,14 +3,8 @@ import {
   FiX, FiChevronLeft, FiChevronRight,
   FiUpload, FiCheck, FiAlertCircle, FiLoader,
 } from 'react-icons/fi'
-
-// ─── Room catalogue ───────────────────────────────────────────────────────────
-const ROOMS = [
-  { id: 'standard',     label: 'Standard Room',    price: 3500,  note: 'Bed & Breakfast included' },
-  { id: 'deluxe',       label: 'Deluxe Room',       price: 6000,  note: '' },
-  { id: 'super-deluxe', label: 'Super Deluxe Room', price: 7000,  note: '' },
-  { id: 'executive',    label: 'Executive Room',    price: 10000, note: '' },
-]
+import { ROOM_CATALOG as ROOMS } from '../lib/rooms'
+import { useFocusTrap } from '../lib/useFocusTrap'
 
 const STEPS = ['Room & Dates', 'Your Details', 'Upload ID', 'Review', 'Payment', 'Confirmed']
 
@@ -49,7 +43,9 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
   const [submitting, setSubmitting] = useState(false)
   const [payState,   setPayState]   = useState('idle')
   const [bookingRef, setBookingRef] = useState('')
+  const [slowConnect, setSlowConnect] = useState(false)
   const pollRef = useRef(null)
+  const slowConnectTimer = useRef(null)
 
   const [data, setData] = useState({
     room: '', checkIn: '', checkOut: '', guests: 1,
@@ -72,10 +68,11 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
   useEffect(() => {
     if (!isOpen) {
       clearInterval(pollRef.current)
+      clearTimeout(slowConnectTimer.current)
       return
     }
     setStep(0); setErrors({}); setPayState('idle')
-    setBookingRef(''); setSubmitting(false)
+    setBookingRef(''); setSubmitting(false); setSlowConnect(false)
     setData(d => ({ ...d, room: preselectedRoom || '' }))
   }, [isOpen, preselectedRoom])
 
@@ -91,7 +88,7 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
     return () => window.removeEventListener('keydown', h)
   }, [isOpen, step, onClose])
 
-  useEffect(() => () => clearInterval(pollRef.current), [])
+  useEffect(() => () => { clearInterval(pollRef.current); clearTimeout(slowConnectTimer.current) }, [])
 
   const set      = (f, v) => setData(d => ({ ...d, [f]: v }))
   const setErr   = (f, m) => setErrors(e => ({ ...e, [f]: m }))
@@ -133,7 +130,12 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
   const handlePay = async () => {
     const phone = (data.mpesaPhone || data.phone).trim()
     if (!phone) { setErr('mpesaPhone', 'Enter your M-Pesa phone number'); return }
-    setSubmitting(true); setPayState('waiting'); setErrors({})
+    setSubmitting(true); setPayState('connecting'); setErrors({}); setSlowConnect(false)
+
+    // Our backend can be cold (free-tier hosting) — if the initial request
+    // takes a while, tell the guest what's happening instead of leaving a
+    // bare spinner that looks stuck.
+    slowConnectTimer.current = setTimeout(() => setSlowConnect(true), 6000)
 
     try {
       const fd = new FormData()
@@ -150,7 +152,9 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
       const json = await res.json()
       if (!res.ok) throw new Error(json.message || 'Server error')
 
+      clearTimeout(slowConnectTimer.current); setSlowConnect(false)
       setBookingRef(json.ref)
+      setPayState('waiting')
       const deadline = Date.now() + 180_000
       pollRef.current = setInterval(async () => {
         if (Date.now() > deadline) {
@@ -166,10 +170,13 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
         } catch { /* keep polling */ }
       }, 3000)
     } catch (err) {
+      clearTimeout(slowConnectTimer.current); setSlowConnect(false)
       setPayState('failed'); setSubmitting(false)
       setErr('mpesaPhone', err.message || 'Could not initiate payment. Please try again.')
     }
   }
+
+  const panelRef = useFocusTrap(isOpen)
 
   if (!isOpen) return null
 
@@ -179,7 +186,14 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
       <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
 
       {/* Panel */}
-      <div className="relative w-full sm:max-w-[520px] bg-white flex flex-col max-h-[96vh] sm:max-h-[90vh] shadow-2xl">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="booking-modal-title"
+        tabIndex={-1}
+        className="relative w-full sm:max-w-[520px] bg-white flex flex-col max-h-[96vh] sm:max-h-[90vh] shadow-2xl outline-none"
+      >
 
         {/* ── Top bar ─────────────────────────────────────────────── */}
         <div className="flex items-start justify-between px-8 pt-8 pb-6">
@@ -187,7 +201,7 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
             <span className="text-[9px] tracking-[0.4em] uppercase text-primary font-medium">
               Hotel Itoya · Busia
             </span>
-            <h2 className="font-serif text-[1.35rem] text-ink mt-1 leading-snug">
+            <h2 id="booking-modal-title" className="font-serif text-[1.35rem] text-ink mt-1 leading-snug">
               Reserve Your Stay
             </h2>
           </div>
@@ -229,7 +243,7 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
           {step === 1 && <StepDetails  data={data} set={set} errors={errors} clearErr={clearErr} />}
           {step === 2 && <StepId       data={data} handleFile={handleFile} errors={errors} />}
           {step === 3 && <StepReview   data={data} room={room} nights={nights} total={total} />}
-          {step === 4 && <StepPayment  data={data} set={set} errors={errors} clearErr={clearErr} total={total} payState={payState} />}
+          {step === 4 && <StepPayment  data={data} set={set} errors={errors} clearErr={clearErr} total={total} payState={payState} slowConnect={slowConnect} />}
           {step === 5 && <StepDone     bookingRef={bookingRef} data={data} onClose={onClose} />}
         </div>
 
@@ -532,7 +546,27 @@ function StepReview({ data, room, nights, total }) {
 }
 
 // ─── Step 4 — Payment ─────────────────────────────────────────────────────────
-function StepPayment({ data, set, errors, clearErr, total, payState }) {
+function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect }) {
+  if (payState === 'connecting') {
+    return (
+      <div className="py-12 flex flex-col items-center text-center gap-6">
+        <div className="w-12 h-12 border-2 border-ink border-t-transparent rounded-full animate-spin" />
+        <div className="space-y-2">
+          <h3 className="font-serif text-xl text-ink">Connecting…</h3>
+          <p className="text-[13px] text-ink/50 leading-relaxed max-w-[17rem] mx-auto">
+            Sending your payment request to our secure booking system.
+          </p>
+          {slowConnect && (
+            <p className="text-[12px] text-ink/40 leading-relaxed max-w-[18rem] mx-auto pt-2">
+              This is taking longer than usual — our booking system may be waking up.
+              Please stay on this page, it can take up to a minute.
+            </p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   if (payState === 'waiting') {
     return (
       <div className="py-12 flex flex-col items-center text-center gap-6">

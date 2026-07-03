@@ -194,7 +194,7 @@ export default function EventsSection() {
             <div key={e.title} className="bg-ink p-8 hover:bg-white/5 transition-colors duration-200">
               <div className="w-6 h-px bg-gold mb-5" />
               <p className="font-serif text-lg text-white mb-3">{e.title}</p>
-              <p className="font-sans text-xs text-white/50 leading-relaxed">{e.desc}</p>
+              <p className="font-sans text-xs text-white/70 leading-relaxed">{e.desc}</p>
             </div>
           ))}
         </div>

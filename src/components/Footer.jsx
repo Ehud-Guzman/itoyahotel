@@ -6,12 +6,13 @@ const footerLinks = {
     { label: 'Rooms & Suites', href: '#rooms' },
     { label: 'Dining',        href: '#dining' },
     { label: 'Gallery',       href: '#gallery' },
+    { label: 'Location',      href: '#location' },
     { label: 'Contact',       href: '#contact' },
   ],
   Services: [
     { label: 'Conference Facilities', href: '#conference' },
     { label: 'Events Planning',       href: '#events' },
-    { label: 'Mobile Kitchen',        href: null },
+    { label: 'Mobile Kitchen',        href: '#parking' },
   ],
 }
 
@@ -123,7 +124,7 @@ export default function Footer() {
               </div>
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Location</p>
-                <p className="font-sans font-light text-sm text-white leading-relaxed">Town Centre Road<br />Busia, Kenya</p>
+                <p className="font-sans font-light text-sm text-white leading-relaxed">B1 Kisumu-Busia Road<br />Busia, Kenya</p>
               </div>
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Hours</p>

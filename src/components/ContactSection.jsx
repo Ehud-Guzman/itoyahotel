@@ -1,6 +1,8 @@
 /* Contact Section — reservations & enquiries */
 import { useState } from 'react'
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+
 const initialForm = {
   name: '',
   email: '',
@@ -29,15 +31,31 @@ const inputClass =
 export default function ContactSection() {
   const [formData, setFormData] = useState(initialForm)
   const [submitted, setSubmitted] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // EmailJS integration goes here — configured next week
-    setSubmitted(true)
+    setSending(true)
+    setError('')
+    try {
+      const res = await fetch(`${API}/api/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.message || 'Could not send your enquiry.')
+      setSubmitted(true)
+    } catch (err) {
+      setError(err.message || 'Could not send your enquiry. Please try WhatsApp or call us directly.')
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -88,7 +106,7 @@ export default function ContactSection() {
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.3em] text-white/90 mb-2">Location</p>
                 <p className="font-sans text-white leading-relaxed text-sm">
-                  Town Centre Road<br />
+                  B1 Kisumu-Busia Road<br />
                   Busia, Kenya
                 </p>
                 <p className="font-sans text-white/90 text-xs mt-1.5">
@@ -243,11 +261,16 @@ export default function ContactSection() {
                     />
                   </Field>
 
+                  {error && (
+                    <p className="font-sans text-xs text-red-500 text-center">{error}</p>
+                  )}
+
                   <button
                     type="submit"
-                    className="w-full bg-primary hover:bg-primary-dark text-white font-sans font-medium tracking-widest uppercase text-xs py-4 transition-colors duration-200"
+                    disabled={sending}
+                    className="w-full bg-primary hover:bg-primary-dark text-white font-sans font-medium tracking-widest uppercase text-xs py-4 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Send Enquiry
+                    {sending ? 'Sending…' : 'Send Enquiry'}
                   </button>
 
                   <p className="font-sans text-[10px] text-ink/60 text-center">

@@ -1,5 +1,6 @@
 const express = require('express')
-const { bookings, sendEmails } = require('./booking')
+const store = require('../store')
+const { sendEmails } = require('./booking')
 
 const router = express.Router()
 
@@ -13,14 +14,7 @@ router.post('/callback', async (req, res) => {
 
     const { CheckoutRequestID, ResultCode, CallbackMetadata } = callback
 
-    // Find the booking that matches this checkout request
-    let matched = null
-    for (const [, record] of bookings) {
-      if (record.checkoutRequestId === CheckoutRequestID) {
-        matched = record
-        break
-      }
-    }
+    const matched = await store.getByCheckoutRequestId(CheckoutRequestID)
 
     if (!matched) {
       console.warn('Callback for unknown CheckoutRequestID:', CheckoutRequestID)
@@ -33,10 +27,11 @@ router.post('/callback', async (req, res) => {
       const mpesaRef = items.find(i => i.Name === 'MpesaReceiptNumber')?.Value || ''
       matched.b.mpesaRef = mpesaRef
       matched.status     = 'success'
+      await store.updateStatus(matched.b.ref, 'success', { mpesaRef })
       await sendEmails(matched)
       console.log(`Booking ${matched.b.ref} confirmed — M-Pesa ref ${mpesaRef}`)
     } else {
-      matched.status = 'failed'
+      await store.updateStatus(matched.b.ref, 'failed')
       console.log(`Booking ${matched.b.ref} payment failed — ResultCode ${ResultCode}`)
     }
   } catch (err) {

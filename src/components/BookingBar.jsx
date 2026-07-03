@@ -1,12 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { FiCalendar, FiUsers, FiChevronDown, FiBriefcase } from 'react-icons/fi'
-
-const ROOMS = [
-  { id: 'standard',     label: 'Standard Room',    price: 3500  },
-  { id: 'deluxe',       label: 'Deluxe Room',       price: 6000  },
-  { id: 'super-deluxe', label: 'Super Deluxe Room', price: 7000  },
-  { id: 'executive',    label: 'Executive Room',    price: 10000 },
-]
+import { ROOM_CATALOG as ROOMS } from '../lib/rooms'
 
 const GUEST_OPTIONS = [
   '1 Room, 1 Guest',
@@ -75,7 +69,7 @@ export default function BookingBar({ onBookNow }) {
         ${shown ? 'translate-y-0' : 'translate-y-full pointer-events-none'}
       `}
     >
-      <div className="bg-white border-t-2 border-[#ff020a] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+      <div className="bg-white border-t-2 border-gold shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
         <div className="max-w-7xl mx-auto px-6 lg:px-10 py-4">
           <div className="flex items-end gap-3">
 
@@ -180,10 +174,10 @@ export default function BookingBar({ onBookNow }) {
                 <button
                   onClick={() => onBookNow(roomId)}
                   className="
-                    bg-[#ff020a] text-white
+                    bg-primary text-white
                     px-8
                     text-[10px] uppercase tracking-[0.28em] font-semibold
-                    hover:bg-[#c80008] active:scale-[0.98]
+                    hover:bg-primary-dark active:scale-[0.98]
                     transition-all duration-200
                     whitespace-nowrap
                   "

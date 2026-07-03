@@ -3,6 +3,7 @@ import { useState } from 'react'
 import RoomModal from './RoomModal'
 import { useSanity, imgUrl } from '../lib/sanity'
 import { srcSet } from '../lib/responsive'
+import { priceForTag } from '../lib/rooms'
 
 const ROOMS_QUERY = `*[_type == "room"] | order(order asc) {
   _id, title, tag, description, longDescription,
@@ -84,7 +85,9 @@ export default function RoomsPreview({ onBookRoom }) {
 
   // Keep fallback rooms whose title isn't already covered by a Sanity room
   const sanityTitles = new Set(sanityRooms.map((r) => r.title))
-  const remainingFallbacks = FALLBACK_ROOMS.filter((r) => !sanityTitles.has(r.title))
+  const remainingFallbacks = FALLBACK_ROOMS
+    .filter((r) => !sanityTitles.has(r.title))
+    .map((r) => ({ ...r, pricePerNight: r.pricePerNight ?? priceForTag(r.tag) }))
 
   const rooms = [...sanityRooms, ...remainingFallbacks].map((r) => ({
     ...r,

@@ -1,15 +1,11 @@
 import { useEffect, useState } from 'react'
-
-const PRICE_MAP = {
-  'Standard':    3500,
-  'Deluxe':      6000,
-  'Super Deluxe':7000,
-  'Executive':   10000,
-}
+import { priceForTag } from '../lib/rooms'
+import { useFocusTrap } from '../lib/useFocusTrap'
 
 export default function RoomModal({ room, onClose, onBookRoom }) {
-  const price = room.pricePerNight || PRICE_MAP[room.tag] || null
+  const price = room.pricePerNight || priceForTag(room.tag) || null
   const [activeImg, setActiveImg] = useState(0)
+  const panelRef = useFocusTrap(true)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -35,7 +31,14 @@ export default function RoomModal({ room, onClose, onBookRoom }) {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
       {/* Panel */}
-      <div className="relative z-10 bg-white w-full max-w-5xl max-h-[92vh] overflow-y-auto shadow-2xl rounded-sm">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="room-modal-title"
+        tabIndex={-1}
+        className="relative z-10 bg-white w-full max-w-5xl max-h-[92vh] overflow-y-auto shadow-2xl rounded-sm outline-none"
+      >
 
         {/* Close */}
         <button
@@ -82,7 +85,7 @@ export default function RoomModal({ room, onClose, onBookRoom }) {
 
             <div className="mb-6">
               <p className="font-sans text-[10px] uppercase tracking-[0.35em] text-primary mb-2">{room.tag}</p>
-              <h2 className="font-serif text-3xl lg:text-4xl text-ink leading-tight">{room.title}</h2>
+              <h2 id="room-modal-title" className="font-serif text-3xl lg:text-4xl text-ink leading-tight">{room.title}</h2>
               <div className="w-10 h-px bg-gold mt-4 mb-3" />
 
               {price && (

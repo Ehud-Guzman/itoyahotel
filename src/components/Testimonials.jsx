@@ -1,34 +1,20 @@
-/* Testimonials — refined hospitality social proof */
+/* Testimonials — refined hospitality social proof, powered by Sanity CMS */
+import { useSanity } from '../lib/sanity'
 
-const testimonials = [
-  {
-    quote:
-      "A welcoming environment with comfortable spaces designed to support both business and leisure stays.",
+const TESTIMONIALS_QUERY = `*[_type == "testimonial" && active == true] | order(order asc, _createdAt desc) {
+  _id, quote, guestName, role, rating, featured
+}`
 
-    title: "Business Traveller",
-    initials: "BT",
-  },
+function initialsFor(name) {
+  return (name || '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('') || '?'
+}
 
-  {
-    quote:
-      "Thoughtful hospitality and functional spaces designed to create memorable guest experiences.",
-
-    title: "Conference Guest",
-    initials: "CG",
-
-    featured: true,
-  },
-
-  {
-    quote:
-      "An experience shaped around comfort, convenience, and attentive service.",
-
-    title: "Returning Visitor",
-    initials: "RV",
-  },
-]
-
-function StarRating() {
+function StarRating({ count = 5 }) {
   return (
     <div className="flex gap-1 mb-6">
       {[1, 2, 3, 4, 5].map((s) => (
@@ -37,7 +23,7 @@ function StarRating() {
           width="14"
           height="14"
           viewBox="0 0 24 24"
-          fill="#C7A56B"
+          fill={s <= count ? '#C7A56B' : '#C7A56B33'}
         >
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
         </svg>
@@ -47,6 +33,12 @@ function StarRating() {
 }
 
 export default function Testimonials() {
+  const { data: testimonials } = useSanity(TESTIMONIALS_QUERY, null)
+
+  // No testimonials published in Sanity yet — hide the section rather than
+  // show fabricated-looking placeholder content.
+  if (!testimonials?.length) return null
+
   return (
     <section className="bg-primary py-16 lg:py-24">
 
@@ -82,7 +74,7 @@ export default function Testimonials() {
           {testimonials.map((t) => (
 
             <div
-              key={t.title}
+              key={t._id}
               className={`
                 p-6
                 rounded-md
@@ -98,7 +90,7 @@ export default function Testimonials() {
               `}
             >
 
-              <StarRating />
+              <StarRating count={t.rating} />
 
               <div className="text-gold/50 text-5xl font-serif mb-3">
                 "
@@ -113,7 +105,7 @@ export default function Testimonials() {
                 <div className="w-12 h-12 rounded-full bg-gold/20 flex items-center justify-center">
 
                   <span className="text-white font-serif">
-                    {t.initials}
+                    {initialsFor(t.guestName)}
                   </span>
 
                 </div>
@@ -121,11 +113,11 @@ export default function Testimonials() {
                 <div>
 
                   <p className="text-white text-sm font-medium">
-                    {t.title}
+                    {t.guestName}
                   </p>
 
                   <p className="text-white/90 text-xs">
-                    Guest Experience
+                    {t.role}
                   </p>
 
                 </div>

@@ -2,11 +2,13 @@ import { useState, useEffect, Fragment } from 'react'
 
 const navLinks = [
   { label: 'Home',       href: '#home' },
+  { label: 'About',      href: '#about' },
   { label: 'Rooms',      href: '#rooms' },
   { label: 'Dining',     href: '#dining' },
   { label: 'Conference', href: '#conference' },
   { label: 'Events',     href: '#events' },
   { label: 'Gallery',    href: '#gallery' },
+  { label: 'Location',   href: '#location' },
   { label: 'Contact',    href: '#contact' },
 ]
 
@@ -133,8 +135,8 @@ export default function Navbar({ onBookNow }) {
                     <a
                       href={link.href}
                       className={`
-                        px-3 xl:px-4
-                        font-sans text-[10px] tracking-[0.22em] uppercase font-medium
+                        px-2 xl:px-3
+                        font-sans text-[9.5px] xl:text-[10px] tracking-[0.18em] xl:tracking-[0.22em] uppercase font-medium
                         relative
                         after:absolute after:bottom-[-2px] after:left-1/2 after:-translate-x-1/2
                         after:h-px after:bg-gold

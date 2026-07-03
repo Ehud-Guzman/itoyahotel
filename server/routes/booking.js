@@ -1,7 +1,9 @@
 const express    = require('express')
 const multer     = require('multer')
 const axios      = require('axios')
-const nodemailer = require('nodemailer')
+const store      = require('../store')
+const { createTransporter } = require('../lib/mailer')
+const { ROOM_CATALOG } = require('../roomCatalog')
 
 const router  = express.Router()
 const upload  = multer({
@@ -12,10 +14,6 @@ const upload  = multer({
     cb(null, ok.includes(file.mimetype))
   },
 })
-
-// In-memory store: ref → booking record
-// Fine for this hotel's volume; replace with Redis/DB if needed later.
-const bookings = new Map()
 
 // ── Generate booking reference ────────────────────────────────────────────────
 function genRef() {
@@ -63,19 +61,6 @@ async function initiateSTKPush({ phone, amount, ref }) {
     { headers: { Authorization: `Bearer ${token}` } },
   )
   return res.data.CheckoutRequestID
-}
-
-// ── Nodemailer transporter ────────────────────────────────────────────────────
-function createTransporter() {
-  return nodemailer.createTransport({
-    host:   process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port:   Number(process.env.EMAIL_PORT) || 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  })
 }
 
 // ── Email helper ──────────────────────────────────────────────────────────────
@@ -157,8 +142,8 @@ router.post(
   async (req, res) => {
     try {
       const {
-        room, roomLabel, checkIn, checkOut, nights,
-        guests, name, phone, email, requests, mpesaPhone, amount,
+        room, checkIn, checkOut,
+        guests, name, phone, email, requests, mpesaPhone,
       } = req.body
 
       if (!name || !phone || !email || !room || !checkIn || !checkOut) {
@@ -168,13 +153,24 @@ router.post(
         return res.status(400).json({ message: 'ID documents are required' })
       }
 
+      // ── Server-side price authority — never trust client-sent amount/nights ──
+      const catalogEntry = ROOM_CATALOG[room]
+      if (!catalogEntry) {
+        return res.status(400).json({ message: 'Unknown room type' })
+      }
+      const nights = Math.round((new Date(checkOut) - new Date(checkIn)) / 86_400_000)
+      if (!(nights > 0)) {
+        return res.status(400).json({ message: 'Check-out must be after check-in' })
+      }
+      const amount = catalogEntry.price * nights
+
       const ref         = genRef()
       const idFrontFile = req.files.idFront[0]
       const idBackFile  = req.files.idBack[0]
 
       const record = {
         b: {
-          ref, room, roomLabel, checkIn, checkOut, nights,
+          ref, room, roomLabel: catalogEntry.label, checkIn, checkOut, nights,
           guests, name, phone, email, requests, mpesaPhone, amount,
           mpesaRef: null,
         },
@@ -185,7 +181,7 @@ router.post(
         status:        'pending',
         checkoutRequestId: null,
       }
-      bookings.set(ref, record)
+      await store.create(record)
 
       // ── Try real M-Pesa STK Push ──────────────────────────────────────────
       const isPlaceholder = !process.env.MPESA_CONSUMER_KEY || process.env.MPESA_CONSUMER_KEY === 'YOUR_CONSUMER_KEY'
@@ -193,20 +189,20 @@ router.post(
       if (!isPlaceholder) {
         try {
           const ckId = await initiateSTKPush({ phone: mpesaPhone, amount, ref })
-          record.checkoutRequestId = ckId
+          await store.updateStatus(ref, 'pending', { checkoutRequestId: ckId })
         } catch (err) {
           console.error('STK Push failed:', err.response?.data || err.message)
-          bookings.delete(ref)
+          await store.deleteByRef(ref)
           return res.status(502).json({ message: 'Could not initiate M-Pesa payment. Please try again.' })
         }
       } else {
         // ── Placeholder mode: auto-succeed after 12 seconds ──────────────────
         console.log(`[PLACEHOLDER] Booking ${ref} — auto-confirming in 12s`)
         setTimeout(async () => {
-          const r = bookings.get(ref)
+          const r = await store.getByRef(ref)
           if (!r || r.status !== 'pending') return
-          r.status = 'success'
-          try { await sendEmails(r) } catch (e) { console.error('Email error:', e.message) }
+          await store.updateStatus(ref, 'success')
+          try { await sendEmails({ ...r, b: { ...r.b } }) } catch (e) { console.error('Email error:', e.message) }
         }, 12_000)
       }
 
@@ -219,13 +215,11 @@ router.post(
 )
 
 // ── GET /api/booking/status/:ref ──────────────────────────────────────────────
-router.get('/status/:ref', (req, res) => {
-  const record = bookings.get(req.params.ref)
+router.get('/status/:ref', async (req, res) => {
+  const record = await store.getByRef(req.params.ref)
   if (!record) return res.status(404).json({ status: 'not_found' })
   res.json({ status: record.status })
 })
 
-// Export map so the mpesa callback route can update statuses
 module.exports = router
-module.exports.bookings  = bookings
 module.exports.sendEmails = sendEmails

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSanity, imgUrl } from '../lib/sanity'
 import { srcSet } from '../lib/responsive'
+import { useFocusTrap } from '../lib/useFocusTrap'
 
 const GALLERY_QUERY = `*[_type == "galleryImage"] | order(order asc, _createdAt desc) {
   _id, alt, category,
@@ -61,6 +62,7 @@ export default function GallerySection() {
   const [activeFilter, setActiveFilter] = useState('all')
   const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT)
   const [lightbox, setLightbox] = useState(null)
+  const lightboxRef = useFocusTrap(lightbox !== null)
 
   const filtered = activeFilter === 'all'
     ? allImages
@@ -192,7 +194,12 @@ export default function GallerySection() {
       {/* Lightbox */}
       {lightbox !== null && (
         <div
-          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+          ref={lightboxRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={visible[lightbox]?.alt || 'Image viewer'}
+          tabIndex={-1}
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center outline-none"
           onClick={closeLightbox}
         >
           {/* Close */}

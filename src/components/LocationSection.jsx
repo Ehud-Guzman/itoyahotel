@@ -3,7 +3,7 @@
 const details = [
   {
     label: 'Address',
-    value: 'Hotel Itoya, Busia Town, Busia County, Kenya',
+    value: 'Hotel Itoya, B1 Kisumu-Busia Road, Busia, Kenya',
   },
   {
     label: 'Phone',
@@ -22,9 +22,9 @@ const details = [
 ]
 
 const directions = [
-  { from: 'Nairobi', via: 'A104 via Nakuru & Eldoret', time: '~8–9 hrs' },
-  { from: 'Kisumu',  via: 'A1 Busia Road',              time: '~3 hrs'   },
-  { from: 'Kampala', via: 'A109 via Busia Border',       time: '~4 hrs 20 min' },
+  { from: 'Nairobi', via: 'A104 via Nakuru & Eldoret', time: '~7–9 hrs' },
+  { from: 'Kisumu',  via: 'A1 Busia Road',              time: '~2–3 hrs'   },
+  { from: 'Kampala', via: 'A109 via Busia Border',       time: '~2.5–4 hrs' },
 ]
 
 export default function LocationSection() {

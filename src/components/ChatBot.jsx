@@ -14,7 +14,7 @@ const getGreeting = () => {
 };
 
 // ── Social word lists (exact-match checked before FAQ scoring) ──────────────
-const GREETINGS   = ['hi','hello','hey','hiya','howdy','sup','good morning','good afternoon','good evening','good night','greetings','salut','habari','mambo','niaje','sasa','karibu'];
+const GREETINGS   = ['hi','hello','hey','hiya','howdy','sup','good morning','good afternoon','good evening','greetings','salut','habari','mambo','niaje','sasa','karibu'];
 const FAREWELLS   = ['bye','goodbye','good bye','see you','cya','take care','farewell','later','talk later','see ya','ttyl','kwaheri','bye bye','good night'];
 const THANKS      = ['thank you','thanks','thank u','thankyou','thx','cheers','appreciated','asante','thank you so much','thanks a lot','thanks so much','many thanks','ok thanks','okay thanks','ok thank you','okay thank you','alright thanks','sure thanks','cool thanks','great thanks','noted thanks','got it thanks','perfect thanks','awesome thanks','nice thanks'];
 const AFFIRMATIONS= ['ok','okay','alright','got it','understood','noted','sure','great','perfect','nice','cool','awesome','wonderful','sounds good','makes sense','that helps','that is helpful','very helpful'];
@@ -370,7 +370,7 @@ const FAQ = [
   },
   {
     keywords: ['location','address','where are you','how to get','directions','map','find you','where is hotel itoya'],
-    answer: `We are on **Town Centre Road, Busia, Kenya** — right near the Kenya-Uganda border.\n\n• From Nairobi: ~7 hrs via A104\n• From Kisumu: ~1.5 hrs via A1\n• From Kampala: ~2 hrs via A109`,
+    answer: `We are on **B1 Kisumu-Busia Road, Busia, Kenya** — right near the Kenya-Uganda border.\n\n• From Nairobi: ~7–9 hrs via A104\n• From Kisumu: ~2–3 hrs via A1\n• From Kampala: ~2.5–4 hrs via A109 (includes border crossing)`,
   },
   {
     keywords: ['ayoti','ayoti group','who owns','management','parent company','owner'],
