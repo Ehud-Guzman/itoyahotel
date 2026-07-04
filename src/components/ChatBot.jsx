@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { FaComments, FaTimes, FaPaperPlane, FaWhatsapp } from 'react-icons/fa';
+import useBookingBarShown from '../lib/useBookingBarShown';
 
 const PHONE_1 = '+254 714 302 777';
 const PHONE_2 = '+254 714 666 222';
@@ -463,18 +464,17 @@ export default function ChatBot() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showChips, setShowChips] = useState(true);
-  const [atTop, setAtTop] = useState(true);
   const [mobileScrolled, setMobileScrolled] = useState(false);
   const endRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Lift above the booking bar only while the bar is actually on screen
+  // (it's a lg:-only element, so ignore its state on smaller viewports)
+  const { shown: barShown } = useBookingBarShown();
+  const atTop = barShown && typeof window !== 'undefined' && window.innerWidth >= 1024;
+
   useEffect(() => {
-    const handleScroll = () => {
-      const nearFooter = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 220
-      const bookingBarUp = window.scrollY > 80 && !nearFooter && window.innerWidth >= 1024
-      setAtTop(bookingBarUp)
-      setMobileScrolled(window.scrollY > 80)
-    }
+    const handleScroll = () => setMobileScrolled(window.scrollY > 80);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);

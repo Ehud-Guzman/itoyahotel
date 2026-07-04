@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { FiCalendar, FiUsers, FiChevronDown, FiBriefcase } from 'react-icons/fi'
 import { ROOM_CATALOG as ROOMS } from '../lib/rooms'
+import useBookingBarShown from '../lib/useBookingBarShown'
 
 const GUEST_OPTIONS = [
   '1 Room, 1 Guest',
@@ -22,8 +23,7 @@ function tomorrowStr() {
 }
 
 export default function BookingBar({ onBookNow }) {
-  const [visible,      setVisible]      = useState(false)
-  const [hiddenByScroll, setHiddenByScroll] = useState(false)
+  const { visible, hiddenByScroll } = useBookingBarShown()
   const [hovering,     setHovering]     = useState(false)
   const [checkIn,  setCheckIn]  = useState(todayStr())
   const [checkOut, setCheckOut] = useState(tomorrowStr())
@@ -31,29 +31,8 @@ export default function BookingBar({ onBookNow }) {
   const [guests,   setGuests]   = useState(GUEST_OPTIONS[0])
 
   const selectedRoom  = ROOMS.find(r => r.id === roomId)
-  const lastScrollY   = useRef(0)
 
-  // Visible once scrolled past the hero, hidden near the footer, and — while
-  // in that range — tucked away while scrolling down (reading) and revealed
-  // again on scrolling up, so it never sits over content you're trying to read.
   const shown = visible && (!hiddenByScroll || hovering)
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentY = window.scrollY
-      const nearFooter = currentY + window.innerHeight >= document.documentElement.scrollHeight - 220
-      setVisible(currentY > 80 && !nearFooter)
-
-      const delta = currentY - lastScrollY.current
-      if (delta > 4) setHiddenByScroll(true)
-      else if (delta < -4) setHiddenByScroll(false)
-      lastScrollY.current = currentY
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    handleScroll()
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
 
   return (
     <div
