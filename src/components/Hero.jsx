@@ -130,11 +130,11 @@ export default function Hero() {
             <div className="h-px w-8 bg-gold/65 mt-5" />
           </div>
 
-          {/* Motto — timed on all breakpoints, yields briefly to Welcome */}
+          {/* Motto — hidden on photo slides so the images run clean; appears only on text slides after Welcome */}
           <div
             className={`
               transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]
-              ${showMotto || !isTextSlide ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'}
+              ${showMotto ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'}
             `}
           >
             <div className="flex justify-center mb-6">
