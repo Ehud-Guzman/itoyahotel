@@ -507,7 +507,7 @@ export default function ChatBot() {
           {/* Desktop — floating circle, lifts above booking bar when it's visible */}
           <button
             onClick={() => setIsOpen(true)}
-            className={`hidden lg:flex fixed ${atTop ? 'bottom-20' : 'bottom-6'} right-6 z-50 h-14 w-14 items-center justify-center rounded-full bg-gold text-white shadow-xl shadow-gold/30 transition-all duration-500 hover:scale-105 hover:shadow-2xl`}
+            className={`hidden lg:flex fixed ${atTop ? 'bottom-28' : 'bottom-6'} right-6 z-50 h-14 w-14 items-center justify-center rounded-full bg-gold text-white shadow-xl shadow-gold/30 transition-all duration-500 hover:scale-105 hover:shadow-2xl`}
             aria-label="Open chat"
           >
             <FaComments size={22} />
@@ -536,7 +536,7 @@ export default function ChatBot() {
       )}
 
       {isOpen && (
-        <div className={`fixed ${atTop ? 'bottom-24' : 'bottom-4'} right-3 sm:right-6 z-50 flex h-[520px] w-[calc(100vw-1.5rem)] sm:w-[380px] max-w-[380px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl shadow-black/10 border border-stone/20 transition-all duration-500`}>
+        <div className={`fixed ${atTop ? 'bottom-28' : 'bottom-4'} right-3 sm:right-6 z-50 flex h-[520px] w-[calc(100vw-1.5rem)] sm:w-[380px] max-w-[380px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl shadow-black/10 border border-stone/20 transition-all duration-500`}>
           {/* Header */}
           <div className="flex items-center justify-between bg-ink px-5 py-4">
             <div>
