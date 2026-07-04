@@ -126,7 +126,7 @@ async function sendEmails(booking) {
       <p style="font-family:sans-serif;font-size:14px;color:#555;margin-top:24px">
         If you have any questions, please call us on
         <strong>+254 714 302 777</strong> or email
-        <a href="info@hotelitoya.co.ke">info@hotelitoya.co.ke</a>.
+        <a href="mailto:hotel.itoya@ayotigroup.com">hotel.itoya@ayotigroup.com</a>.
       </p>
       <p style="font-family:sans-serif;font-size:12px;color:#aaa;margin-top:32px">
         Hotel Itoya · B1 Kisumu-Busia Road, Busia, Kenya

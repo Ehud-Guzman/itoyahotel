@@ -12,8 +12,8 @@ const details = [
   },
   {
     label: 'Email',
-    value: 'info@hotelitoya.co.ke',
-    href: 'mailto:info@hotelitoya.co.ke',
+    value: 'hotel.itoya@ayotigroup.com',
+    href: 'mailto:hotel.itoya@ayotigroup.com',
   },
   {
     label: 'Border Crossing',

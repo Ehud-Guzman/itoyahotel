@@ -98,8 +98,8 @@ export default function ContactSection() {
 
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.3em] text-white/90 mb-2">Email</p>
-                <a href="mailto:info@hotelitoya.co.ke" className="font-sans text-white hover:text-gold transition-colors duration-200 break-all">
-                  info@hotelitoya.co.ke
+                <a href="mailto:hotel.itoya@ayotigroup.com" className="font-sans text-white hover:text-gold transition-colors duration-200 break-all">
+                  hotel.itoya@ayotigroup.com
                 </a>
               </div>
 

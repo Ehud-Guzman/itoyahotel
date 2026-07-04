@@ -4,7 +4,7 @@ import useBookingBarShown from '../lib/useBookingBarShown';
 
 const PHONE_1 = '+254 714 302 777';
 const PHONE_2 = '+254 714 666 222';
-const EMAIL = 'info@hotelitoya.co.ke';
+const EMAIL = 'hotel.itoya@ayotigroup.com';
 const WA_URL = 'https://wa.me/254714302777';
 
 const getGreeting = () => {
@@ -67,7 +67,7 @@ const FAQ = [
   },
   {
     keywords: ['room','rooms','suite','suites','accommodation','stay','bed','king'],
-    answer: 'We offer **60+ well-appointed rooms** across four categories: Standard, Deluxe, Super Deluxe, and Executive. All include en-suite bathrooms, TV, work desk, and free Wi-Fi.',
+    answer: 'We offer **59 well-appointed rooms** across four categories: Standard, Deluxe, Super Deluxe, and Executive. All include en-suite bathrooms, TV, work desk, and free Wi-Fi.',
   },
 
   // ── Pricing & Booking ───────────────────────────────────────────────────
@@ -379,7 +379,7 @@ const FAQ = [
   },
   {
     keywords: ['about','tell me about','what is hotel itoya','hotel itoya','overview'],
-    answer: 'Hotel Itoya is a **premier business hotel** in Busia, Kenya — on the Kenya-Uganda border. We offer 60+ rooms, a full-service restaurant, conference facilities, spa, gym, event services, and more, all under the Ayoti Group.',
+    answer: 'Hotel Itoya is a **premier business hotel** in Busia, Kenya — on the Kenya-Uganda border. We offer 59 rooms, a full-service restaurant, conference facilities, spa, gym, event services, and more, all under the Ayoti Group.',
   },
 ];
 

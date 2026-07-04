@@ -120,7 +120,7 @@ export default function Footer() {
               </div>
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Email</p>
-                <a href="mailto:info@hotelitoya.co.ke" className="font-sans font-light text-sm text-white hover:text-gold transition-colors duration-150 break-all">info@hotelitoya.co.ke</a>
+                <a href="mailto:hotel.itoya@ayotigroup.com" className="font-sans font-light text-sm text-white hover:text-gold transition-colors duration-150 break-all">hotel.itoya@ayotigroup.com</a>
               </div>
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Location</p>
