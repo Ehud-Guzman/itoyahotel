@@ -130,11 +130,14 @@ export default function Hero() {
             <div className="h-px w-8 bg-gold/65 mt-5" />
           </div>
 
-          {/* Motto — hidden on photo slides so the images run clean; appears only on text slides after Welcome */}
+          {/* Motto — desktop hides it on photo slides so the images run clean
+              (appears only on text slides after Welcome); mobile keeps it up
+              permanently, yielding briefly to the Welcome overlay */}
           <div
             className={`
               transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]
               ${showMotto ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'}
+              ${showWelcome ? '' : 'max-lg:opacity-100 max-lg:translate-y-0 max-lg:pointer-events-auto'}
             `}
           >
             <div className="flex justify-center mb-6">
