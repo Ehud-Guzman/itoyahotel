@@ -261,7 +261,71 @@
       960
     ]
   },
+  "/images/rooms/deluxe-room-2.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/deluxe-room-3.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/deluxe-room-4.webp": {
+    "w": 1280,
+    "h": 960,
+    "widths": [
+      640,
+      960
+    ]
+  },
   "/images/rooms/executive-room-1.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/executive-room-2.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/executive-room-3.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/executive-room-4.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/executive-room-5.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/executive-room-6.webp": {
     "w": 1280,
     "h": 721,
     "widths": [
@@ -285,7 +349,79 @@
       960
     ]
   },
+  "/images/rooms/standard-room-2.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/standard-room-3.webp": {
+    "w": 1280,
+    "h": 960,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/standard-room-4.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/standard-room-5.webp": {
+    "w": 1280,
+    "h": 742,
+    "widths": [
+      640,
+      960
+    ]
+  },
   "/images/rooms/super-deluxe-room-1.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/super-deluxe-room-2.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/super-deluxe-room-3.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/super-deluxe-room-4.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/super-deluxe-room-5.webp": {
+    "w": 1280,
+    "h": 721,
+    "widths": [
+      640,
+      960
+    ]
+  },
+  "/images/rooms/super-deluxe-room-6.webp": {
     "w": 1280,
     "h": 721,
     "widths": [

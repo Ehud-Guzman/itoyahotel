@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { priceForTag } from '../lib/rooms'
 import { useFocusTrap } from '../lib/useFocusTrap'
+import { srcSet } from '../lib/responsive'
 
 export default function RoomModal({ room, onClose, onBookRoom }) {
   const price = room.pricePerNight || priceForTag(room.tag) || null
@@ -59,6 +60,8 @@ export default function RoomModal({ room, onClose, onBookRoom }) {
               <img
                 key={activeImg}
                 src={images[activeImg]}
+                srcSet={srcSet(images[activeImg])}
+                sizes="(min-width: 1024px) 45vw, 92vw"
                 alt={room.title}
                 className="w-full h-full object-cover"
               />
@@ -73,7 +76,14 @@ export default function RoomModal({ room, onClose, onBookRoom }) {
                       i === activeImg ? 'border-gold' : 'border-transparent opacity-60 hover:opacity-100'
                     }`}
                   >
-                    <img src={src} alt="" className="w-full h-full object-cover" />
+                    <img
+                      src={src}
+                      srcSet={srcSet(src)}
+                      sizes="64px"
+                      alt=""
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
                   </button>
                 ))}
               </div>

@@ -23,3 +23,6 @@ pnpm-debug.log*
 
 # system
 Thumbs.db
+
+# raw uploads kept as local backup, not deployed (see public/images for optimized webp)
+/source-images

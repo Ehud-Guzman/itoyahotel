@@ -20,7 +20,13 @@ const FALLBACK_ROOMS = [
     title: 'Standard Room',
     description: 'Designed for comfortable stays with thoughtful details and a calm atmosphere for rest, productivity, and ease.',
     longDescription: 'Our Standard Rooms are crafted for the guest who values simplicity done well. Clean lines, quality bedding, and a quiet environment make this the ideal base for business travellers and short-stay visitors exploring Busia. Everything you need — nothing you don\'t.',
-    images: ['/images/rooms/standard-room-1.webp'],
+    images: [
+      '/images/rooms/standard-room-1.webp',
+      '/images/rooms/standard-room-2.webp',
+      '/images/rooms/standard-room-3.webp',
+      '/images/rooms/standard-room-4.webp',
+      '/images/rooms/standard-room-5.webp',
+    ],
     features: ['Comfortable Bedding', 'Workspace', 'Free Wi-Fi', 'Modern Interior'],
     amenities: [
       { label: 'Sleeping',  items: ['Queen Bed', 'Premium Mattress', 'Quality Linen', 'Blackout Curtains'] },
@@ -35,7 +41,12 @@ const FALLBACK_ROOMS = [
     title: 'Deluxe Room',
     description: 'A more spacious accommodation experience offering additional comfort and flexibility for business and leisure stays.',
     longDescription: 'Step up to the Deluxe Room and enjoy noticeably more space, a dedicated lounge area, and enhanced in-room amenities. Popular with guests staying multiple nights, the Deluxe Room offers the breathing room and comfort that turns a trip into an experience.',
-    images: ['/images/rooms/deluxe-room-1.webp'],
+    images: [
+      '/images/rooms/deluxe-room-1.webp',
+      '/images/rooms/deluxe-room-2.webp',
+      '/images/rooms/deluxe-room-3.webp',
+      '/images/rooms/deluxe-room-4.webp',
+    ],
     features: ['Spacious Layout', 'Seating Area', 'Free Wi-Fi', 'Enhanced Comfort'],
     amenities: [
       { label: 'Sleeping',  items: ['King or Twin Beds', 'Premium Mattress', 'Luxury Linen', 'Blackout Curtains'] },
@@ -50,7 +61,14 @@ const FALLBACK_ROOMS = [
     title: 'Super Deluxe Room',
     description: 'The ultimate stay with generous space, luxurious finishing touches, and elevated amenities for an unforgettable retreat.',
     longDescription: 'The Super Deluxe Room represents the pinnacle of comfort at Hotel Itoya. A separate lounge area, king bed, panoramic views, and a suite of premium amenities make this the choice for guests who expect the very best — whether for a special occasion or a longer stay.',
-    images: ['/images/rooms/super-deluxe-room-1.webp'],
+    images: [
+      '/images/rooms/super-deluxe-room-1.webp',
+      '/images/rooms/super-deluxe-room-2.webp',
+      '/images/rooms/super-deluxe-room-3.webp',
+      '/images/rooms/super-deluxe-room-4.webp',
+      '/images/rooms/super-deluxe-room-5.webp',
+      '/images/rooms/super-deluxe-room-6.webp',
+    ],
     features: ['Private Lounge', 'King Bed', 'Panoramic Views', 'Premium Amenities'],
     amenities: [
       { label: 'Sleeping',  items: ['King Bed', 'Luxury Pillow Menu', 'Premium Linen', 'Separate Lounge Area'] },
@@ -65,7 +83,14 @@ const FALLBACK_ROOMS = [
     title: 'Executive Room',
     description: 'A refined stay experience designed for guests seeking elevated comfort and a relaxed atmosphere.',
     longDescription: 'Purpose-built for the business traveller, the Executive Room combines a productive workspace with the comforts of a premium retreat. Designed to help you arrive rested, work efficiently, and leave feeling refreshed — every time.',
-    images: ['/images/rooms/executive-room-1.webp'],
+    images: [
+      '/images/rooms/executive-room-1.webp',
+      '/images/rooms/executive-room-2.webp',
+      '/images/rooms/executive-room-3.webp',
+      '/images/rooms/executive-room-4.webp',
+      '/images/rooms/executive-room-5.webp',
+      '/images/rooms/executive-room-6.webp',
+    ],
     features: ['Premium Interior', 'Business Friendly', 'Work Area', 'Comfort Focused'],
     amenities: [
       { label: 'Sleeping',  items: ['King Bed', 'Premium Mattress', 'Luxury Linen', 'Blackout Curtains'] },
