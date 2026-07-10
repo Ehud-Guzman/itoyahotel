@@ -20,11 +20,15 @@ const Testimonials    = lazy(() => import('./components/Testimonials'))
 const ChatBot         = lazy(() => import('./components/ChatBot'))
 
 export default function App() {
-  const [bookingOpen,     setBookingOpen]     = useState(false)
-  const [preselectedRoom, setPreselectedRoom] = useState('')
+  const [bookingOpen, setBookingOpen] = useState(false)
+  const [preselected, setPreselected] = useState({})
 
-  const openBooking = (roomId = '') => {
-    setPreselectedRoom(roomId)
+  // Accepts either a bare room id (from RoomsPreview / RoomModal / nav "Book
+  // Now" buttons) or a prefill object with room/checkIn/checkOut/guests
+  // (from the homepage quick-search bar), so callers don't need to know
+  // which shape the other callers use.
+  const openBooking = (prefill = '') => {
+    setPreselected(typeof prefill === 'string' ? { room: prefill } : prefill)
     setBookingOpen(true)
   }
 
@@ -61,7 +65,7 @@ export default function App() {
       <BookingModal
         isOpen={bookingOpen}
         onClose={() => setBookingOpen(false)}
-        preselectedRoom={preselectedRoom}
+        preselected={preselected}
       />
     </>
   )

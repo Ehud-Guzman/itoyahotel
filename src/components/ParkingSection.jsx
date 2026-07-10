@@ -99,7 +99,7 @@ export default function ParkingSection() {
         </div>
 
         {/* --- ROW 2: MOBILE KITCHEN --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 rounded-2xl overflow-hidden shadow-2xl shadow-black/5 border border-stone/100">
+        <div id="mobile-kitchen" className="grid grid-cols-1 md:grid-cols-2 gap-8 rounded-2xl overflow-hidden shadow-2xl shadow-black/5 border border-stone/100">
           {/* Left: Content */}
           <div className="flex flex-col justify-center p-8 lg:p-12 xl:p-16 order-2 md:order-1">
             <span className="text-primary text-[11px] uppercase tracking-[0.3em] font-sans font-medium">

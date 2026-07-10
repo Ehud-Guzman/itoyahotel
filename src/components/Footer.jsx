@@ -12,7 +12,7 @@ const footerLinks = {
   Services: [
     { label: 'Conference Facilities', href: '#conference' },
     { label: 'Events Planning',       href: '#events' },
-    { label: 'Mobile Kitchen',        href: '#parking' },
+    { label: 'Mobile Kitchen',        href: '#mobile-kitchen' },
   ],
 }
 

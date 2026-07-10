@@ -43,6 +43,16 @@ async function init() {
     })
     await pool.query(SCHEMA)
     console.log('Booking store: Postgres connected — bookings persist across restarts.')
+  } else if (process.env.NODE_ENV === 'production') {
+    // Refuse to start in production without persistence — guests would be
+    // paying real money into a store that's wiped on the next restart or
+    // redeploy, with no way to recover an in-flight booking.
+    throw new Error(
+      'DATABASE_URL is not set. Refusing to start in production with in-memory ' +
+      'booking storage — every restart/redeploy would silently lose all bookings, ' +
+      'including ones with completed M-Pesa payments. Provision Postgres (Neon, ' +
+      'Supabase, Railway, etc.) and set DATABASE_URL before deploying.',
+    )
   } else {
     memory = new Map()
     console.warn(

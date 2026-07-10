@@ -23,6 +23,16 @@ function normalisePhone(raw) {
   return n
 }
 
+// Strips everything but digits first (same as normalisePhone) so a number
+// typed with dashes or spaces — "0712-345-678" — validates consistently
+// instead of failing here while normalisePhone would have accepted it fine.
+function isValidKenyanPhone(raw) {
+  const d = (raw || '').replace(/\D/g, '')
+  return /^(254[17]\d{8}|0[17]\d{8}|[17]\d{8})$/.test(d)
+}
+
+const ACCEPTED_ID_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+
 function fmtDate(str) {
   if (!str) return '—'
   return new Date(str + 'T00:00:00').toLocaleDateString('en-KE', {
@@ -37,7 +47,7 @@ const inp = (err) =>
    ${err ? 'border-red-300' : 'border-stone/40 hover:border-stone/70'}`
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) {
+export default function BookingModal({ isOpen, onClose, preselected = {} }) {
   const [step,       setStep]       = useState(0)
   const [errors,     setErrors]     = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -73,8 +83,14 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
     }
     setStep(0); setErrors({}); setPayState('idle')
     setBookingRef(''); setSubmitting(false); setSlowConnect(false)
-    setData(d => ({ ...d, room: preselectedRoom || '' }))
-  }, [isOpen, preselectedRoom])
+    setData(d => ({
+      ...d,
+      room:     preselected.room     || '',
+      checkIn:  preselected.checkIn  || '',
+      checkOut: preselected.checkOut || '',
+      guests:   preselected.guests   || 1,
+    }))
+  }, [isOpen, preselected])
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : ''
@@ -101,11 +117,13 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
       if (!data.checkIn) e.checkIn  = 'Select check-in date'
       if (!data.checkOut)e.checkOut = 'Select check-out date'
       if (data.checkIn && data.checkOut && nights < 1) e.checkOut = 'Check-out must be after check-in'
+      if (room && room.maxGuests && data.guests > room.maxGuests)
+        e.guests = `${room.label} fits up to ${room.maxGuests} guest${room.maxGuests !== 1 ? 's' : ''}`
     }
     if (step === 1) {
       if (!data.name.trim()) e.name = 'Full name is required'
       if (!data.phone.trim()) e.phone = 'Phone number is required'
-      else if (!/^(?:\+?254|0)[17]\d{8}$/.test(data.phone.replace(/\s/g, '')))
+      else if (!isValidKenyanPhone(data.phone))
         e.phone = 'Enter a valid Kenyan phone number'
       if (!data.email.trim()) e.email = 'Email is required'
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) e.email = 'Enter a valid email'
@@ -119,17 +137,24 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
   }
 
   const next = () => { if (validate()) setStep(s => s + 1) }
-  const back = () => { setErrors({}); setStep(s => s - 1) }
+  const back = () => { setErrors({}); setPayState('idle'); setStep(s => s - 1) }
 
   const handleFile = (field, prev, file) => {
     if (!file) return
     if (file.size > 10 * 1024 * 1024) { setErr(field, 'File must be under 10 MB'); return }
+    if (!ACCEPTED_ID_TYPES.includes(file.type)) {
+      setErr(field, file.type === 'image/heic' || file.type === 'image/heif'
+        ? 'HEIC photos aren’t supported — switch your camera to "Most Compatible" in Settings > Camera > Formats, or choose a JPG/PNG/PDF file.'
+        : 'Unsupported file type — please upload a JPG, PNG, or PDF.')
+      return
+    }
     set(field, file); set(prev, URL.createObjectURL(file)); clearErr(field)
   }
 
   const handlePay = async () => {
     const phone = (data.mpesaPhone || data.phone).trim()
     if (!phone) { setErr('mpesaPhone', 'Enter your M-Pesa phone number'); return }
+    if (!isValidKenyanPhone(phone)) { setErr('mpesaPhone', 'Enter a valid Kenyan phone number'); return }
     setSubmitting(true); setPayState('connecting'); setErrors({}); setSlowConnect(false)
 
     // Our backend can be cold (free-tier hosting) — if the initial request
@@ -138,22 +163,46 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
     slowConnectTimer.current = setTimeout(() => setSlowConnect(true), 6000)
 
     try {
-      const fd = new FormData()
-      Object.entries({
-        room: data.room, roomLabel: room?.label, checkIn: data.checkIn,
-        checkOut: data.checkOut, nights, guests: data.guests, name: data.name,
-        phone: data.phone, email: data.email, requests: data.requests,
-        mpesaPhone: normalisePhone(phone), amount: total,
-      }).forEach(([k, v]) => fd.append(k, v))
-      fd.append('idFront', data.idFront)
-      fd.append('idBack',  data.idBack)
+      let ref = bookingRef
 
-      const res  = await fetch(`${API}/api/booking/initiate`, { method: 'POST', body: fd })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.message || 'Server error')
+      if (ref) {
+        // Retrying after a previous failed attempt — reuse the existing
+        // booking record instead of creating a duplicate with fresh ID
+        // uploads and a brand-new reference.
+        const res  = await fetch(`${API}/api/booking/${ref}/retry`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mpesaPhone: normalisePhone(phone) }),
+        })
+        const json = await res.json()
+        if (!res.ok) {
+          const e = new Error(json.message || 'Server error')
+          e.step = json.step; e.field = json.field
+          throw e
+        }
+      } else {
+        const fd = new FormData()
+        Object.entries({
+          room: data.room, roomLabel: room?.label, checkIn: data.checkIn,
+          checkOut: data.checkOut, nights, guests: data.guests, name: data.name,
+          phone: data.phone, email: data.email, requests: data.requests,
+          mpesaPhone: normalisePhone(phone), amount: total,
+        }).forEach(([k, v]) => fd.append(k, v))
+        fd.append('idFront', data.idFront)
+        fd.append('idBack',  data.idBack)
+
+        const res  = await fetch(`${API}/api/booking/initiate`, { method: 'POST', body: fd })
+        const json = await res.json()
+        if (!res.ok) {
+          const e = new Error(json.message || 'Server error')
+          e.step = json.step; e.field = json.field
+          throw e
+        }
+        ref = json.ref
+      }
 
       clearTimeout(slowConnectTimer.current); setSlowConnect(false)
-      setBookingRef(json.ref)
+      setBookingRef(ref)
       setPayState('waiting')
       const deadline = Date.now() + 180_000
       pollRef.current = setInterval(async () => {
@@ -161,7 +210,7 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
           clearInterval(pollRef.current); setPayState('failed'); setSubmitting(false); return
         }
         try {
-          const s = await fetch(`${API}/api/booking/status/${json.ref}`).then(r => r.json())
+          const s = await fetch(`${API}/api/booking/status/${ref}`).then(r => r.json())
           if (s.status === 'success') {
             clearInterval(pollRef.current); setPayState('success'); setSubmitting(false); setStep(5)
           } else if (s.status === 'failed') {
@@ -171,8 +220,19 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
       }, 3000)
     } catch (err) {
       clearTimeout(slowConnectTimer.current); setSlowConnect(false)
-      setPayState('failed'); setSubmitting(false)
-      setErr('mpesaPhone', err.message || 'Could not initiate payment. Please try again.')
+      setSubmitting(false)
+
+      // Errors that trace back to an earlier step (bad room, invalid dates,
+      // a rejected ID upload) belong on that step, not bolted onto the
+      // M-Pesa phone field where they'd be unreadable and unfixable.
+      if (typeof err.step === 'number' && err.step !== 4) {
+        setPayState('idle')
+        setStep(err.step)
+        setErrors({ [err.field || '_general']: err.message })
+      } else {
+        setPayState('failed')
+        setErr(err.field || '_general', err.message || 'Could not initiate payment. Please try again.')
+      }
     }
   }
 
@@ -206,7 +266,16 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
             </h2>
           </div>
           {step < 5 && (
-            <button onClick={onClose} className="mt-0.5 text-ink/30 hover:text-ink transition-colors p-1">
+            <button
+              onClick={() => {
+                const midPayment = payState === 'connecting' || payState === 'waiting'
+                if (midPayment && !window.confirm(
+                  'A payment request is in progress. Closing now will not cancel it, and you may lose your booking reference on screen. Close anyway?'
+                )) return
+                onClose()
+              }}
+              className="mt-0.5 text-ink/30 hover:text-ink transition-colors p-1"
+            >
               <FiX size={18} />
             </button>
           )}
@@ -252,7 +321,7 @@ export default function BookingModal({ isOpen, onClose, preselectedRoom = '' }) 
           <>
             <div className="h-px bg-stone/20 mx-8" />
             <div className="px-8 py-5 flex items-center justify-between">
-              {step > 0 && step < 4 ? (
+              {step > 0 && !(step === 4 && (payState === 'connecting' || payState === 'waiting')) ? (
                 <button
                   onClick={back}
                   className="flex items-center gap-1.5 text-[11px] tracking-[0.15em] uppercase text-ink/40 hover:text-ink transition-colors"
@@ -363,10 +432,10 @@ function StepRoom({ data, set, errors, clearErr, today, minCheckout, room, night
       </div>
 
       {/* Guests */}
-      <Field label="Guests">
+      <Field label="Guests" error={errors.guests}>
         <select
           value={data.guests} onChange={e => set('guests', Number(e.target.value))}
-          className={inp(false)}
+          className={inp(errors.guests)}
         >
           {[1, 2, 3, 4].map(n => (
             <option key={n} value={n}>{n} {n === 1 ? 'Guest' : 'Guests'}</option>
@@ -584,6 +653,11 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
   }
 
   if (payState === 'failed') {
+    // A specific message (bad phone format, upload rejected, Safaricom
+    // error) always takes priority over the generic fallback — this used to
+    // be hardcoded regardless of cause, so an ID-upload failure and a real
+    // M-Pesa decline showed the exact same "check your balance" text.
+    const msg = errors._general || errors.mpesaPhone
     return (
       <div className="py-12 flex flex-col items-center text-center gap-5">
         <div className="w-12 h-12 border border-red-200 bg-red-50 flex items-center justify-center">
@@ -592,7 +666,7 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
         <div className="space-y-2">
           <h3 className="font-serif text-xl text-ink">Payment Failed</h3>
           <p className="text-[13px] text-ink/50 max-w-[17rem] mx-auto leading-relaxed">
-            The transaction was not confirmed. Please check your M-Pesa balance and try again.
+            {msg || 'The transaction was not confirmed. Please check your M-Pesa balance and try again.'}
           </p>
         </div>
       </div>

@@ -1,11 +1,26 @@
 const express    = require('express')
 const multer     = require('multer')
 const axios      = require('axios')
+const rateLimit  = require('express-rate-limit')
 const store      = require('../store')
 const { createTransporter } = require('../lib/mailer')
 const { ROOM_CATALOG } = require('../roomCatalog')
 
 const router  = express.Router()
+
+// Each of these routes can trigger a real M-Pesa STK push to whatever phone
+// number is submitted — unthrottled, that's a ready-made way to spam a
+// stranger's phone with payment prompts and burn the hotel's Daraja quota.
+// /status/:ref is deliberately excluded: the client polls it every 3s for
+// up to 3 minutes per booking, which this limit would break.
+const stkLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many booking attempts from this device. Please wait a few minutes and try again.' },
+})
+
 const upload  = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -32,6 +47,28 @@ async function getAccessToken() {
     auth: { username: key, password: secret },
   })
   return res.data.access_token
+}
+
+async function queryStkStatus({ checkoutRequestId }) {
+  const { MPESA_SHORTCODE, MPESA_PASSKEY, MPESA_ENV } = process.env
+  const base      = MPESA_ENV === 'production'
+    ? 'https://api.safaricom.co.ke'
+    : 'https://sandbox.safaricom.co.ke'
+  const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, '').slice(0, 14)
+  const password  = Buffer.from(`${MPESA_SHORTCODE}${MPESA_PASSKEY}${timestamp}`).toString('base64')
+  const token     = await getAccessToken()
+
+  const res = await axios.post(
+    `${base}/mpesa/stkpushquery/v1/query`,
+    {
+      BusinessShortCode: MPESA_SHORTCODE,
+      Password:          password,
+      Timestamp:         timestamp,
+      CheckoutRequestID: checkoutRequestId,
+    },
+    { headers: { Authorization: `Bearer ${token}` } },
+  )
+  return res.data
 }
 
 async function initiateSTKPush({ phone, amount, ref }) {
@@ -135,9 +172,17 @@ async function sendEmails(booking) {
   })
 }
 
+// Maps a validation failure to the modal step/field it belongs to, so the
+// client can route the guest back to the right screen instead of dumping
+// every error onto the payment step.
+function fail(res, status, message, step, field) {
+  return res.status(status).json({ message, step, field })
+}
+
 // ── POST /api/booking/initiate ────────────────────────────────────────────────
 router.post(
   '/initiate',
+  stkLimiter,
   upload.fields([{ name: 'idFront', maxCount: 1 }, { name: 'idBack', maxCount: 1 }]),
   async (req, res) => {
     try {
@@ -146,21 +191,29 @@ router.post(
         guests, name, phone, email, requests, mpesaPhone,
       } = req.body
 
-      if (!name || !phone || !email || !room || !checkIn || !checkOut) {
-        return res.status(400).json({ message: 'Missing required fields' })
-      }
-      if (!req.files?.idFront || !req.files?.idBack) {
-        return res.status(400).json({ message: 'ID documents are required' })
-      }
+      if (!room)     return fail(res, 400, 'Please select a room type.', 0, 'room')
+      if (!checkIn)  return fail(res, 400, 'Select a check-in date.', 0, 'checkIn')
+      if (!checkOut) return fail(res, 400, 'Select a check-out date.', 0, 'checkOut')
+      if (!name)     return fail(res, 400, 'Full name is required.', 1, 'name')
+      if (!phone)    return fail(res, 400, 'Phone number is required.', 1, 'phone')
+      if (!email)    return fail(res, 400, 'Email is required.', 1, 'email')
+      if (!req.files?.idFront)
+        return fail(res, 400, 'The front of your ID could not be uploaded — please use a JPG, PNG, or PDF file.', 2, 'idFront')
+      if (!req.files?.idBack)
+        return fail(res, 400, 'The back of your ID could not be uploaded — please use a JPG, PNG, or PDF file.', 2, 'idBack')
 
       // ── Server-side price authority — never trust client-sent amount/nights ──
       const catalogEntry = ROOM_CATALOG[room]
       if (!catalogEntry) {
-        return res.status(400).json({ message: 'Unknown room type' })
+        return fail(res, 400, 'Unknown room type.', 0, 'room')
       }
       const nights = Math.round((new Date(checkOut) - new Date(checkIn)) / 86_400_000)
       if (!(nights > 0)) {
-        return res.status(400).json({ message: 'Check-out must be after check-in' })
+        return fail(res, 400, 'Check-out must be after check-in.', 0, 'checkOut')
+      }
+      const guestsNum = Number(guests) || 1
+      if (catalogEntry.maxGuests && guestsNum > catalogEntry.maxGuests) {
+        return fail(res, 400, `${catalogEntry.label} fits up to ${catalogEntry.maxGuests} guests.`, 0, 'guests')
       }
       const amount = catalogEntry.price * nights
 
@@ -193,7 +246,7 @@ router.post(
         } catch (err) {
           console.error('STK Push failed:', err.response?.data || err.message)
           await store.deleteByRef(ref)
-          return res.status(502).json({ message: 'Could not initiate M-Pesa payment. Please try again.' })
+          return fail(res, 502, 'Could not initiate M-Pesa payment. Please try again.', 4, 'mpesaPhone')
         }
       } else {
         // ── Placeholder mode: auto-succeed after 12 seconds ──────────────────
@@ -214,10 +267,78 @@ router.post(
   },
 )
 
+// ── POST /api/booking/:ref/retry ──────────────────────────────────────────────
+// Re-attempts the STK push against an existing (failed/pending) booking
+// record instead of the client creating a brand-new one on every retry —
+// keeps the store from accumulating duplicate rows with re-uploaded ID
+// images for what is, from the guest's point of view, one booking attempt.
+router.post('/:ref/retry', stkLimiter, async (req, res) => {
+  try {
+    const record = await store.getByRef(req.params.ref)
+    if (!record) return fail(res, 404, 'We could not find that booking. Please start again.', 0, 'room')
+    if (record.status === 'success') return fail(res, 400, 'This booking has already been paid.', 4, '_general')
+
+    const phone = (req.body?.mpesaPhone || record.b.mpesaPhone || record.b.phone || '').trim()
+    if (!phone) return fail(res, 400, 'Enter your M-Pesa phone number.', 4, 'mpesaPhone')
+
+    const isPlaceholder = !process.env.MPESA_CONSUMER_KEY || process.env.MPESA_CONSUMER_KEY === 'YOUR_CONSUMER_KEY'
+
+    if (!isPlaceholder) {
+      try {
+        const ckId = await initiateSTKPush({ phone, amount: record.b.amount, ref: record.b.ref })
+        await store.updateStatus(record.b.ref, 'pending', { checkoutRequestId: ckId })
+      } catch (err) {
+        console.error('STK retry push failed:', err.response?.data || err.message)
+        return fail(res, 502, 'Could not initiate M-Pesa payment. Please try again.', 4, 'mpesaPhone')
+      }
+    } else {
+      console.log(`[PLACEHOLDER] Booking ${record.b.ref} — retry auto-confirming in 12s`)
+      await store.updateStatus(record.b.ref, 'pending')
+      setTimeout(async () => {
+        const r = await store.getByRef(record.b.ref)
+        if (!r || r.status !== 'pending') return
+        await store.updateStatus(record.b.ref, 'success')
+        try { await sendEmails({ ...r, b: { ...r.b } }) } catch (e) { console.error('Email error:', e.message) }
+      }, 12_000)
+    }
+
+    res.json({ ref: record.b.ref })
+  } catch (err) {
+    console.error('Booking retry error:', err)
+    res.status(500).json({ message: 'Server error. Please try again.' })
+  }
+})
+
 // ── GET /api/booking/status/:ref ──────────────────────────────────────────────
 router.get('/status/:ref', async (req, res) => {
   const record = await store.getByRef(req.params.ref)
   if (!record) return res.status(404).json({ status: 'not_found' })
+
+  // Safety net: don't rely solely on Safaricom's callback landing. If the
+  // booking is still pending and we have a CheckoutRequestID, ask Daraja
+  // directly — covers callback delivery failures (cold starts, a briefly
+  // misconfigured MPESA_CALLBACK_URL, transient network issues) that would
+  // otherwise leave a guest who actually paid staring at a timeout. Only the
+  // "definitely paid" result is trusted here; anything else (including query
+  // errors, which commonly just mean "still processing") is left for the
+  // real callback or the next poll to resolve, so we never mis-mark a
+  // slow-but-live transaction as failed.
+  if (record.status === 'pending' && record.checkoutRequestId) {
+    try {
+      const result = await queryStkStatus({ checkoutRequestId: record.checkoutRequestId })
+      if (String(result.ResultCode) === '0') {
+        const mpesaRef = result.CallbackMetadata?.Item?.find?.(i => i.Name === 'MpesaReceiptNumber')?.Value || ''
+        await store.updateStatus(record.b.ref, 'success', { mpesaRef })
+        record.status = 'success'
+        record.b.mpesaRef = mpesaRef
+        try { await sendEmails(record) } catch (e) { console.error('Reconciliation email error:', e.message) }
+      }
+    } catch {
+      // Still processing (Daraja errors on an in-flight query) or the query
+      // itself failed — trust whatever the webhook has already recorded.
+    }
+  }
+
   res.json({ status: record.status })
 })
 

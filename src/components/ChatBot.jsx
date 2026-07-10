@@ -1,11 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { FaComments, FaTimes, FaPaperPlane, FaWhatsapp } from 'react-icons/fa';
 import useBookingBarShown from '../lib/useBookingBarShown';
+import { ROOM_CATALOG } from '../lib/rooms';
 
 const PHONE_1 = '+254 714 302 777';
 const PHONE_2 = '+254 714 666 222';
 const EMAIL = 'hotel.itoya@ayotigroup.com';
 const WA_URL = 'https://wa.me/254714302777';
+
+const RATE_LINES = ROOM_CATALOG
+  .map((r) => `• **${r.label}** — KES ${r.price.toLocaleString('en-KE')}/night`)
+  .join('\n');
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -73,7 +78,7 @@ const FAQ = [
   // ── Pricing & Booking ───────────────────────────────────────────────────
   {
     keywords: ['price','prices','cost','rate','how much','rates','tariff','fees','charges'],
-    answer: `Room rates vary by category and season. For current pricing and the best available rate, reach us on:\n\n📞 ${PHONE_1}\n💬 WhatsApp us for a quick quote`,
+    answer: `Our current room rates:\n\n${RATE_LINES}\n\nRates may vary with season or promotions. For a corporate/group quote or the best available rate, reach us on:\n\n📞 ${PHONE_1}\n💬 WhatsApp us for a quick quote`,
   },
   {
     keywords: ['book','booking','reserve','reservation','availability','available rooms','make a booking','book a room'],

@@ -26,11 +26,18 @@ export default function Hero() {
     '/images/events/homeland-setup.webp',
   ]
 
-  const [currentSlide, setCurrentSlide] = useState(0)
+  const prefersReducedMotion = typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  // Reduced-motion visitors get a single static slide instead of an
+  // indefinite auto-advancing carousel (WCAG 2.2.2) — start on a text slide
+  // specifically, so the headline ("Where Hospitality Meets Value") is the
+  // thing they land on rather than a photo with no rotation left to reveal it.
+  const [currentSlide, setCurrentSlide] = useState(() => (prefersReducedMotion ? 2 : 0))
   // Slides get mounted just-in-time (current + upcoming) so the browser
   // doesn't download all hero images at startup — they sit in the viewport,
   // so loading="lazy" alone never defers them.
-  const [mountedSlides, setMountedSlides] = useState(() => new Set([0, 1]))
+  const [mountedSlides, setMountedSlides] = useState(() => new Set(prefersReducedMotion ? [2] : [0, 1]))
 
   const isTextSlide = currentSlide % 3 === 2
   const showWelcome = welcomePhase
@@ -38,6 +45,7 @@ export default function Hero() {
 
   // Text slides run longer to comfortably hold both Welcome + Motto
   useEffect(() => {
+    if (prefersReducedMotion) return
     const id = setInterval(() => {
       setCurrentSlide((s) => (s + 1) % slides.length)
     }, 8000)

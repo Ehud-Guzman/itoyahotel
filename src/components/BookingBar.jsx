@@ -22,6 +22,15 @@ function tomorrowStr() {
   return d.toISOString().split('T')[0]
 }
 
+// The quick-search bar supports multi-room phrasing ("2 Rooms, 3 Guests")
+// but the booking flow itself only ever books one room — pull out the guest
+// count and clamp it to what BookingModal's guest picker supports (1-4).
+function guestCountFrom(option) {
+  const match = /(\d+)\s*Guests?/i.exec(option)
+  const n = match ? parseInt(match[1], 10) : 1
+  return Math.min(4, Math.max(1, n))
+}
+
 export default function BookingBar({ onBookNow }) {
   const { visible, hiddenByScroll } = useBookingBarShown()
   const [hovering,     setHovering]     = useState(false)
@@ -150,7 +159,12 @@ export default function BookingBar({ onBookNow }) {
                   </span>
                 </div>
                 <button
-                  onClick={() => onBookNow(roomId)}
+                  onClick={() => onBookNow({
+                    room: roomId,
+                    checkIn,
+                    checkOut,
+                    guests: guestCountFrom(guests),
+                  })}
                   className="
                     bg-primary text-white
                     px-8

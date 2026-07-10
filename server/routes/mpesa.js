@@ -21,6 +21,14 @@ router.post('/callback', async (req, res) => {
       return res.json({ ResultCode: 0, ResultDesc: 'Accepted' })
     }
 
+    // Safaricom can redeliver the same callback, and the status-poll
+    // reconciliation fallback can also have already confirmed this booking —
+    // don't re-send guest/hotel emails for a booking that's already settled.
+    if (matched.status === 'success') {
+      console.log(`Callback for already-confirmed booking ${matched.b.ref} — ignoring duplicate.`)
+      return res.json({ ResultCode: 0, ResultDesc: 'Accepted' })
+    }
+
     if (ResultCode === 0) {
       // Payment successful — extract M-Pesa receipt number
       const items = CallbackMetadata?.Item || []

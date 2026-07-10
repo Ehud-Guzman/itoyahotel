@@ -15,7 +15,14 @@ const ENQUIRY_LABELS = {
 // ── POST /api/contact ─────────────────────────────────────────────────────────
 router.post('/', async (req, res) => {
   try {
-    const { name, email, phone, type, checkin, checkout, guests, message } = req.body
+    const { name, email, phone, type, checkin, checkout, guests, message, company } = req.body
+
+    // Honeypot — a real visitor never sees or fills this field (hidden
+    // off-screen in the form). Bots that blindly fill every input trip it.
+    // Respond as if it succeeded so the bot doesn't learn to look elsewhere.
+    if (company) {
+      return res.json({ ok: true })
+    }
 
     if (!name || !email || !message) {
       return res.status(400).json({ message: 'Name, email and message are required' })

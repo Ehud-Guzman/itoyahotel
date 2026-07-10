@@ -12,6 +12,7 @@ const initialForm = {
   checkout: '',
   guests: '',
   message: '',
+  company: '', // honeypot — real visitors never see or fill this
 }
 
 function Field({ label, children }) {
@@ -162,6 +163,19 @@ export default function ContactSection() {
                 <h3 className="font-serif text-2xl text-ink mb-8">Send an Enquiry</h3>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
+
+                  {/* Honeypot — hidden from sighted and screen-reader users alike;
+                      bots that auto-fill every field trip it. */}
+                  <input
+                    type="text"
+                    name="company"
+                    value={formData.company}
+                    onChange={handleChange}
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    className="absolute -left-[9999px] w-px h-px overflow-hidden"
+                  />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <Field label="Full Name *">
