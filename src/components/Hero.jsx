@@ -133,7 +133,7 @@ export default function Hero() {
             `}
           >
             <p className="font-serif italic font-light text-white/85 text-3xl sm:text-4xl md:text-5xl xl:text-6xl tracking-[0.15em] sm:tracking-[0.2em] text-center drop-shadow-lg">
-              Welcome
+              Welcome To Hotel Itoya
             </p>
             <div className="h-px w-8 bg-gold/65 mt-5" />
           </div>
