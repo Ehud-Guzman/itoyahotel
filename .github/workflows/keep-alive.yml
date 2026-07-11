@@ -14,4 +14,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping health endpoint
-        run: curl -sf https://itoyahotel.onrender.com/health || echo "Health check failed — server may be cold-starting"
+        run: curl -sf https://itoyahotel-1wiy.onrender.com/health || echo "Health check failed — server may be cold-starting"
