@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://hotelitoya.netlify.app/sitemap.xml
+Sitemap: https://www.hotelitoya.co.ke/sitemap.xml
