@@ -75,7 +75,7 @@ export default function AboutSection() {
             </div>
 
             {/* Floating stat badge — anchored to bottom-left of image */}
-            <div className="absolute bottom-6 left-6 w-36 h-36 sm:w-40 sm:h-40 rounded-full bg-white shadow-xl flex flex-col items-center justify-center text-center px-4">
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-36 h-36 sm:w-40 sm:h-40 rounded-full bg-white shadow-xl flex flex-col items-center justify-center text-center px-4">
               <p className="font-serif text-3xl text-primary font-medium leading-none">59</p>
               <p className="font-sans text-[9px] uppercase tracking-[0.2em] text-ink/70 mt-1">Rooms &amp; Suites</p>
               <div className="gold-divider w-8 my-2" />
