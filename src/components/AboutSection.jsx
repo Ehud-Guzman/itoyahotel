@@ -74,17 +74,13 @@ export default function AboutSection() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
             </div>
 
-            {/* Floating stat card — anchored to bottom-left of image */}
-            <div className="absolute bottom-6 left-6 bg-white px-6 py-5 shadow-xl max-w-[260px]">
-              <div className="mb-4">
-                <p className="font-serif text-4xl text-primary font-medium">59</p>
-                <p className="font-sans text-[10px] uppercase tracking-[0.22em] text-ink/70 mt-0.5">Rooms &amp; Suites</p>
-              </div>
-              <div className="gold-divider mb-3" />
-              <p className="font-sans text-[10px] uppercase tracking-[0.28em] text-ink/70 leading-relaxed">
+            {/* Floating stat badge — anchored to bottom-left of image */}
+            <div className="absolute bottom-6 left-6 w-36 h-36 sm:w-40 sm:h-40 rounded-full bg-white shadow-xl flex flex-col items-center justify-center text-center px-4">
+              <p className="font-serif text-3xl text-primary font-medium leading-none">59</p>
+              <p className="font-sans text-[9px] uppercase tracking-[0.2em] text-ink/70 mt-1">Rooms &amp; Suites</p>
+              <div className="gold-divider w-8 my-2" />
+              <p className="font-sans text-[9px] uppercase tracking-[0.24em] text-ink/70 leading-relaxed">
                 Busia, Kenya
-                <br />
-                An Ayoti Group Property
               </p>
             </div>
           </div>
