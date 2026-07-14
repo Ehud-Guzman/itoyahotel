@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.hotelitoya.co.ke/sitemap.xml
+Sitemap: https://hotelitoya.co.ke/sitemap.xml
