@@ -96,8 +96,38 @@ async function create(record) {
       ],
     )
   } else {
-    memory.set(b.ref, record)
+    memory.set(b.ref, { ...record, createdAt: new Date().toISOString() })
   }
+}
+
+// Admin dashboard listing — deliberately excludes id_front/id_back (BYTEA)
+// so the list payload stays small; fetch those per-row via getByRef.
+async function listAll() {
+  if (pool) {
+    const { rows } = await pool.query(
+      `SELECT ref, room, room_label, check_in, check_out, nights, guests,
+              name, phone, email, requests, mpesa_phone, amount, mpesa_ref,
+              status, id_front_name, id_back_name, created_at
+       FROM bookings ORDER BY created_at DESC`,
+    )
+    return rows.map((row) => ({
+      ref: row.ref, room: row.room, roomLabel: row.room_label,
+      checkIn: row.check_in.toISOString().slice(0, 10),
+      checkOut: row.check_out.toISOString().slice(0, 10),
+      nights: row.nights, guests: row.guests, name: row.name, phone: row.phone,
+      email: row.email, requests: row.requests, mpesaPhone: row.mpesa_phone,
+      amount: Number(row.amount), mpesaRef: row.mpesa_ref, status: row.status,
+      hasIdFront: !!row.id_front_name, hasIdBack: !!row.id_back_name,
+      createdAt: row.created_at.toISOString(),
+    }))
+  }
+  return [...memory.values()]
+    .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+    .map((record) => ({
+      ...record.b, status: record.status,
+      hasIdFront: !!record.idFrontName, hasIdBack: !!record.idBackName,
+      createdAt: record.createdAt,
+    }))
 }
 
 async function getByRef(ref) {
@@ -146,4 +176,4 @@ async function deleteByRef(ref) {
   else memory.delete(ref)
 }
 
-module.exports = { init, create, getByRef, getByCheckoutRequestId, updateStatus, deleteByRef }
+module.exports = { init, create, getByRef, getByCheckoutRequestId, updateStatus, deleteByRef, listAll }

@@ -34,7 +34,7 @@ const FAQ = [
   },
   {
     keywords: ['check out','check-out','checkout','departure','late check out','when do i leave','checkout time','check out time'],
-    answer: 'Check-out is at **11:00 AM**. Late check-out can be arranged upon request — please let reception know the evening before. A small fee may apply depending on how late.',
+    answer: 'Check-out is at **10:00 AM**. Late check-out can be arranged upon request — please let reception know the evening before. A small fee may apply depending on how late.',
   },
 
   // ── Rooms ───────────────────────────────────────────────────────────────

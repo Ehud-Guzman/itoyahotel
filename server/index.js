@@ -7,9 +7,20 @@ const store         = require('./store')
 const bookingRouter = require('./routes/booking')
 const mpesaRouter   = require('./routes/mpesa')
 const contactRouter = require('./routes/contact')
+const adminRouter   = require('./routes/admin')
 
 const app  = express()
 const PORT = process.env.PORT || 4000
+
+// Refuse to start in production without admin credentials configured — the
+// alternative is deploying a login route that either can't be used or (if
+// ADMIN_JWT_SECRET is missing) signs tokens with `undefined` as the secret.
+if (process.env.NODE_ENV === 'production' && (!process.env.ADMIN_PASSWORD || !process.env.ADMIN_JWT_SECRET)) {
+  throw new Error(
+    'ADMIN_PASSWORD and/or ADMIN_JWT_SECRET is not set. Refusing to start in ' +
+    'production without admin dashboard credentials configured.',
+  )
+}
 
 app.use(helmet())
 app.use(cors({
@@ -37,6 +48,7 @@ const contactLimiter = rateLimit({
 app.use('/api/booking', bookingRouter)
 app.use('/api/mpesa',   mpesaRouter)
 app.use('/api/contact', contactLimiter, contactRouter)
+app.use('/api/admin',   adminRouter)
 
 store.init()
   .then(() => app.listen(PORT, () => console.log(`Hotel Itoya server running on :${PORT}`)))

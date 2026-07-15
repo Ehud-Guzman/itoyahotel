@@ -8,9 +8,9 @@
 // reject overbooked rooms.
 export const ROOM_CATALOG = [
   { id: 'standard',     tag: 'Standard',     label: 'Standard Room',     price: 3500,  maxGuests: 2, note: 'Bed & Breakfast included' },
-  { id: 'deluxe',       tag: 'Deluxe',       label: 'Deluxe Room',       price: 6000,  maxGuests: 3, note: '' },
-  { id: 'super-deluxe', tag: 'Super Deluxe', label: 'Super Deluxe Room', price: 7000,  maxGuests: 3, note: '' },
-  { id: 'executive',    tag: 'Executive',    label: 'Executive Room',    price: 10000, maxGuests: 4, note: '' },
+  { id: 'deluxe',       tag: 'Deluxe',       label: 'Deluxe Room',       price: 6000,  maxGuests: 3, note: 'Bed & Breakfast included' },
+  { id: 'super-deluxe', tag: 'Super Deluxe', label: 'Super Deluxe Room', price: 7000,  maxGuests: 3, note: 'Bed & Breakfast included' },
+  { id: 'executive',    tag: 'Executive',    label: 'Executive Room',    price: 10000, maxGuests: 4, note: 'Bed & Breakfast included' },
 ]
 
 export function priceForTag(tag) {
