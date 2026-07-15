@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { FiLock, FiLogOut, FiSearch, FiLoader, FiAlertCircle, FiImage } from 'react-icons/fi'
+import { FiLock, FiLogOut, FiSearch, FiLoader, FiAlertCircle, FiImage, FiX } from 'react-icons/fi'
+import { useFocusTrap } from '../lib/useFocusTrap'
 
 const API         = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 const TOKEN_KEY    = 'itoya_admin_token'
@@ -99,8 +100,8 @@ function Login({ onLoggedIn }) {
   )
 }
 
-// ── ID image button — fetches with auth header, opens as a blob URL ──────────
-function IdImageButton({ bookingRef, side, token, label }) {
+// ── ID image button — fetches with auth header, hands the blob to the lightbox
+function IdImageButton({ bookingRef, side, token, label, onView }) {
   const [loading, setLoading] = useState(false)
 
   async function handleClick() {
@@ -111,7 +112,7 @@ function IdImageButton({ bookingRef, side, token, label }) {
       })
       if (!res.ok) throw new Error('Could not load image.')
       const blob = await res.blob()
-      window.open(URL.createObjectURL(blob), '_blank', 'noopener')
+      onView({ url: URL.createObjectURL(blob), type: blob.type, label: `${bookingRef} — ID ${label}` })
     } catch {
       alert('Could not load that ID image.')
     } finally {
@@ -132,6 +133,55 @@ function IdImageButton({ bookingRef, side, token, label }) {
   )
 }
 
+// ── ID image lightbox — in-page viewer, no new tab ────────────────────────────
+function IdImageLightbox({ image, onClose }) {
+  const panelRef = useFocusTrap(true)
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-ink/80 flex items-center justify-center p-4 md:p-10"
+      onClick={onClose}
+    >
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={image.label}
+        tabIndex={-1}
+        className="relative max-w-4xl w-full max-h-full bg-white p-2 outline-none"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-2 py-1.5 mb-1">
+          <span className="text-xs text-ink/60 truncate">{image.label}</span>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="text-ink/50 hover:text-ink transition-colors p-1"
+          >
+            <FiX size={18} />
+          </button>
+        </div>
+        {image.type === 'application/pdf' ? (
+          <iframe src={image.url} title={image.label} className="w-full h-[75vh]" />
+        ) : (
+          <img src={image.url} alt={image.label} className="w-full max-h-[75vh] object-contain" />
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Dashboard ────────────────────────────────────────────────────────────────
 function Dashboard({ token, onLogout }) {
   const [bookings, setBookings] = useState([])
@@ -139,6 +189,14 @@ function Dashboard({ token, onLogout }) {
   const [error,    setError]    = useState('')
   const [query,    setQuery]    = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [viewingImage, setViewingImage] = useState(null)
+
+  const closeImage = useCallback(() => {
+    setViewingImage((current) => {
+      if (current) URL.revokeObjectURL(current.url)
+      return null
+    })
+  }, [])
 
   const loadBookings = useCallback(async () => {
     setLoading(true)
@@ -259,8 +317,8 @@ function Dashboard({ token, onLogout }) {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-1">
-                        {b.hasIdFront && <IdImageButton bookingRef={b.ref} side="front" token={token} label="Front" />}
-                        {b.hasIdBack  && <IdImageButton bookingRef={b.ref} side="back"  token={token} label="Back" />}
+                        {b.hasIdFront && <IdImageButton bookingRef={b.ref} side="front" token={token} label="Front" onView={setViewingImage} />}
+                        {b.hasIdBack  && <IdImageButton bookingRef={b.ref} side="back"  token={token} label="Back"  onView={setViewingImage} />}
                         {!b.hasIdFront && !b.hasIdBack && <span className="text-ink/30 text-xs">—</span>}
                       </div>
                     </td>
@@ -272,6 +330,8 @@ function Dashboard({ token, onLogout }) {
           </div>
         )}
       </main>
+
+      {viewingImage && <IdImageLightbox image={viewingImage} onClose={closeImage} />}
     </div>
   )
 }
