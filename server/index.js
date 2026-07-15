@@ -16,11 +16,18 @@ const PORT = process.env.PORT || 4000
 // alternative is deploying a login route that either can't be used or (if
 // ADMIN_JWT_SECRET is missing) signs tokens with `undefined` as the secret.
 if (process.env.NODE_ENV === 'production' && (!process.env.ADMIN_PASSWORD || !process.env.ADMIN_JWT_SECRET)) {
-  throw new Error(
+  console.error(
     'ADMIN_PASSWORD and/or ADMIN_JWT_SECRET is not set. Refusing to start in ' +
     'production without admin dashboard credentials configured.',
   )
+  process.exit(1)
 }
+
+// Render (and most PaaS hosts) put the app behind a reverse proxy — without
+// this, req.ip resolves to the proxy's own address for every request, so
+// express-rate-limit's per-IP buckets (below) end up shared across every
+// caller instead of actually being per-client.
+app.set('trust proxy', 1)
 
 app.use(helmet())
 app.use(cors({

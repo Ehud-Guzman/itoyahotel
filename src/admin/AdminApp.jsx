@@ -103,9 +103,11 @@ function Login({ onLoggedIn }) {
 // ── ID image button — fetches with auth header, hands the blob to the lightbox
 function IdImageButton({ bookingRef, side, token, label, onView }) {
   const [loading, setLoading] = useState(false)
+  const [failed,  setFailed]  = useState(false)
 
   async function handleClick() {
     setLoading(true)
+    setFailed(false)
     try {
       const res = await fetch(`${API}/api/admin/bookings/${bookingRef}/id/${side}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -114,22 +116,29 @@ function IdImageButton({ bookingRef, side, token, label, onView }) {
       const blob = await res.blob()
       onView({ url: URL.createObjectURL(blob), type: blob.type, label: `${bookingRef} — ID ${label}` })
     } catch {
-      alert('Could not load that ID image.')
+      setFailed(true)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={loading}
-      className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary-dark underline
-                 underline-offset-2 disabled:opacity-40"
-    >
-      {loading ? <FiLoader className="animate-spin" size={11} /> : <FiImage size={11} />}
-      {label}
-    </button>
+    <div>
+      <button
+        onClick={handleClick}
+        disabled={loading}
+        className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary-dark underline
+                   underline-offset-2 disabled:opacity-40"
+      >
+        {loading ? <FiLoader className="animate-spin" size={11} /> : <FiImage size={11} />}
+        {label}
+      </button>
+      {failed && (
+        <span className="flex items-center gap-1 text-[11px] text-red-700 mt-0.5">
+          <FiAlertCircle size={10} /> Couldn't load
+        </span>
+      )}
+    </div>
   )
 }
 
@@ -173,7 +182,7 @@ function IdImageLightbox({ image, onClose }) {
           </button>
         </div>
         {image.type === 'application/pdf' ? (
-          <iframe src={image.url} title={image.label} className="w-full h-[75vh]" />
+          <iframe src={image.url} title={image.label} sandbox="" className="w-full h-[75vh]" />
         ) : (
           <img src={image.url} alt={image.label} className="w-full max-h-[75vh] object-contain" />
         )}

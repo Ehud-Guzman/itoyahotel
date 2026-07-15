@@ -37,8 +37,15 @@ router.post('/login', loginLimiter, (req, res) => {
   if (!password || !timingSafeStringsEqual(password, process.env.ADMIN_PASSWORD || '')) {
     return res.status(401).json({ message: 'Incorrect password.' })
   }
-  const token = jwt.sign({ role: 'admin' }, process.env.ADMIN_JWT_SECRET, { expiresIn: '12h' })
-  res.json({ token })
+  try {
+    const token = jwt.sign({ role: 'admin' }, process.env.ADMIN_JWT_SECRET, {
+      expiresIn: '12h', algorithm: 'HS256',
+    })
+    res.json({ token })
+  } catch (err) {
+    console.error('Admin login token signing error:', err.message)
+    res.status(500).json({ message: 'Server is not configured for admin login yet.' })
+  }
 })
 
 function requireAdmin(req, res, next) {
@@ -46,7 +53,7 @@ function requireAdmin(req, res, next) {
   const token  = header.startsWith('Bearer ') ? header.slice(7) : null
   if (!token) return res.status(401).json({ message: 'Not authenticated.' })
   try {
-    jwt.verify(token, process.env.ADMIN_JWT_SECRET)
+    jwt.verify(token, process.env.ADMIN_JWT_SECRET, { algorithms: ['HS256'] })
     next()
   } catch {
     res.status(401).json({ message: 'Session expired. Please log in again.' })
