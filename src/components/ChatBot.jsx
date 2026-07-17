@@ -383,7 +383,7 @@ const FAQ = [
     answer: 'Hotel Itoya is proudly part of the **Ayoti Group** — a trusted hospitality and business group operating across East Africa.',
   },
   {
-    keywords: ['about','what is hotel itoya','hotel itoya','overview'],
+    keywords: ['about the hotel','about this hotel','about your hotel','about hotel itoya','what is hotel itoya','hotel itoya','overview'],
     answer: 'Hotel Itoya is a **premier business hotel** in Busia, Kenya — on the Kenya-Uganda border. We offer 59 rooms, a full-service restaurant, conference facilities, spa, gym, event services, and more, all under the Ayoti Group.',
   },
 
@@ -465,9 +465,12 @@ const findAnswer = (question) => {
   if (best) return best.answer;
 
   // Not an FAQ hit — a lone "thanks bro" / "hello there" / "sawa" should still
-  // get a social reply instead of the contact fallback.
-  for (const [list, reply] of SOCIAL_REPLIES) {
-    if (list.some(w => matchesWord(lower, w))) return reply();
+  // get a social reply instead of the contact fallback. Short messages only:
+  // "hello, do you offer pizzas" is a real question, not a greeting.
+  if (lower.split(/\s+/).length <= 4) {
+    for (const [list, reply] of SOCIAL_REPLIES) {
+      if (list.some(w => matchesWord(lower, w))) return reply();
+    }
   }
   return null;
 };
