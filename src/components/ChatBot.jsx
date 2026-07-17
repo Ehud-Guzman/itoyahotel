@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { FaComments, FaTimes, FaPaperPlane, FaWhatsapp } from 'react-icons/fa';
+import { FaComments, FaTimes, FaPaperPlane, FaWhatsapp, FaPhoneAlt, FaEnvelope } from 'react-icons/fa';
 import useBookingBarShown from '../lib/useBookingBarShown';
 import { ROOM_CATALOG } from '../lib/rooms';
 
@@ -12,6 +12,11 @@ const RATE_LINES = ROOM_CATALOG
   .map((r) => `• **${r.label}** — KES ${r.price.toLocaleString('en-KE')}/night`)
   .join('\n');
 
+const rateFor = (tag) => {
+  const r = ROOM_CATALOG.find((x) => x.tag === tag);
+  return r ? `KES ${r.price.toLocaleString('en-KE')}/night (${r.note})` : '';
+};
+
 const getGreeting = () => {
   const h = new Date().getHours();
   if (h < 12) return 'Good morning';
@@ -23,14 +28,14 @@ const getGreeting = () => {
 const GREETINGS   = ['hi','hello','hey','hiya','howdy','sup','good morning','good afternoon','good evening','greetings','salut','habari','mambo','niaje','sasa','karibu'];
 const FAREWELLS   = ['bye','goodbye','good bye','see you','cya','take care','farewell','later','talk later','see ya','ttyl','kwaheri','bye bye','good night'];
 const THANKS      = ['thank you','thanks','thank u','thankyou','thx','cheers','appreciated','asante','thank you so much','thanks a lot','thanks so much','many thanks','ok thanks','okay thanks','ok thank you','okay thank you','alright thanks','sure thanks','cool thanks','great thanks','noted thanks','got it thanks','perfect thanks','awesome thanks','nice thanks'];
-const AFFIRMATIONS= ['ok','okay','alright','got it','understood','noted','sure','great','perfect','nice','cool','awesome','wonderful','sounds good','makes sense','that helps','that is helpful','very helpful'];
+const AFFIRMATIONS= ['ok','okay','alright','got it','understood','noted','sure','great','perfect','nice','cool','awesome','wonderful','sounds good','makes sense','that helps','that is helpful','very helpful','sawa','sawa sawa','poa'];
 const NEGATIONS   = ['no','nope','nah','not really','nothing else',"that's all",'all good','im good',"i'm good",'no thanks','no thank you','nothing','never mind','nevermind','not now'];
 
 const FAQ = [
   // ── Check-in / Check-out ────────────────────────────────────────────────
   {
-    keywords: ['check in','check-in','checkin','arrival','when can i arrive','early check in','early arrival'],
-    answer: 'Check-in is from **2:00 PM**. Early arrivals are welcome to relax in our lobby while your room is prepared. Early check-in can sometimes be arranged subject to availability — contact us in advance.',
+    keywords: ['check in','check-in','checkin','arrival','arrive','arriving','late arrival','when can i arrive','early check in','early arrival'],
+    answer: 'Check-in is from **2:00 PM**. Early arrivals are welcome to relax in our lobby while your room is prepared, and since reception is open **24/7**, late arrivals are no problem at all — just let us know you\'re on the way.',
   },
   {
     keywords: ['check out','check-out','checkout','departure','late check out','when do i leave','checkout time','check out time'],
@@ -44,19 +49,19 @@ const FAQ = [
   },
   {
     keywords: ['standard room','standard'],
-    answer: 'Our **Standard Rooms** offer a comfortable bed (single, twin, or king), en-suite bathroom, flat-screen TV, work desk, and complimentary Wi-Fi — everything you need for a great stay.',
+    answer: `Our **Standard Rooms** offer a comfortable bed (single, twin, or king), en-suite bathroom, flat-screen TV, work desk, and complimentary Wi-Fi — everything you need for a great stay.\n\n💰 ${rateFor('Standard')}`,
   },
   {
     keywords: ['deluxe room','deluxe'],
-    answer: '**Deluxe Rooms** offer upgraded furnishings and more space — a step up in comfort and style from the Standard category.',
+    answer: `**Deluxe Rooms** offer upgraded furnishings and more space — a step up in comfort and style from the Standard category.\n\n💰 ${rateFor('Deluxe')}`,
   },
   {
     keywords: ['super deluxe','super-deluxe','superdeluxe'],
-    answer: '**Super Deluxe Rooms** combine premium décor with generous space and top-tier in-room facilities — ideal for longer stays or special occasions.',
+    answer: `**Super Deluxe Rooms** combine premium décor with generous space and top-tier in-room facilities — ideal for longer stays or special occasions.\n\n💰 ${rateFor('Super Deluxe')}`,
   },
   {
     keywords: ['executive room','executive suite','executive'],
-    answer: 'Our **Executive Rooms** are the finest at Hotel Itoya — premium finishes, superior space, and exclusive amenities. Perfect for business executives and discerning guests.',
+    answer: `Our **Executive Rooms** are the finest at Hotel Itoya — premium finishes, superior space, and exclusive amenities. Perfect for business executives and discerning guests.\n\n💰 ${rateFor('Executive')}`,
   },
   {
     keywords: ['single room','single bed'],
@@ -67,21 +72,16 @@ const FAQ = [
     answer: 'Double-bed rooms are available across multiple categories. Let us know your preference when booking and we\'ll match you with the best option.',
   },
   {
-    keywords: ['twin room','twin beds','two beds'],
+    keywords: ['twin room','twin bed','two beds'],
     answer: 'Twin-bed rooms (two separate beds) are available. Please mention your preference when booking so we can arrange accordingly.',
   },
-  {
-    keywords: ['room','rooms','suite','suites','accommodation','stay','bed','king'],
-    answer: 'We offer **59 well-appointed rooms** across four categories: Standard, Deluxe, Super Deluxe, and Executive. All include en-suite bathrooms, TV, work desk, and free Wi-Fi.',
-  },
-
   // ── Pricing & Booking ───────────────────────────────────────────────────
   {
-    keywords: ['price','prices','cost','rate','how much','rates','tariff','fees','charges'],
+    keywords: ['price','cost','rate','how much','tariff','fee','charge','price list'],
     answer: `Our current room rates:\n\n${RATE_LINES}\n\nRates may vary with season or promotions. For a corporate/group quote or the best available rate, reach us on:\n\n📞 ${PHONE_1}\n💬 WhatsApp us for a quick quote`,
   },
   {
-    keywords: ['book','booking','reserve','reservation','availability','available rooms','make a booking','book a room'],
+    keywords: ['book','booking','reserve','reservation','availability','available room','room available','any room','free room','vacancy','vacancies','available tonight','make a booking','book a room'],
     answer: `To book or check availability, use the **Enquiry form** on this page, or contact us directly:\n\n📞 ${PHONE_1}\n✉️ ${EMAIL}\n\nOur team responds promptly.`,
   },
   {
@@ -89,7 +89,7 @@ const FAQ = [
     answer: 'Some bookings may require a deposit to secure your reservation. Our reservations team will confirm the amount and payment instructions when you book.',
   },
   {
-    keywords: ['cancellation','cancel booking','cancel reservation','cancel my booking','cancellation policy'],
+    keywords: ['cancellation','cancel','cancelling','canceling','cancel booking','cancel reservation','cancel my booking','cancellation policy'],
     answer: 'Cancellation terms vary by booking type and season. Please contact our reservations team directly for specific cancellation and refund information.',
   },
   {
@@ -97,7 +97,7 @@ const FAQ = [
     answer: 'Refund eligibility depends on the cancellation policy applied to your booking. Contact us directly and our team will advise you on the next steps.',
   },
   {
-    keywords: ['discount','offer','deal','promotion','special offer','package','corporate rate','group rate'],
+    keywords: ['discount','offers','any offers','deal','promotion','special offer','package','corporate rate','group rate'],
     answer: `We offer corporate rates, group discounts, and seasonal packages. Contact our reservations team for the best available deal:\n\n📞 ${PHONE_1}\n✉️ ${EMAIL}`,
   },
 
@@ -137,11 +137,11 @@ const FAQ = [
     answer: 'Dinner is served from **6:00 PM to 10:00 PM**. Join us for a relaxed evening meal with our full restaurant menu.',
   },
   {
-    keywords: ['room service','in-room dining','deliver food','food to room','order food'],
+    keywords: ['room service','in-room dining','deliver food','food to room','order food','delivery','delivered','deliver'],
     answer: 'Room service is available during restaurant hours (**6:30 AM – 10:00 PM**). Call reception and we will deliver your order to your room.',
   },
   {
-    keywords: ['bar','drinks','cocktail','lounge','alcohol','beer','wine','spirits','juice'],
+    keywords: ['bar','drink','cocktail','lounge','alcohol','beer','wine','spirits','juice'],
     answer: 'Our bar and lounge is the perfect place to unwind — enjoy cocktails, cold drinks, wines, spirits, or light snacks in a relaxed atmosphere.',
   },
   {
@@ -187,7 +187,7 @@ const FAQ = [
     answer: 'We offer outside catering and mobile kitchen services — bringing Hotel Itoya cuisine directly to your venue. Contact our events team for pricing and availability.',
   },
   {
-    keywords: ['events','event','corporate event','gala','party','function','celebration','launch','product launch'],
+    keywords: ['event','corporate event','gala','party','function','celebration','launch','product launch'],
     answer: 'We host a wide range of events — corporate galas, cultural celebrations, product launches, graduation parties, and more. Our events team handles every detail from planning to execution.',
   },
   {
@@ -217,7 +217,7 @@ const FAQ = [
     answer: 'Our **spa** offers a range of relaxing treatments and massages. Ask at reception for the treatment menu, availability, and pricing.',
   },
   {
-    keywords: ['air conditioning','ac','air con','aircon','fan','temperature','heating','cool'],
+    keywords: ['air conditioning','ac','air con','aircon','fan','temperature','heating'],
     answer: 'All our rooms are equipped with **air conditioning** to ensure your comfort regardless of the weather.',
   },
   {
@@ -237,7 +237,7 @@ const FAQ = [
     answer: 'In-room safes and safety deposit facilities are available for securing your valuables. Ask reception for assistance.',
   },
   {
-    keywords: ['luggage','baggage','store luggage','luggage storage','left luggage','bag storage','store bags'],
+    keywords: ['luggage','baggage','bags','store luggage','luggage storage','left luggage','bag storage','store bags','leave my bags','keep my bags'],
     answer: 'We offer **luggage storage** for guests — whether you arrive before check-in or need to leave bags after check-out. Just speak to reception.',
   },
   {
@@ -277,7 +277,7 @@ const FAQ = [
 
   // ── Families & Children ─────────────────────────────────────────────────
   {
-    keywords: ['children','kids','child','family','baby','infant','toddler','family room','family friendly','bring kids'],
+    keywords: ['children','kid','child','family','baby','infant','toddler','family room','family friendly','bring kids'],
     answer: 'Hotel Itoya warmly welcomes families! We can arrange extra beds, baby cots, and family-friendly room setups. Please inform us of your family\'s needs when booking.',
   },
   {
@@ -371,11 +371,11 @@ const FAQ = [
     answer: `Our reception is open **24/7**:\n\n📞 ${PHONE_1}\n📞 ${PHONE_2}\n✉️ ${EMAIL}\n\nOr WhatsApp us for a quick response.`,
   },
   {
-    keywords: ['whatsapp','whats app','wa','message us','text us','chat with us'],
+    keywords: ['whatsapp','whats app','message us','text us','chat with us'],
     answer: `WhatsApp us at **${PHONE_1}** — we typically respond within minutes during business hours.`,
   },
   {
-    keywords: ['location','address','where are you','how to get','directions','map','find you','where is hotel itoya'],
+    keywords: ['location','address','where are you','how to get','how do i get','how do we get','how to reach','coming from','directions','map','find you','where is hotel itoya','located'],
     answer: `We are on **B1 Kisumu-Busia Road, Busia, Kenya** — right near the Kenya-Uganda border.\n\n• From Nairobi: ~7–9 hrs via A104\n• From Kisumu: ~2–3 hrs via A1\n• From Kampala: ~2.5–4 hrs via A109 (includes border crossing)`,
   },
   {
@@ -383,8 +383,15 @@ const FAQ = [
     answer: 'Hotel Itoya is proudly part of the **Ayoti Group** — a trusted hospitality and business group operating across East Africa.',
   },
   {
-    keywords: ['about','tell me about','what is hotel itoya','hotel itoya','overview'],
+    keywords: ['about','what is hotel itoya','hotel itoya','overview'],
     answer: 'Hotel Itoya is a **premier business hotel** in Busia, Kenya — on the Kenya-Uganda border. We offer 59 rooms, a full-service restaurant, conference facilities, spa, gym, event services, and more, all under the Ayoti Group.',
+  },
+
+  // ── Generic catch-alls — half-weighted so specific entries always win ────
+  {
+    generic: true,
+    keywords: ['room','suite','accommodation','stay','bed','king'],
+    answer: 'We offer **59 well-appointed rooms** across four categories: Standard, Deluxe, Super Deluxe, and Executive. All include en-suite bathrooms, TV, work desk, and free Wi-Fi.',
   },
 ];
 
@@ -400,37 +407,69 @@ const exact = (list, lower) => {
   return list.some(w => clean === w || lower === w);
 };
 
-// Weighted scoring: longer keyword phrases are more specific and score higher
+// Whole-word keyword matching — a substring check would make "parking" hit
+// "king", "will" hit "ill", "weather" hit "eat", etc. Each word also accepts
+// a plural "s"/"es" so 'shower' still matches "showers".
+const KW_REGEX = new Map();
+const matchesWord = (text, kw) => {
+  let re = KW_REGEX.get(kw);
+  if (!re) {
+    const pattern = kw
+      .split(/\s+/)
+      .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:es|s)?')
+      .join('\\s+');
+    re = new RegExp(`\\b${pattern}\\b`);
+    KW_REGEX.set(kw, re);
+  }
+  return re.test(text);
+};
+
+const SOCIAL_REPLIES = [
+  [FAREWELLS,    () => 'Goodbye! We look forward to welcoming you at Hotel Itoya. Have a wonderful day!'],
+  [THANKS,       () => "You're most welcome! Is there anything else I can help you with?"],
+  [GREETINGS,    () => GREETING_REPLIES[Math.floor(Math.random() * GREETING_REPLIES.length)]],
+  [AFFIRMATIONS, () => 'Great! Feel free to ask if you need anything else about Hotel Itoya.'],
+  [NEGATIONS,    () => 'No problem at all! Feel free to reach out anytime — we look forward to welcoming you at Hotel Itoya.'],
+];
+
+// Weighted scoring: longer keyword phrases are more specific and score higher.
+// Ties are broken by the longest single keyword matched (so "conference
+// charges" goes to conference, not pricing), and `generic: true` entries score
+// at half weight so any specific entry beats a catch-all.
 const findAnswer = (question) => {
   const lower = question.toLowerCase().trim();
   if (!lower) return null;
 
-  if (exact(GREETINGS, lower))
-    return GREETING_REPLIES[Math.floor(Math.random() * GREETING_REPLIES.length)];
-  if (exact(FAREWELLS, lower))
-    return 'Goodbye! We look forward to welcoming you at Hotel Itoya. Have a wonderful day!';
-  if (exact(THANKS, lower))
-    return "You're most welcome! Is there anything else I can help you with?";
-  if (exact(AFFIRMATIONS, lower))
-    return 'Great! Feel free to ask if you need anything else about Hotel Itoya.';
-  if (exact(NEGATIONS, lower))
-    return 'No problem at all! Feel free to reach out anytime — we look forward to welcoming you at Hotel Itoya.';
+  for (const [list, reply] of SOCIAL_REPLIES) {
+    if (exact(list, lower)) return reply();
+  }
 
   let best = null;
   let bestScore = 0;
+  let bestKwLen = 0;
   for (const entry of FAQ) {
     let score = 0;
+    let kwLen = 0;
     for (const kw of entry.keywords) {
-      if (lower.includes(kw)) {
-        score += kw.split(/\s+/).length;
+      if (matchesWord(lower, kw)) {
+        score += kw.split(/\s+/).length * (entry.generic ? 0.5 : 1);
+        kwLen = Math.max(kwLen, kw.length);
       }
     }
-    if (score > bestScore) {
+    if (score > bestScore || (score === bestScore && score > 0 && kwLen > bestKwLen)) {
       bestScore = score;
+      bestKwLen = kwLen;
       best = entry;
     }
   }
-  return bestScore > 0 ? best.answer : null;
+  if (best) return best.answer;
+
+  // Not an FAQ hit — a lone "thanks bro" / "hello there" / "sawa" should still
+  // get a social reply instead of the contact fallback.
+  for (const [list, reply] of SOCIAL_REPLIES) {
+    if (list.some(w => matchesWord(lower, w))) return reply();
+  }
+  return null;
 };
 
 const QUICK_CHIPS = [
@@ -580,16 +619,30 @@ export default function ChatBot() {
                   {msg.isFallback ? (
                     <span>
                       <span className="block">
-                        I'm not sure about that one. Try asking about rooms, dining, conference, parking, or location — or reach us directly:
+                        Hmm, I'm not sure about that one — but our team will know! Reach us directly and we'll sort you out:
                       </span>
-                      <a
-                        href={WA_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 inline-flex items-center gap-2 rounded-lg bg-green-500 px-3 py-2 text-white text-xs font-medium hover:bg-green-600 transition-colors"
-                      >
-                        <FaWhatsapp size={13} /> Chat on WhatsApp
-                      </a>
+                      <span className="mt-2.5 flex flex-col gap-1.5">
+                        <a
+                          href={WA_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 rounded-lg bg-green-500 px-3 py-2 text-white text-xs font-medium hover:bg-green-600 transition-colors"
+                        >
+                          <FaWhatsapp size={13} /> Chat on WhatsApp
+                        </a>
+                        <a
+                          href={`tel:${PHONE_1.replace(/\s+/g, '')}`}
+                          className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-white text-xs font-medium hover:bg-ink/80 transition-colors"
+                        >
+                          <FaPhoneAlt size={11} /> Call {PHONE_1}
+                        </a>
+                        <a
+                          href={`mailto:${EMAIL}`}
+                          className="inline-flex items-center gap-2 rounded-lg border border-gold/60 bg-gold/10 px-3 py-2 text-ink text-xs font-medium hover:bg-gold hover:text-white transition-colors"
+                        >
+                          <FaEnvelope size={11} /> {EMAIL}
+                        </a>
+                      </span>
                     </span>
                   ) : (
                     <MsgText text={msg.content} />
