@@ -43,14 +43,17 @@ export default function Hero() {
   const showWelcome = welcomePhase
   const showMotto   = isTextSlide && !isTransitioning && !welcomePhase
 
-  // Text slides run longer to comfortably hold both Welcome + Motto
+  // Photo slides keep a quick beat so visitors catch several images before
+  // scrolling; text slides hold longer so the Welcome → Motto sequence
+  // (1.5s settle + 2.8s Welcome + ~3.2s Motto) plays out comfortably
   useEffect(() => {
     if (prefersReducedMotion) return
-    const id = setInterval(() => {
+    const duration = currentSlide % 3 === 2 ? 7500 : 3500
+    const id = setTimeout(() => {
       setCurrentSlide((s) => (s + 1) % slides.length)
-    }, 8000)
-    return () => clearInterval(id)
-  }, [])
+    }, duration)
+    return () => clearTimeout(id)
+  }, [currentSlide])
 
   // Mount the next slide ahead of time — it renders hidden (opacity-0), which
   // both preloads the image and lets the crossfade transition run on arrival
