@@ -121,7 +121,7 @@ const FAQ = [
 
   // ── Dining ──────────────────────────────────────────────────────────────
   {
-    keywords: ['restaurant','dining','food','eat','menu','cuisine','dining hours','open for food'],
+    keywords: ['restaurant','dining','food','eat','menu','cuisine','dining hours','open for food','meal','meals','meal time','meal times'],
     answer: `Our restaurant serves local and international cuisine daily:\n\n• 🌅 Breakfast: 6:30 – 10:00 AM\n• ☀️ Lunch: 12:00 – 3:00 PM\n• 🌙 Dinner: 6:00 – 10:00 PM\n\nRoom service is available during all restaurant hours.`,
   },
   {
