@@ -25,9 +25,9 @@ const getGreeting = () => {
 };
 
 // ── Social word lists (exact-match checked before FAQ scoring) ──────────────
-const GREETINGS   = ['hi','hello','hey','hiya','howdy','sup','good morning','good afternoon','good evening','greetings','salut','habari','mambo','niaje','sasa','karibu'];
-const FAREWELLS   = ['bye','goodbye','good bye','see you','cya','take care','farewell','later','talk later','see ya','ttyl','kwaheri','bye bye','good night'];
-const THANKS      = ['thank you','thanks','thank u','thankyou','thx','cheers','appreciated','asante','thank you so much','thanks a lot','thanks so much','many thanks','ok thanks','okay thanks','ok thank you','okay thank you','alright thanks','sure thanks','cool thanks','great thanks','noted thanks','got it thanks','perfect thanks','awesome thanks','nice thanks'];
+const GREETINGS   = ['hi','hello','hey','hiya','howdy','sup','gm','wagwan','good morning','good afternoon','good evening','greetings','salut','habari','mambo','niaje','sasa','karibu'];
+const FAREWELLS   = ['bye','goodbye','good bye','see you','cya','take care','farewell','later','talk later','see ya','ttyl','kwaheri','bye bye','good night','gn'];
+const THANKS      = ['thank you','thanks','thank u','thankyou','thx','cheers','appreciated','appreciate it','asante','thank you so much','thanks a lot','thanks so much','many thanks','ok thanks','okay thanks','ok thank you','okay thank you','alright thanks','sure thanks','cool thanks','great thanks','noted thanks','got it thanks','perfect thanks','awesome thanks','nice thanks'];
 const AFFIRMATIONS= ['ok','okay','alright','got it','understood','noted','sure','great','perfect','nice','cool','awesome','wonderful','sounds good','makes sense','that helps','that is helpful','very helpful','sawa','sawa sawa','poa'];
 const NEGATIONS   = ['no','nope','nah','not really','nothing else',"that's all",'all good','im good',"i'm good",'no thanks','no thank you','nothing','never mind','nevermind','not now'];
 
@@ -125,7 +125,7 @@ const FAQ = [
     answer: `Our restaurant serves local and international cuisine daily:\n\n• 🌅 Breakfast: 6:30 – 10:00 AM\n• ☀️ Lunch: 12:00 – 3:00 PM\n• 🌙 Dinner: 6:00 – 10:00 PM\n\nRoom service is available during all restaurant hours.`,
   },
   {
-    keywords: ['breakfast','morning meal','when is breakfast','breakfast time','breakfast hours'],
+    keywords: ['breakfast','brekfast','brekky','morning meal','when is breakfast','breakfast time','breakfast hours'],
     answer: 'Breakfast is served daily from **6:30 AM to 10:00 AM** — a hearty mix of continental and local dishes to start your day right.',
   },
   {
@@ -133,7 +133,7 @@ const FAQ = [
     answer: 'Lunch is served from **12:00 PM to 3:00 PM** daily — a varied menu of local and international options.',
   },
   {
-    keywords: ['dinner','supper','evening meal','dinner hours','dinner time'],
+    keywords: ['dinner','supper','suppa','evening meal','dinner hours','dinner time'],
     answer: 'Dinner is served from **6:00 PM to 10:00 PM**. Join us for a relaxed evening meal with our full restaurant menu.',
   },
   {
@@ -171,7 +171,7 @@ const FAQ = [
     answer: 'We offer complete wedding coordination — venue, catering, décor, and more. Our events team will work with you to create the perfect day. Contact us for a personalised quote.',
   },
   {
-    keywords: ['birthday','birthday party','celebrate birthday','birthday surprise','birthday celebration'],
+    keywords: ['birthday','bday','birthday party','celebrate birthday','birthday surprise','birthday celebration'],
     answer: 'We\'d love to help make your birthday special! Contact us in advance and we can arrange a cake, decorations, and a birthday setup — in your room or at our restaurant.',
   },
   {
@@ -211,6 +211,10 @@ const FAQ = [
   {
     keywords: ['gym','fitness','fitness centre','workout','exercise','weights','treadmill'],
     answer: 'Our **fitness centre** with modern equipment is available to all guests. Ask at reception for access hours.',
+  },
+  {
+    keywords: ['pool','swimming pool','swim','swimming','swimming instructor'],
+    answer: 'We don\'t have a swimming pool on-site. Our fitness centre and spa are available if you\'d like to unwind, and reception can point you to nearby options if a pool is important for your stay.',
   },
   {
     keywords: ['spa','massage','wellness','treatment','pamper','body treatment','facial'],
@@ -291,7 +295,7 @@ const FAQ = [
 
   // ── Local Area ──────────────────────────────────────────────────────────
   {
-    keywords: ['nearby','near hotel','close by','what to do','activities','attractions','things to do','sightseeing','explore busia','busia town'],
+    keywords: ['nearby','near hotel','close by','what to do','to do around','activities','attractions','things to do','sightseeing','explore busia','busia town'],
     answer: 'Busia is a vibrant border town with plenty to explore:\n\n• Busia market & shopping\n• Kenya-Uganda border crossing\n• Local restaurants & cultural spots\n\nAsk our reception team for personalised recommendations!',
   },
   {
@@ -311,7 +315,7 @@ const FAQ = [
     answer: 'Petrol stations are available in Busia town, close to the hotel. Ask reception for the nearest one.',
   },
   {
-    keywords: ['border','busia border','kenya uganda border','crossing','immigration','customs','border crossing'],
+    keywords: ['border','busia border','kenya uganda border','crossing','cross','immigration','customs','border crossing'],
     answer: 'Hotel Itoya is conveniently located right near the **Kenya-Uganda border** in Busia. Reception can advise on the crossing process and any current requirements.',
   },
   {
@@ -321,7 +325,7 @@ const FAQ = [
 
   // ── Transport ───────────────────────────────────────────────────────────
   {
-    keywords: ['airport','shuttle','transfer','taxi','pickup','pick up','transport','boda boda','matatu','uber','bolt'],
+    keywords: ['airport','shuttle','transfer','taxi','pickup','pick up','transport','rent a car','car rental','boda boda','matatu','uber','bolt'],
     answer: 'We can arrange **airport transfers and shuttle services** upon request. We can also advise on local taxis, boda bodas, and matatus. Contact us in advance to arrange.',
   },
 
@@ -353,11 +357,11 @@ const FAQ = [
 
   // ── Bot identity & help ─────────────────────────────────────────────────
   {
-    keywords: ['who are you','what are you','are you a bot','are you human','are you ai','are you real','robot','chatbot','virtual assistant'],
+    keywords: ['who are you','what are you','are you a bot','are you human','are you ai','are you real','robot','chatbot','chatgpt','virtual assistant','bot','your name','talk to a human','speak to a human','chat with a human','real human'],
     answer: 'I\'m the **Hotel Itoya virtual concierge** — here to answer your questions instantly, any time of day. For anything I can\'t handle, our human team is just a call or WhatsApp away!',
   },
   {
-    keywords: ['how are you','how are you doing','hows it going','how\'s it going'],
+    keywords: ['how are you','how are you doing','hows it going','how\'s it going','hru'],
     answer: 'I\'m doing wonderfully, thank you for asking! Ready to help make your Hotel Itoya experience exceptional. What can I do for you?',
   },
   {
@@ -375,7 +379,7 @@ const FAQ = [
     answer: `WhatsApp us at **${PHONE_1}** — we typically respond within minutes during business hours.`,
   },
   {
-    keywords: ['location','address','where are you','how to get','how do i get','how do we get','how to reach','coming from','directions','map','find you','where is hotel itoya','located'],
+    keywords: ['location','address','where are you','how to get','how do i get','how do we get','how to reach','how far','how far is it','distance from','far from','coming from','directions','map','find you','where is hotel itoya','located'],
     answer: `We are on **B1 Kisumu-Busia Road, Busia, Kenya** — right near the Kenya-Uganda border.\n\n• From Nairobi: ~7–9 hrs via A104\n• From Kisumu: ~2–3 hrs via A1\n• From Kampala: ~2.5–4 hrs via A109 (includes border crossing)`,
   },
   {
@@ -409,14 +413,15 @@ const exact = (list, lower) => {
 
 // Whole-word keyword matching — a substring check would make "parking" hit
 // "king", "will" hit "ill", "weather" hit "eat", etc. Each word also accepts
-// a plural "s"/"es" so 'shower' still matches "showers".
+// a plural "s"/"es" or past tense "d"/"ed" so 'shower' still matches "showers"
+// and 'iron' still matches "ironed".
 const KW_REGEX = new Map();
 const matchesWord = (text, kw) => {
   let re = KW_REGEX.get(kw);
   if (!re) {
     const pattern = kw
       .split(/\s+/)
-      .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:es|s)?')
+      .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?:ed|d|es|s)?')
       .join('\\s+');
     re = new RegExp(`\\b${pattern}\\b`);
     KW_REGEX.set(kw, re);
@@ -437,7 +442,12 @@ const SOCIAL_REPLIES = [
 // charges" goes to conference, not pricing), and `generic: true` entries score
 // at half weight so any specific entry beats a catch-all.
 const findAnswer = (question) => {
-  const lower = question.toLowerCase().trim();
+  // Normalize common texting shorthand ("r u ok", "whats ur name") to full
+  // words so keyword phrases written in full English still match them.
+  const lower = question.toLowerCase().trim()
+    .replace(/\bur\b/g, 'your')
+    .replace(/\bu\b/g, 'you')
+    .replace(/\br\b/g, 'are');
   if (!lower) return null;
 
   for (const [list, reply] of SOCIAL_REPLIES) {
