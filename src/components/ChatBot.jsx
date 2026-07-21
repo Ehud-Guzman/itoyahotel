@@ -42,6 +42,20 @@ const FAQ = [
     answer: 'Check-out is at **10:00 AM**. Late check-out can be arranged upon request — please let reception know the evening before. A small fee may apply depending on how late.',
   },
 
+  // ── Feedback & Complaints ───────────────────────────────────────────────
+  // Placed early deliberately: when a message ties on score with a neutral
+  // facility entry (e.g. "not happy... no hot water" ties with the bathroom
+  // FAQ), whichever entry appears first in this array wins the tie. A guest
+  // expressing real dissatisfaction should win that tie over a fact restate.
+  // 'problem'/'issue' are deliberately excluded as bare keywords — as common
+  // rhetorical words ("is that a problem?") they were stealing unrelated
+  // matches (e.g. a dog question) purely by having more characters than the
+  // real topic's keyword.
+  {
+    keywords: ['complaint','complain','unhappy','disappointed','speak to manager','manager','supervisor','not happy'],
+    answer: `We're sorry to hear you've had a concern. Please contact our management team directly and we will resolve it as a priority:\n\n📞 ${PHONE_1}\n✉️ ${EMAIL}\n\nYour satisfaction is everything to us.`,
+  },
+
   // ── Rooms ───────────────────────────────────────────────────────────────
   {
     keywords: ['room types','types of rooms','what rooms','room categories','accommodation options','room options','kinds of rooms'],
@@ -342,10 +356,6 @@ const FAQ = [
   },
 
   // ── Feedback & Complaints ───────────────────────────────────────────────
-  {
-    keywords: ['complaint','complain','unhappy','disappointed','problem','issue','speak to manager','manager','supervisor','not happy'],
-    answer: `We're sorry to hear you've had a concern. Please contact our management team directly and we will resolve it as a priority:\n\n📞 ${PHONE_1}\n✉️ ${EMAIL}\n\nYour satisfaction is everything to us.`,
-  },
   {
     keywords: ['review','tripadvisor','google review','rating','feedback','rate us','leave a review'],
     answer: 'We\'d love to hear about your experience! Leave us a review on **Google** or **TripAdvisor** — search for **Hotel Itoya Busia**. Your feedback helps us serve you better.',
