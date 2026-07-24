@@ -37,14 +37,54 @@ const statusLimiter = rateLimit({
   message: { status: 'rate_limited' },
 })
 
+// multer buffers each upload fully in memory (Postgres BYTEA storage and
+// email attachments both need the whole file as a Buffer, not a stream) —
+// on Render's free/starter tier that's a small, shared RAM budget, and
+// stkLimiter's 8-per-15min cap is per-IP, so it doesn't bound how many
+// *different* IPs can upload concurrently. Two levers keep worst-case
+// memory bounded: a lower per-file cap, and limitConcurrentUploads below
+// capping how many upload requests can be mid-flight at once, checked
+// before multer even starts buffering the multipart body.
+const MAX_FILE_SIZE_BYTES     = 6 * 1024 * 1024
+const MAX_CONCURRENT_UPLOADS  = 15
+
 const upload  = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: MAX_FILE_SIZE_BYTES },
   fileFilter: (_, file, cb) => {
     const ok = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
     cb(null, ok.includes(file.mimetype))
   },
 })
+
+let activeUploads = 0
+function limitConcurrentUploads(req, res, next) {
+  if (activeUploads >= MAX_CONCURRENT_UPLOADS) {
+    return res.status(503).json({
+      message: 'The booking system is busy right now. Please wait a moment and try again.',
+    })
+  }
+  activeUploads++
+  const release = () => { activeUploads = Math.max(0, activeUploads - 1) }
+  res.on('finish', release)
+  res.on('close', release)
+  next()
+}
+
+// Wraps upload.fields() so a rejected file (too large, wrong type — e.g. a
+// direct API call bypassing the frontend's own pre-upload size check)
+// produces our normal { message, step, field } shape instead of an
+// unhandled MulterError reaching Express's default error page.
+function handleIdUploads(req, res, next) {
+  upload.fields([{ name: 'idFront', maxCount: 1 }, { name: 'idBack', maxCount: 1 }])(req, res, (err) => {
+    if (!err) return next()
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return fail(res, 400, `Each ID file must be under ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB.`, 2, 'idFront')
+    }
+    console.error('Upload error:', err.message)
+    return fail(res, 400, 'Could not process your uploaded ID files — please use a JPG, PNG, or PDF under 6MB.', 2, 'idFront')
+  })
+}
 
 // ── Generate booking reference ────────────────────────────────────────────────
 function genRef() {
@@ -273,7 +313,8 @@ router.get('/config', (req, res) => {
 router.post(
   '/initiate',
   stkLimiter,
-  upload.fields([{ name: 'idFront', maxCount: 1 }, { name: 'idBack', maxCount: 1 }]),
+  limitConcurrentUploads,
+  handleIdUploads,
   async (req, res) => {
     try {
       const {

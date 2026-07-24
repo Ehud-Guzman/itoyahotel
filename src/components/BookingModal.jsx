@@ -187,7 +187,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
 
   const handleFile = (field, prev, file) => {
     if (!file) return
-    if (file.size > 10 * 1024 * 1024) { setErr(field, 'File must be under 10 MB'); return }
+    if (file.size > 6 * 1024 * 1024) { setErr(field, 'File must be under 6 MB'); return }
     if (!ACCEPTED_ID_TYPES.includes(file.type)) {
       setErr(field, file.type === 'image/heic' || file.type === 'image/heif'
         ? 'HEIC photos aren’t supported — switch your camera to "Most Compatible" in Settings > Camera > Formats, or choose a JPG/PNG/PDF file.'
@@ -606,7 +606,7 @@ function StepId({ data, handleFile, errors }) {
           Kenyan law requires hotels to verify guest identity.
           Please upload both sides of a valid government-issued ID.
         </p>
-        <p className="text-[10.5px] text-ink/35">JPG, PNG or PDF · Max 10 MB each</p>
+        <p className="text-[10.5px] text-ink/35">JPG, PNG or PDF · Max 6 MB each</p>
       </div>
 
       <Zone label="Front of ID" file={data.idFront} preview={data.idFrontPreview}
