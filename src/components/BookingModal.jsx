@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   FiX, FiChevronLeft, FiChevronRight,
-  FiUpload, FiCheck, FiAlertCircle, FiLoader,
+  FiUpload, FiCheck, FiAlertCircle, FiLoader, FiDownload,
 } from 'react-icons/fi'
 import { ROOM_CATALOG as ROOMS } from '../lib/rooms'
 import { useFocusTrap } from '../lib/useFocusTrap'
+import { downloadReceipt } from '../lib/generateReceipt'
 
 const STEPS = ['Room & Dates', 'Your Details', 'Upload ID', 'Review', 'Payment', 'Confirmed']
 
@@ -349,7 +350,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
           {step === 2 && <StepId       data={data} handleFile={handleFile} errors={errors} />}
           {step === 3 && <StepReview   data={data} room={room} nights={nights} total={total} />}
           {step === 4 && <StepPayment  data={data} set={set} errors={errors} clearErr={clearErr} total={total} payState={payState} slowConnect={slowConnect} paymentsLive={paymentsLive} />}
-          {step === 5 && <StepDone     bookingRef={bookingRef} data={data} total={total} paid={paidOnline} onClose={onClose} />}
+          {step === 5 && <StepDone     bookingRef={bookingRef} data={data} room={room} nights={nights} total={total} paid={paidOnline} onClose={onClose} />}
         </div>
 
         {/* ── Footer ──────────────────────────────────────────────── */}
@@ -784,7 +785,25 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
 }
 
 // ─── Step 5 — Confirmation ────────────────────────────────────────────────────
-function StepDone({ bookingRef, data, total, paid, onClose }) {
+function StepDone({ bookingRef, data, room, nights, total, paid, onClose }) {
+  const [downloading, setDownloading] = useState(false)
+
+  const handleDownload = async () => {
+    setDownloading(true)
+    try {
+      await downloadReceipt({
+        ref: bookingRef, roomLabel: room?.label || '—',
+        checkIn: data.checkIn, checkOut: data.checkOut, nights, guests: data.guests,
+        name: data.name, phone: data.phone, email: data.email,
+        total, paid,
+      })
+    } catch (e) {
+      console.error('Receipt generation failed:', e)
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   return (
     <div className="py-4 flex flex-col items-center text-center gap-7">
       {/* Icon */}
@@ -823,12 +842,23 @@ function StepDone({ bookingRef, data, total, paid, onClose }) {
         ))}
       </div>
 
-      <button
-        onClick={onClose}
-        className="w-full bg-ink text-white py-4 text-[10px] tracking-[0.28em] uppercase hover:bg-ink/80 transition-colors"
-      >
-        Return to Website
-      </button>
+      <div className="w-full space-y-2.5">
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="w-full flex items-center justify-center gap-2 border border-ink/25 text-ink py-4 text-[10px] tracking-[0.28em] uppercase hover:bg-ink/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {downloading
+            ? <><FiLoader size={12} className="animate-spin" /> Preparing…</>
+            : <><FiDownload size={12} /> Download Receipt</>}
+        </button>
+        <button
+          onClick={onClose}
+          className="w-full bg-ink text-white py-4 text-[10px] tracking-[0.28em] uppercase hover:bg-ink/80 transition-colors"
+        >
+          Return to Website
+        </button>
+      </div>
     </div>
   )
 }
