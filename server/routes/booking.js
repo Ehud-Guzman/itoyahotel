@@ -37,6 +37,18 @@ function genRef() {
   return `ITOYA-${d}-${r}`
 }
 
+// Real payment collection requires both a production Daraja app AND
+// MPESA_ENV explicitly set to 'production' — sandbox credentials can push
+// an STK prompt, but only to phone numbers Safaricom has pre-whitelisted
+// for testing, so they can't be used to actually charge a real guest.
+// Until both are true, bookings fall back to reserve-now/pay-at-hotel.
+// Flipping MPESA_ENV + real credentials in Render switches this back to
+// live STK push with no code changes.
+function mpesaIsLive() {
+  const { MPESA_ENV, MPESA_CONSUMER_KEY } = process.env
+  return MPESA_ENV === 'production' && Boolean(MPESA_CONSUMER_KEY) && MPESA_CONSUMER_KEY !== 'YOUR_CONSUMER_KEY'
+}
+
 // ── M-Pesa STK Push ───────────────────────────────────────────────────────────
 async function getAccessToken() {
   const { MPESA_CONSUMER_KEY: key, MPESA_CONSUMER_SECRET: secret, MPESA_ENV } = process.env
@@ -101,7 +113,10 @@ async function initiateSTKPush({ phone, amount, ref }) {
 }
 
 // ── Email helper ──────────────────────────────────────────────────────────────
-async function sendEmails(booking) {
+// `paid` distinguishes a real completed M-Pesa payment from a reservation
+// made while live payment collection isn't configured (see mpesaIsLive) —
+// the wording must never claim a payment happened when none was collected.
+async function sendEmails(booking, { paid = true } = {}) {
   const transporter = createTransporter()
   const from        = `"Hotel Itoya Bookings" <${process.env.EMAIL_USER}>`
   const hotelEmail  = process.env.HOTEL_EMAIL
@@ -118,8 +133,8 @@ async function sendEmails(booking) {
       <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Name</td><td style="padding:6px 12px">${b.name}</td></tr>
       <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Phone</td><td style="padding:6px 12px">${b.phone}</td></tr>
       <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Email</td><td style="padding:6px 12px">${b.email}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">M-Pesa Ref</td><td style="padding:6px 12px">${b.mpesaRef || '—'}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Amount Paid</td><td style="padding:6px 12px;font-weight:600">KES ${Number(b.amount).toLocaleString()}</td></tr>
+      ${paid ? `<tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">M-Pesa Ref</td><td style="padding:6px 12px">${b.mpesaRef || '—'}</td></tr>` : ''}
+      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">${paid ? 'Amount Paid' : 'Amount Due'}</td><td style="padding:6px 12px;font-weight:600">KES ${Number(b.amount).toLocaleString()}${paid ? '' : ' — pay at hotel'}</td></tr>
       ${b.requests ? `<tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Requests</td><td style="padding:6px 12px">${b.requests}</td></tr>` : ''}
     </table>
   `
@@ -128,12 +143,13 @@ async function sendEmails(booking) {
   await transporter.sendMail({
     from,
     to:      hotelEmail,
-    subject: `New Booking ${b.ref} — ${b.name} (${b.checkIn} → ${b.checkOut})`,
+    subject: `${paid ? 'New Booking' : 'New Reservation Request'} ${b.ref} — ${b.name} (${b.checkIn} → ${b.checkOut})`,
     html: `
-      <h2 style="font-family:serif;color:#a4733c">New Confirmed Booking</h2>
+      <h2 style="font-family:serif;color:#a4733c">${paid ? 'New Confirmed Booking' : 'New Reservation Request — Payment Not Yet Collected'}</h2>
       <p style="font-family:sans-serif;font-size:14px;color:#555">
-        A guest has completed payment and submitted a booking request.
-        Please review the details below and confirm via email to the guest.
+        ${paid
+          ? 'A guest has completed payment and submitted a booking request. Please review the details below and confirm via email to the guest.'
+          : 'A guest has requested a reservation. <strong>No online payment was collected</strong> — the guest will pay at the hotel on arrival (cash or M-Pesa). Please review the details below and confirm via email or phone.'}
       </p>
       ${summary}
       <p style="font-family:sans-serif;font-size:13px;color:#888;margin-top:24px">
@@ -150,14 +166,14 @@ async function sendEmails(booking) {
   await transporter.sendMail({
     from,
     to:      b.email,
-    subject: `Your Booking at Hotel Itoya — ${b.ref}`,
+    subject: `Your ${paid ? 'Booking' : 'Reservation'} at Hotel Itoya — ${b.ref}`,
     html: `
-      <h2 style="font-family:serif;color:#a4733c">Booking Received — Hotel Itoya</h2>
+      <h2 style="font-family:serif;color:#a4733c">${paid ? 'Booking Received' : 'Reservation Received'} — Hotel Itoya</h2>
       <p style="font-family:sans-serif;font-size:14px;color:#555">
         Dear ${b.name},<br><br>
-        Thank you for choosing Hotel Itoya. Your payment has been received and your
-        booking is under review. A member of our team will contact you within a few hours
-        to confirm your reservation.
+        ${paid
+          ? 'Thank you for choosing Hotel Itoya. Your payment has been received and your booking is under review. A member of our team will contact you within a few hours to confirm your reservation.'
+          : `Thank you for choosing Hotel Itoya. We've received your reservation request. Payment of <strong>KES ${Number(b.amount).toLocaleString()}</strong> is due at the hotel during check-in (cash or M-Pesa). A member of our team will contact you within a few hours to confirm your reservation.`}
       </p>
       ${summary}
       <p style="font-family:sans-serif;font-size:14px;color:#555;margin-top:24px">
@@ -178,6 +194,14 @@ async function sendEmails(booking) {
 function fail(res, status, message, step, field) {
   return res.status(status).json({ message, step, field })
 }
+
+// ── GET /api/booking/config ───────────────────────────────────────────────────
+// Tells the client whether to run the live M-Pesa payment flow or the
+// reserve-now/pay-at-hotel fallback, so it can render step 4 correctly
+// before the guest ever submits anything.
+router.get('/config', (req, res) => {
+  res.json({ live: mpesaIsLive() })
+})
 
 // ── POST /api/booking/initiate ────────────────────────────────────────────────
 router.post(
@@ -237,9 +261,9 @@ router.post(
       await store.create(record)
 
       // ── Try real M-Pesa STK Push ──────────────────────────────────────────
-      const isPlaceholder = !process.env.MPESA_CONSUMER_KEY || process.env.MPESA_CONSUMER_KEY === 'YOUR_CONSUMER_KEY'
+      const live = mpesaIsLive()
 
-      if (!isPlaceholder) {
+      if (live) {
         try {
           const ckId = await initiateSTKPush({ phone: mpesaPhone, amount, ref })
           await store.updateStatus(ref, 'pending', { checkoutRequestId: ckId })
@@ -249,17 +273,19 @@ router.post(
           return fail(res, 502, 'Could not initiate M-Pesa payment. Please try again.', 4, 'mpesaPhone')
         }
       } else {
-        // ── Placeholder mode: auto-succeed after 12 seconds ──────────────────
-        console.log(`[PLACEHOLDER] Booking ${ref} — auto-confirming in 12s`)
-        setTimeout(async () => {
+        // ── Reservation-only mode: no live M-Pesa credentials configured ──────
+        // No online payment is collected — the guest reserves now and pays at
+        // the hotel. Setting MPESA_ENV=production with real Daraja credentials
+        // switches this back to live STK push with no code changes.
+        await store.updateStatus(ref, 'reservation')
+        console.log(`[RESERVATION] Booking ${ref} — no live M-Pesa credentials, guest pays at hotel`)
+        try {
           const r = await store.getByRef(ref)
-          if (!r || r.status !== 'pending') return
-          await store.updateStatus(ref, 'success')
-          try { await sendEmails({ ...r, b: { ...r.b } }) } catch (e) { console.error('Email error:', e.message) }
-        }, 12_000)
+          await sendEmails(r, { paid: false })
+        } catch (e) { console.error('Email error:', e.message) }
       }
 
-      res.json({ ref })
+      res.json({ ref, live })
     } catch (err) {
       console.error('Booking initiate error:', err)
       res.status(500).json({ message: 'Server error. Please try again.' })
@@ -276,14 +302,15 @@ router.post('/:ref/retry', stkLimiter, async (req, res) => {
   try {
     const record = await store.getByRef(req.params.ref)
     if (!record) return fail(res, 404, 'We could not find that booking. Please start again.', 0, 'room')
-    if (record.status === 'success') return fail(res, 400, 'This booking has already been paid.', 4, '_general')
+    if (record.status === 'success' || record.status === 'reservation')
+      return fail(res, 400, 'This booking has already been submitted.', 4, '_general')
 
     const phone = (req.body?.mpesaPhone || record.b.mpesaPhone || record.b.phone || '').trim()
     if (!phone) return fail(res, 400, 'Enter your M-Pesa phone number.', 4, 'mpesaPhone')
 
-    const isPlaceholder = !process.env.MPESA_CONSUMER_KEY || process.env.MPESA_CONSUMER_KEY === 'YOUR_CONSUMER_KEY'
+    const live = mpesaIsLive()
 
-    if (!isPlaceholder) {
+    if (live) {
       try {
         const ckId = await initiateSTKPush({ phone, amount: record.b.amount, ref: record.b.ref })
         await store.updateStatus(record.b.ref, 'pending', { checkoutRequestId: ckId })
@@ -292,17 +319,18 @@ router.post('/:ref/retry', stkLimiter, async (req, res) => {
         return fail(res, 502, 'Could not initiate M-Pesa payment. Please try again.', 4, 'mpesaPhone')
       }
     } else {
-      console.log(`[PLACEHOLDER] Booking ${record.b.ref} — retry auto-confirming in 12s`)
-      await store.updateStatus(record.b.ref, 'pending')
-      setTimeout(async () => {
+      // Should be unreachable from the client (reservation mode never enters
+      // a 'failed' payState to retry from) — kept as a safe fallback so a
+      // stuck 'pending' record can't linger forever if this is ever hit.
+      console.log(`[RESERVATION] Booking ${record.b.ref} — retry with no live M-Pesa credentials, guest pays at hotel`)
+      await store.updateStatus(record.b.ref, 'reservation')
+      try {
         const r = await store.getByRef(record.b.ref)
-        if (!r || r.status !== 'pending') return
-        await store.updateStatus(record.b.ref, 'success')
-        try { await sendEmails({ ...r, b: { ...r.b } }) } catch (e) { console.error('Email error:', e.message) }
-      }, 12_000)
+        await sendEmails(r, { paid: false })
+      } catch (e) { console.error('Email error:', e.message) }
     }
 
-    res.json({ ref: record.b.ref })
+    res.json({ ref: record.b.ref, live })
   } catch (err) {
     console.error('Booking retry error:', err)
     res.status(500).json({ message: 'Server error. Please try again.' })

@@ -54,6 +54,11 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
   const [payState,   setPayState]   = useState('idle')
   const [bookingRef, setBookingRef] = useState('')
   const [slowConnect, setSlowConnect] = useState(false)
+  // Whether live M-Pesa payment collection is configured server-side. Starts
+  // `false` (the safer default — never promises an STK push we can't back)
+  // and flips to `true` only once /api/booking/config confirms it.
+  const [paymentsLive, setPaymentsLive] = useState(false)
+  const [paidOnline,   setPaidOnline]   = useState(false)
   const pollRef = useRef(null)
   const slowConnectTimer = useRef(null)
 
@@ -83,6 +88,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
     }
     setStep(0); setErrors({}); setPayState('idle')
     setBookingRef(''); setSubmitting(false); setSlowConnect(false)
+    setPaidOnline(false)
     setData(d => ({
       ...d,
       room:     preselected.room     || '',
@@ -90,6 +96,13 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
       checkOut: preselected.checkOut || '',
       guests:   preselected.guests   || 1,
     }))
+
+    // Check once per open whether live payment collection is configured, so
+    // step 4 can render the right flow before the guest ever submits.
+    fetch(`${API}/api/booking/config`)
+      .then(r => r.json())
+      .then(cfg => setPaymentsLive(Boolean(cfg.live)))
+      .catch(() => setPaymentsLive(false))
   }, [isOpen, preselected])
 
   useEffect(() => {
@@ -153,8 +166,13 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
 
   const handlePay = async () => {
     const phone = (data.mpesaPhone || data.phone).trim()
-    if (!phone) { setErr('mpesaPhone', 'Enter your M-Pesa phone number'); return }
-    if (!isValidKenyanPhone(phone)) { setErr('mpesaPhone', 'Enter a valid Kenyan phone number'); return }
+    // The M-Pesa phone field only appears (and only needs re-validating)
+    // when live payment collection is actually configured — in reserve-now
+    // mode we just reuse the guest's contact phone from step 1.
+    if (paymentsLive) {
+      if (!phone) { setErr('mpesaPhone', 'Enter your M-Pesa phone number'); return }
+      if (!isValidKenyanPhone(phone)) { setErr('mpesaPhone', 'Enter a valid Kenyan phone number'); return }
+    }
     setSubmitting(true); setPayState('connecting'); setErrors({}); setSlowConnect(false)
 
     // Our backend can be cold (free-tier hosting) — if the initial request
@@ -163,7 +181,12 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
     slowConnectTimer.current = setTimeout(() => setSlowConnect(true), 6000)
 
     try {
-      let ref = bookingRef
+      let ref  = bookingRef
+      // Trust the server's response over the pre-fetched config for what
+      // happens next — it reflects the mode this booking actually ran
+      // under. Falls back to the pre-fetched value (React state updates
+      // aren't visible synchronously) only if the response omits it.
+      let live = paymentsLive
 
       if (ref) {
         // Retrying after a previous failed attempt — reuse the existing
@@ -180,6 +203,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
           e.step = json.step; e.field = json.field
           throw e
         }
+        live = Boolean(json.live)
       } else {
         const fd = new FormData()
         Object.entries({
@@ -198,11 +222,23 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
           e.step = json.step; e.field = json.field
           throw e
         }
-        ref = json.ref
+        ref  = json.ref
+        live = Boolean(json.live)
       }
 
+      setPaymentsLive(live)
       clearTimeout(slowConnectTimer.current); setSlowConnect(false)
       setBookingRef(ref)
+
+      if (!live) {
+        // Reservation-only mode: the server already finished the whole
+        // thing (record saved, emails sent) inside this one request — no
+        // payment to wait on.
+        setPaidOnline(false)
+        setPayState('success'); setSubmitting(false); setStep(5)
+        return
+      }
+
       setPayState('waiting')
       const deadline = Date.now() + 180_000
       pollRef.current = setInterval(async () => {
@@ -212,7 +248,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
         try {
           const s = await fetch(`${API}/api/booking/status/${ref}`).then(r => r.json())
           if (s.status === 'success') {
-            clearInterval(pollRef.current); setPayState('success'); setSubmitting(false); setStep(5)
+            clearInterval(pollRef.current); setPaidOnline(true); setPayState('success'); setSubmitting(false); setStep(5)
           } else if (s.status === 'failed') {
             clearInterval(pollRef.current); setPayState('failed'); setSubmitting(false)
           }
@@ -312,8 +348,8 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
           {step === 1 && <StepDetails  data={data} set={set} errors={errors} clearErr={clearErr} />}
           {step === 2 && <StepId       data={data} handleFile={handleFile} errors={errors} />}
           {step === 3 && <StepReview   data={data} room={room} nights={nights} total={total} />}
-          {step === 4 && <StepPayment  data={data} set={set} errors={errors} clearErr={clearErr} total={total} payState={payState} slowConnect={slowConnect} />}
-          {step === 5 && <StepDone     bookingRef={bookingRef} data={data} onClose={onClose} />}
+          {step === 4 && <StepPayment  data={data} set={set} errors={errors} clearErr={clearErr} total={total} payState={payState} slowConnect={slowConnect} paymentsLive={paymentsLive} />}
+          {step === 5 && <StepDone     bookingRef={bookingRef} data={data} total={total} paid={paidOnline} onClose={onClose} />}
         </div>
 
         {/* ── Footer ──────────────────────────────────────────────── */}
@@ -343,18 +379,20 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
                   onClick={next}
                   className="ml-auto bg-ink text-white px-8 py-3 text-[10px] tracking-[0.25em] uppercase hover:bg-ink/80 transition-colors"
                 >
-                  Proceed to Payment
+                  {paymentsLive ? 'Proceed to Payment' : 'Continue'}
                 </button>
               )}
               {step === 4 && payState !== 'failed' && (
                 <button
                   onClick={handlePay}
                   disabled={submitting}
-                  className="ml-auto flex items-center gap-2 bg-[#2d7a30] text-white px-8 py-3 text-[10px] tracking-[0.25em] uppercase hover:bg-[#236125] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className={`ml-auto flex items-center gap-2 text-white px-8 py-3 text-[10px] tracking-[0.25em] uppercase disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                    paymentsLive ? 'bg-[#2d7a30] hover:bg-[#236125]' : 'bg-ink hover:bg-ink/80'
+                  }`}
                 >
                   {submitting
                     ? <><FiLoader size={12} className="animate-spin" /> Processing…</>
-                    : `Pay ${kes(total)}`}
+                    : paymentsLive ? `Pay ${kes(total)}` : 'Confirm Reservation'}
                 </button>
               )}
               {step === 4 && payState === 'failed' && (
@@ -615,15 +653,19 @@ function StepReview({ data, room, nights, total }) {
 }
 
 // ─── Step 4 — Payment ─────────────────────────────────────────────────────────
-function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect }) {
+function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect, paymentsLive }) {
   if (payState === 'connecting') {
     return (
       <div className="py-12 flex flex-col items-center text-center gap-6">
         <div className="w-12 h-12 border-2 border-ink border-t-transparent rounded-full animate-spin" />
         <div className="space-y-2">
-          <h3 className="font-serif text-xl text-ink">Connecting…</h3>
+          <h3 className="font-serif text-xl text-ink">
+            {paymentsLive ? 'Connecting…' : 'Submitting…'}
+          </h3>
           <p className="text-[13px] text-ink/50 leading-relaxed max-w-[17rem] mx-auto">
-            Sending your payment request to our secure booking system.
+            {paymentsLive
+              ? 'Sending your payment request to our secure booking system.'
+              : 'Sending your reservation to Hotel Itoya.'}
           </p>
           {slowConnect && (
             <p className="text-[12px] text-ink/40 leading-relaxed max-w-[18rem] mx-auto pt-2">
@@ -673,6 +715,38 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
     )
   }
 
+  if (!paymentsLive) {
+    return (
+      <div className="space-y-7">
+        {/* Amount */}
+        <div className="text-center py-6 border border-stone/25">
+          <p className="text-[9.5px] tracking-[0.35em] uppercase text-ink/40">Amount Due at Check-in</p>
+          <p className="font-serif text-[2.75rem] text-ink leading-none mt-2">{kes(total)}</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-ink flex items-center justify-center shrink-0">
+            <FiCheck size={16} className="text-white" />
+          </div>
+          <div>
+            <p className="text-[13px] font-medium text-ink">Reserve now, pay at the hotel</p>
+            <p className="text-[11px] text-ink/40">Cash or M-Pesa, on arrival</p>
+          </div>
+        </div>
+
+        <p className="text-[13px] text-ink/55 leading-relaxed">
+          Online payment isn't required to reserve — your room is held once
+          the hotel confirms your booking by phone or email. Please have{' '}
+          <strong className="text-ink">{kes(total)}</strong> ready at check-in.
+        </p>
+
+        <p className="text-[11px] text-ink/35 leading-relaxed">
+          By clicking Confirm Reservation you agree to Hotel Itoya's booking terms.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-7">
       {/* Amount */}
@@ -710,7 +784,7 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
 }
 
 // ─── Step 5 — Confirmation ────────────────────────────────────────────────────
-function StepDone({ bookingRef, data, onClose }) {
+function StepDone({ bookingRef, data, total, paid, onClose }) {
   return (
     <div className="py-4 flex flex-col items-center text-center gap-7">
       {/* Icon */}
@@ -719,10 +793,13 @@ function StepDone({ bookingRef, data, onClose }) {
       </div>
 
       <div className="space-y-3">
-        <h3 className="font-serif text-2xl text-ink">Booking Received</h3>
+        <h3 className="font-serif text-2xl text-ink">
+          {paid ? 'Booking Received' : 'Reservation Received'}
+        </h3>
         <p className="text-[13px] text-ink/50 leading-relaxed max-w-[20rem] mx-auto">
-          Payment confirmed. Hotel Itoya will review your booking and
-          contact you to finalise your stay.
+          {paid
+            ? 'Payment confirmed. Hotel Itoya will review your booking and contact you to finalise your stay.'
+            : `Hotel Itoya will review your reservation and contact you to confirm. Please have ${kes(total)} ready to pay at check-in (cash or M-Pesa).`}
         </p>
       </div>
 

@@ -22,15 +22,20 @@ function fmtDateTime(str) {
 }
 
 const STATUS_STYLE = {
-  success: 'bg-green-100 text-green-800',
-  pending: 'bg-gold-light/40 text-primary-dark',
-  failed:  'bg-red-100 text-red-800',
+  success:     'bg-green-100 text-green-800',
+  pending:     'bg-gold-light/40 text-primary-dark',
+  failed:      'bg-red-100 text-red-800',
+  reservation: 'bg-blue-100 text-blue-800',
+}
+
+const STATUS_LABEL = {
+  reservation: 'Pay at Hotel',
 }
 
 function StatusBadge({ status }) {
   return (
     <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium capitalize ${STATUS_STYLE[status] || 'bg-stone text-ink/70'}`}>
-      {status}
+      {STATUS_LABEL[status] || status}
     </span>
   )
 }
@@ -266,6 +271,7 @@ function Dashboard({ token, onLogout }) {
           >
             <option value="all">All statuses</option>
             <option value="success">Success</option>
+            <option value="reservation">Pay at Hotel</option>
             <option value="pending">Pending</option>
             <option value="failed">Failed</option>
           </select>
