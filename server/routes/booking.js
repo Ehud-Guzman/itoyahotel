@@ -272,20 +272,23 @@ router.post(
           await store.deleteByRef(ref)
           return fail(res, 502, 'Could not initiate M-Pesa payment. Please try again.', 4, 'mpesaPhone')
         }
-      } else {
-        // ── Reservation-only mode: no live M-Pesa credentials configured ──────
-        // No online payment is collected — the guest reserves now and pays at
-        // the hotel. Setting MPESA_ENV=production with real Daraja credentials
-        // switches this back to live STK push with no code changes.
-        await store.updateStatus(ref, 'reservation')
-        console.log(`[RESERVATION] Booking ${ref} — no live M-Pesa credentials, guest pays at hotel`)
-        try {
-          const r = await store.getByRef(ref)
-          await sendEmails(r, { paid: false })
-        } catch (e) { console.error('Email error:', e.message) }
+        return res.json({ ref, live })
       }
 
+      // ── Reservation-only mode: no live M-Pesa credentials configured ────────
+      // No online payment is collected — the guest reserves now and pays at
+      // the hotel. Setting MPESA_ENV=production with real Daraja credentials
+      // switches this back to live STK push with no code changes.
+      await store.updateStatus(ref, 'reservation')
+      console.log(`[RESERVATION] Booking ${ref} — no live M-Pesa credentials, guest pays at hotel`)
       res.json({ ref, live })
+
+      // Fire-and-forget: an SMTP hang or auth failure (e.g. EMAIL_USER/PASS
+      // not yet configured) must never block the response the guest is
+      // waiting on — it already has their reservation either way.
+      store.getByRef(ref)
+        .then(r => sendEmails(r, { paid: false }))
+        .catch(e => console.error('Email error:', e.message))
     } catch (err) {
       console.error('Booking initiate error:', err)
       res.status(500).json({ message: 'Server error. Please try again.' })
@@ -318,19 +321,21 @@ router.post('/:ref/retry', stkLimiter, async (req, res) => {
         console.error('STK retry push failed:', err.response?.data || err.message)
         return fail(res, 502, 'Could not initiate M-Pesa payment. Please try again.', 4, 'mpesaPhone')
       }
-    } else {
-      // Should be unreachable from the client (reservation mode never enters
-      // a 'failed' payState to retry from) — kept as a safe fallback so a
-      // stuck 'pending' record can't linger forever if this is ever hit.
-      console.log(`[RESERVATION] Booking ${record.b.ref} — retry with no live M-Pesa credentials, guest pays at hotel`)
-      await store.updateStatus(record.b.ref, 'reservation')
-      try {
-        const r = await store.getByRef(record.b.ref)
-        await sendEmails(r, { paid: false })
-      } catch (e) { console.error('Email error:', e.message) }
+      return res.json({ ref: record.b.ref, live })
     }
 
+    // Should be unreachable from the client (reservation mode never enters
+    // a 'failed' payState to retry from) — kept as a safe fallback so a
+    // stuck 'pending' record can't linger forever if this is ever hit.
+    console.log(`[RESERVATION] Booking ${record.b.ref} — retry with no live M-Pesa credentials, guest pays at hotel`)
+    await store.updateStatus(record.b.ref, 'reservation')
     res.json({ ref: record.b.ref, live })
+
+    // Fire-and-forget — see /initiate for why this must not be awaited
+    // before responding.
+    store.getByRef(record.b.ref)
+      .then(r => sendEmails(r, { paid: false }))
+      .catch(e => console.error('Email error:', e.message))
   } catch (err) {
     console.error('Booking retry error:', err)
     res.status(500).json({ message: 'Server error. Please try again.' })
@@ -359,7 +364,9 @@ router.get('/status/:ref', async (req, res) => {
         await store.updateStatus(record.b.ref, 'success', { mpesaRef })
         record.status = 'success'
         record.b.mpesaRef = mpesaRef
-        try { await sendEmails(record) } catch (e) { console.error('Reconciliation email error:', e.message) }
+        // Fire-and-forget — this response is polled every 3s by a waiting
+        // guest; an SMTP hang here must not stall that poll.
+        sendEmails(record).catch(e => console.error('Reconciliation email error:', e.message))
       }
     } catch {
       // Still processing (Daraja errors on an in-flight query) or the query

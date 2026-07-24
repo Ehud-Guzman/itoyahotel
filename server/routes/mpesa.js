@@ -36,8 +36,10 @@ router.post('/callback', async (req, res) => {
       matched.b.mpesaRef = mpesaRef
       matched.status     = 'success'
       await store.updateStatus(matched.b.ref, 'success', { mpesaRef })
-      await sendEmails(matched)
       console.log(`Booking ${matched.b.ref} confirmed — M-Pesa ref ${mpesaRef}`)
+      // Fire-and-forget — Safaricom expects a prompt ack; an SMTP hang here
+      // must not delay it (a slow/missing ack can trigger callback retries).
+      sendEmails(matched).catch(e => console.error('Email error:', e.message))
     } else {
       await store.updateStatus(matched.b.ref, 'failed')
       console.log(`Booking ${matched.b.ref} payment failed — ResultCode ${ResultCode}`)
