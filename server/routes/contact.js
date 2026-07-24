@@ -3,6 +3,15 @@ const { createTransporter } = require('../lib/mailer')
 
 const router = express.Router()
 
+// Guest-supplied fields are interpolated straight into the HTML email body
+// below — without escaping, a message like `<a href="evil">click</a>`
+// would render as a live link inside the hotel's inbox.
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ))
+}
+
 const ENQUIRY_LABELS = {
   accommodation: 'Accommodation',
   conference:    'Conference & Meetings',
@@ -39,14 +48,14 @@ router.post('/', async (req, res) => {
       html: `
         <h2 style="font-family:serif;color:#a4733c">New Website Enquiry</h2>
         <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px">
-          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666;width:120px">Type</td><td style="padding:6px 12px">${enquiryType}</td></tr>
-          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Name</td><td style="padding:6px 12px">${name}</td></tr>
-          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Email</td><td style="padding:6px 12px">${email}</td></tr>
-          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Phone</td><td style="padding:6px 12px">${phone || '—'}</td></tr>
-          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Check-in</td><td style="padding:6px 12px">${checkin || '—'}</td></tr>
-          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Check-out</td><td style="padding:6px 12px">${checkout || '—'}</td></tr>
-          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Guests</td><td style="padding:6px 12px">${guests || '—'}</td></tr>
-          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Message</td><td style="padding:6px 12px">${message}</td></tr>
+          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666;width:120px">Type</td><td style="padding:6px 12px">${escapeHtml(enquiryType)}</td></tr>
+          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Name</td><td style="padding:6px 12px">${escapeHtml(name)}</td></tr>
+          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Email</td><td style="padding:6px 12px">${escapeHtml(email)}</td></tr>
+          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Phone</td><td style="padding:6px 12px">${escapeHtml(phone) || '—'}</td></tr>
+          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Check-in</td><td style="padding:6px 12px">${escapeHtml(checkin) || '—'}</td></tr>
+          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Check-out</td><td style="padding:6px 12px">${escapeHtml(checkout) || '—'}</td></tr>
+          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Guests</td><td style="padding:6px 12px">${escapeHtml(guests) || '—'}</td></tr>
+          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Message</td><td style="padding:6px 12px">${escapeHtml(message)}</td></tr>
         </table>
       `,
     })

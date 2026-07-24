@@ -86,6 +86,11 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
   const [paidOnline,   setPaidOnline]   = useState(false)
   const pollRef = useRef(null)
   const slowConnectTimer = useRef(null)
+  // A ref, not state — `disabled={submitting}` alone leaves a window where
+  // a fast double-click/double-tap fires handlePay twice before React
+  // re-renders the disabled button, submitting two separate bookings for
+  // one guest action. Checked synchronously at the very top of handlePay.
+  const submittingRef = useRef(false)
 
   const [data, setData] = useState({
     room: '', checkIn: '', checkOut: '', guests: 1,
@@ -114,6 +119,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
     setStep(0); setErrors({}); setPayState('idle')
     setBookingRef(''); setSubmitting(false); setSlowConnect(false)
     setPaidOnline(false)
+    submittingRef.current = false
     setData(d => ({
       ...d,
       room:     preselected.room     || '',
@@ -192,6 +198,12 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
   }
 
   const handlePay = async () => {
+    // Closes the race `disabled={submitting}` alone leaves open: a fast
+    // double-click/tap can fire this handler twice before React re-renders
+    // the disabled button. This ref check is synchronous, so the second
+    // call is rejected immediately regardless of render timing.
+    if (submittingRef.current) return
+
     const phone = (data.mpesaPhone || data.phone).trim()
     // The M-Pesa phone field only appears (and only needs re-validating)
     // when live payment collection is actually configured — in reserve-now
@@ -200,12 +212,21 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
       if (!phone) { setErr('mpesaPhone', 'Enter your M-Pesa phone number'); return }
       if (!isValidKenyanPhone(phone)) { setErr('mpesaPhone', 'Enter a valid Kenyan phone number'); return }
     }
+    submittingRef.current = true
     setSubmitting(true); setPayState('connecting'); setErrors({}); setSlowConnect(false)
 
     // Our backend can be cold (free-tier hosting) — if the initial request
     // takes a while, tell the guest what's happening instead of leaving a
     // bare spinner that looks stuck.
     slowConnectTimer.current = setTimeout(() => setSlowConnect(true), 6000)
+
+    // Stable for this one submission attempt, including all of
+    // fetchWithRetry's automatic retries of it (they reuse this same body)
+    // — lets the server recognize a retried request as the same logical
+    // attempt instead of creating a duplicate booking or firing a second
+    // STK push. A genuinely new attempt (the guest clicking "Try Again"
+    // after a real failure) calls handlePay fresh and gets a new id.
+    const clientRequestId = crypto.randomUUID()
 
     try {
       let ref  = bookingRef
@@ -222,7 +243,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
         const res  = await fetchWithRetry(`${API}/api/booking/${ref}/retry`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mpesaPhone: normalisePhone(phone) }),
+          body: JSON.stringify({ mpesaPhone: normalisePhone(phone), clientRequestId }),
         })
         const json = await res.json()
         if (!res.ok) {
@@ -237,7 +258,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
           room: data.room, roomLabel: room?.label, checkIn: data.checkIn,
           checkOut: data.checkOut, nights, guests: data.guests, name: data.name,
           phone: data.phone, email: data.email, requests: data.requests,
-          mpesaPhone: normalisePhone(phone), amount: total,
+          mpesaPhone: normalisePhone(phone), amount: total, clientRequestId,
         }).forEach(([k, v]) => fd.append(k, v))
         fd.append('idFront', data.idFront)
         fd.append('idBack',  data.idBack)
@@ -262,6 +283,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
         // thing (record saved, emails sent) inside this one request — no
         // payment to wait on.
         setPaidOnline(false)
+        submittingRef.current = false
         setPayState('success'); setSubmitting(false); setStep(5)
         return
       }
@@ -270,19 +292,20 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
       const deadline = Date.now() + 180_000
       pollRef.current = setInterval(async () => {
         if (Date.now() > deadline) {
-          clearInterval(pollRef.current); setPayState('failed'); setSubmitting(false); return
+          clearInterval(pollRef.current); submittingRef.current = false; setPayState('failed'); setSubmitting(false); return
         }
         try {
           const s = await fetch(`${API}/api/booking/status/${ref}`).then(r => r.json())
           if (s.status === 'success') {
-            clearInterval(pollRef.current); setPaidOnline(true); setPayState('success'); setSubmitting(false); setStep(5)
+            clearInterval(pollRef.current); setPaidOnline(true); submittingRef.current = false; setPayState('success'); setSubmitting(false); setStep(5)
           } else if (s.status === 'failed') {
-            clearInterval(pollRef.current); setPayState('failed'); setSubmitting(false)
+            clearInterval(pollRef.current); submittingRef.current = false; setPayState('failed'); setSubmitting(false)
           }
         } catch { /* keep polling */ }
       }, 3000)
     } catch (err) {
       clearTimeout(slowConnectTimer.current); setSlowConnect(false)
+      submittingRef.current = false
       setSubmitting(false)
 
       // A raw fetch()-level failure (network drop, or all retries in

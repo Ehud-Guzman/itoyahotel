@@ -21,6 +21,22 @@ const stkLimiter = rateLimit({
   message: { message: 'Too many booking attempts from this device. Please wait a few minutes and try again.' },
 })
 
+// /status/:ref is unauthenticated and takes no secret beyond the ref itself
+// (4 base36 chars per day — ~1.7M combinations, brute-forceable). Left
+// unthrottled, it's also a way to burn the hotel's Daraja API quota: any
+// ref that happens to be 'pending' with a checkoutRequestId makes this
+// route call out to Safaricom (getAccessToken + stkpushquery) on every
+// single hit. The legitimate case (one guest's own booking) polls every 3s
+// for up to 3 minutes — about 60 requests — so this is sized generously
+// above that per client, not tuned to the bare minimum.
+const statusLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  limit: 90,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { status: 'rate_limited' },
+})
+
 const upload  = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -35,6 +51,56 @@ function genRef() {
   const d = new Date().toISOString().slice(0, 10).replace(/-/g, '')
   const r = Math.random().toString(36).slice(2, 6).toUpperCase()
   return `ITOYA-${d}-${r}`
+}
+
+// Guest-supplied text (name, requests, etc.) is interpolated straight into
+// HTML email bodies below — without escaping, a booking named e.g.
+// `<a href="evil">click</a>` would render as a live link inside the
+// hotel's inbox and the guest's own confirmation email.
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ))
+}
+
+// ROOM_CATALOG is a plain object keyed by guest-supplied `room`. A plain
+// `obj[key]` lookup resolves inherited properties too, so `room` values
+// like `__proto__`, `constructor`, or `toString` return a truthy
+// non-catalog value (Object.prototype, the constructor function, etc.)
+// instead of undefined — bypassing the `!catalogEntry` check below and
+// producing a NaN booking amount rather than a clean validation error.
+function lookupRoom(id) {
+  return Object.prototype.hasOwnProperty.call(ROOM_CATALOG, id) ? ROOM_CATALOG[id] : undefined
+}
+
+// fetchWithRetry on the client can legitimately retry a request whose
+// response was lost in transit (e.g. a Render cold-start 502 returned by
+// the proxy after the app already finished the work) even though the
+// server already completed it. Without this, a retried /initiate would
+// create a second booking record, and a retried /retry would fire a
+// second M-Pesa STK push for the same booking — a real double-charge
+// risk. Keyed on a client-generated id that stays identical across
+// fetchWithRetry's automatic retries of one logical submission (it's part
+// of the same request body/FormData, not regenerated per attempt).
+const recentRequests = new Map()  // clientRequestId -> { promise, expiresAt }
+const IDEMPOTENCY_TTL_MS = 5 * 60 * 1000
+
+function withIdempotency(clientRequestId, fn) {
+  if (!clientRequestId) return fn()
+  const now = Date.now()
+  for (const [key, entry] of recentRequests) {
+    if (entry.expiresAt < now) recentRequests.delete(key)
+  }
+  const existing = recentRequests.get(clientRequestId)
+  if (existing) return existing.promise
+  // A failure is cached too, deliberately — a duplicate call for the same
+  // clientRequestId means fetchWithRetry auto-retried the same submission,
+  // and replaying "STK push already failed" is safer than re-attempting a
+  // real Safaricom charge a second time. A genuinely new attempt (the
+  // guest clicking "Try Again") sends a fresh clientRequestId instead.
+  const promise = fn()
+  recentRequests.set(clientRequestId, { promise, expiresAt: now + IDEMPOTENCY_TTL_MS })
+  return promise
 }
 
 // Real payment collection requires both a production Daraja app AND
@@ -124,18 +190,18 @@ async function sendEmails(booking, { paid = true } = {}) {
 
   const summary = `
     <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px">
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666;width:120px">Reference</td><td style="padding:6px 12px;font-weight:600">${b.ref}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Room</td><td style="padding:6px 12px">${b.roomLabel}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Check-in</td><td style="padding:6px 12px">${b.checkIn}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Check-out</td><td style="padding:6px 12px">${b.checkOut}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Nights</td><td style="padding:6px 12px">${b.nights}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Guests</td><td style="padding:6px 12px">${b.guests}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Name</td><td style="padding:6px 12px">${b.name}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Phone</td><td style="padding:6px 12px">${b.phone}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Email</td><td style="padding:6px 12px">${b.email}</td></tr>
-      ${paid ? `<tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">M-Pesa Ref</td><td style="padding:6px 12px">${b.mpesaRef || '—'}</td></tr>` : ''}
+      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666;width:120px">Reference</td><td style="padding:6px 12px;font-weight:600">${escapeHtml(b.ref)}</td></tr>
+      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Room</td><td style="padding:6px 12px">${escapeHtml(b.roomLabel)}</td></tr>
+      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Check-in</td><td style="padding:6px 12px">${escapeHtml(b.checkIn)}</td></tr>
+      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Check-out</td><td style="padding:6px 12px">${escapeHtml(b.checkOut)}</td></tr>
+      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Nights</td><td style="padding:6px 12px">${escapeHtml(b.nights)}</td></tr>
+      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Guests</td><td style="padding:6px 12px">${escapeHtml(b.guests)}</td></tr>
+      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Name</td><td style="padding:6px 12px">${escapeHtml(b.name)}</td></tr>
+      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Phone</td><td style="padding:6px 12px">${escapeHtml(b.phone)}</td></tr>
+      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Email</td><td style="padding:6px 12px">${escapeHtml(b.email)}</td></tr>
+      ${paid ? `<tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">M-Pesa Ref</td><td style="padding:6px 12px">${escapeHtml(b.mpesaRef) || '—'}</td></tr>` : ''}
       <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">${paid ? 'Amount Paid' : 'Amount Due'}</td><td style="padding:6px 12px;font-weight:600">KES ${Number(b.amount).toLocaleString()}${paid ? '' : ' — pay at hotel'}</td></tr>
-      ${b.requests ? `<tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Requests</td><td style="padding:6px 12px">${b.requests}</td></tr>` : ''}
+      ${b.requests ? `<tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Requests</td><td style="padding:6px 12px">${escapeHtml(b.requests)}</td></tr>` : ''}
     </table>
   `
 
@@ -170,7 +236,7 @@ async function sendEmails(booking, { paid = true } = {}) {
     html: `
       <h2 style="font-family:serif;color:#a4733c">${paid ? 'Booking Received' : 'Reservation Received'} — Hotel Itoya</h2>
       <p style="font-family:sans-serif;font-size:14px;color:#555">
-        Dear ${b.name},<br><br>
+        Dear ${escapeHtml(b.name)},<br><br>
         ${paid
           ? 'Thank you for choosing Hotel Itoya. Your payment has been received and your booking is under review. A member of our team will contact you within a few hours to confirm your reservation.'
           : `Thank you for choosing Hotel Itoya. We've received your reservation request. Payment of <strong>KES ${Number(b.amount).toLocaleString()}</strong> is due at the hotel during check-in (cash or M-Pesa). A member of our team will contact you within a few hours to confirm your reservation.`}
@@ -212,7 +278,7 @@ router.post(
     try {
       const {
         room, checkIn, checkOut,
-        guests, name, phone, email, requests, mpesaPhone,
+        guests, name, phone, email, requests, mpesaPhone, clientRequestId,
       } = req.body
 
       if (!room)     return fail(res, 400, 'Please select a room type.', 0, 'room')
@@ -227,68 +293,88 @@ router.post(
         return fail(res, 400, 'The back of your ID could not be uploaded — please use a JPG, PNG, or PDF file.', 2, 'idBack')
 
       // ── Server-side price authority — never trust client-sent amount/nights ──
-      const catalogEntry = ROOM_CATALOG[room]
+      const catalogEntry = lookupRoom(room)
       if (!catalogEntry) {
         return fail(res, 400, 'Unknown room type.', 0, 'room')
       }
-      const nights = Math.round((new Date(checkOut) - new Date(checkIn)) / 86_400_000)
+      const checkInDate  = new Date(`${checkIn}T00:00:00Z`)
+      const checkOutDate = new Date(`${checkOut}T00:00:00Z`)
+      const nights = Math.round((checkOutDate - checkInDate) / 86_400_000)
       if (!(nights > 0)) {
         return fail(res, 400, 'Check-out must be after check-in.', 0, 'checkOut')
       }
-      const guestsNum = Number(guests) || 1
+      const todayUTC = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00Z')
+      if (checkInDate < todayUTC) {
+        return fail(res, 400, 'Check-in date cannot be in the past.', 0, 'checkIn')
+      }
+      const guestsNum = Number(guests)
+      if (!Number.isInteger(guestsNum) || guestsNum < 1) {
+        return fail(res, 400, 'Enter a valid number of guests.', 0, 'guests')
+      }
       if (catalogEntry.maxGuests && guestsNum > catalogEntry.maxGuests) {
         return fail(res, 400, `${catalogEntry.label} fits up to ${catalogEntry.maxGuests} guests.`, 0, 'guests')
       }
       const amount = catalogEntry.price * nights
 
-      const ref         = genRef()
       const idFrontFile = req.files.idFront[0]
       const idBackFile  = req.files.idBack[0]
 
-      const record = {
-        b: {
-          ref, room, roomLabel: catalogEntry.label, checkIn, checkOut, nights,
-          guests, name, phone, email, requests, mpesaPhone, amount,
-          mpesaRef: null,
-        },
-        idFrontBuffer: idFrontFile.buffer,
-        idBackBuffer:  idBackFile.buffer,
-        idFrontName:   idFrontFile.originalname,
-        idBackName:    idBackFile.originalname,
-        status:        'pending',
-        checkoutRequestId: null,
-      }
-      await store.create(record)
-
-      // ── Try real M-Pesa STK Push ──────────────────────────────────────────
-      const live = mpesaIsLive()
-
-      if (live) {
-        try {
-          const ckId = await initiateSTKPush({ phone: mpesaPhone, amount, ref })
-          await store.updateStatus(ref, 'pending', { checkoutRequestId: ckId })
-        } catch (err) {
-          console.error('STK Push failed:', err.response?.data || err.message)
-          await store.deleteByRef(ref)
-          return fail(res, 502, 'Could not initiate M-Pesa payment. Please try again.', 4, 'mpesaPhone')
+      const { status, body } = await withIdempotency(clientRequestId, async () => {
+        const ref = genRef()
+        const record = {
+          b: {
+            ref, room, roomLabel: catalogEntry.label, checkIn, checkOut, nights,
+            guests: guestsNum, name, phone, email, requests, mpesaPhone, amount,
+            mpesaRef: null,
+          },
+          idFrontBuffer: idFrontFile.buffer,
+          idBackBuffer:  idBackFile.buffer,
+          idFrontName:   idFrontFile.originalname,
+          idBackName:    idBackFile.originalname,
+          status:        'pending',
+          checkoutRequestId: null,
         }
-        return res.json({ ref, live })
-      }
+        await store.create(record)
 
-      // ── Reservation-only mode: no live M-Pesa credentials configured ────────
-      // No online payment is collected — the guest reserves now and pays at
-      // the hotel. Setting MPESA_ENV=production with real Daraja credentials
-      // switches this back to live STK push with no code changes.
-      await store.updateStatus(ref, 'reservation')
-      console.log(`[RESERVATION] Booking ${ref} — no live M-Pesa credentials, guest pays at hotel`)
-      res.json({ ref, live })
+        // ── Try real M-Pesa STK Push ────────────────────────────────────────
+        const live = mpesaIsLive()
 
-      // Fire-and-forget: an SMTP hang or auth failure (e.g. EMAIL_USER/PASS
-      // not yet configured) must never block the response the guest is
-      // waiting on — it already has their reservation either way.
-      store.getByRef(ref)
-        .then(r => sendEmails(r, { paid: false }))
-        .catch(e => console.error('Email error:', e.message))
+        if (live) {
+          try {
+            const ckId = await initiateSTKPush({ phone: mpesaPhone, amount, ref })
+            await store.updateStatus(ref, 'pending', { checkoutRequestId: ckId })
+          } catch (err) {
+            console.error('STK Push failed:', err.response?.data || err.message)
+            await store.deleteByRef(ref)
+            // 400, not 502 — this is our own definitive "Safaricom declined
+            // it" outcome, not a transient infra failure. Using a status
+            // outside fetchWithRetry's retry set means the guest sees this
+            // once and gets the real "Try Again" button, instead of the
+            // client silently re-attempting a real charge for several seconds.
+            return { status: 400, body: { message: 'Could not initiate M-Pesa payment. Please try again.', step: 4, field: 'mpesaPhone' } }
+          }
+          return { status: 200, body: { ref, live } }
+        }
+
+        // ── Reservation-only mode: no live M-Pesa credentials configured ────
+        // No online payment is collected — the guest reserves now and pays
+        // at the hotel. Setting MPESA_ENV=production with real Daraja
+        // credentials switches this back to live STK push with no code
+        // changes.
+        await store.updateStatus(ref, 'reservation')
+        console.log(`[RESERVATION] Booking ${ref} — no live M-Pesa credentials, guest pays at hotel`)
+
+        // Fire-and-forget: an SMTP hang or auth failure (e.g. EMAIL_USER/PASS
+        // not yet configured) must never block the response the guest is
+        // waiting on — it already has their reservation either way.
+        store.getByRef(ref)
+          .then(r => sendEmails(r, { paid: false }))
+          .catch(e => console.error('Email error:', e.message))
+
+        return { status: 200, body: { ref, live } }
+      })
+
+      res.status(status).json(body)
     } catch (err) {
       console.error('Booking initiate error:', err)
       res.status(500).json({ message: 'Server error. Please try again.' })
@@ -312,30 +398,38 @@ router.post('/:ref/retry', stkLimiter, async (req, res) => {
     if (!phone) return fail(res, 400, 'Enter your M-Pesa phone number.', 4, 'mpesaPhone')
 
     const live = mpesaIsLive()
+    const clientRequestId = req.body?.clientRequestId
 
-    if (live) {
-      try {
-        const ckId = await initiateSTKPush({ phone, amount: record.b.amount, ref: record.b.ref })
-        await store.updateStatus(record.b.ref, 'pending', { checkoutRequestId: ckId })
-      } catch (err) {
-        console.error('STK retry push failed:', err.response?.data || err.message)
-        return fail(res, 502, 'Could not initiate M-Pesa payment. Please try again.', 4, 'mpesaPhone')
+    const { status, body } = await withIdempotency(clientRequestId, async () => {
+      if (live) {
+        try {
+          const ckId = await initiateSTKPush({ phone, amount: record.b.amount, ref: record.b.ref })
+          await store.updateStatus(record.b.ref, 'pending', { checkoutRequestId: ckId })
+        } catch (err) {
+          console.error('STK retry push failed:', err.response?.data || err.message)
+          // 400, not 502 — see /initiate for why this must stay outside
+          // fetchWithRetry's auto-retried status set.
+          return { status: 400, body: { message: 'Could not initiate M-Pesa payment. Please try again.', step: 4, field: 'mpesaPhone' } }
+        }
+        return { status: 200, body: { ref: record.b.ref, live } }
       }
-      return res.json({ ref: record.b.ref, live })
-    }
 
-    // Should be unreachable from the client (reservation mode never enters
-    // a 'failed' payState to retry from) — kept as a safe fallback so a
-    // stuck 'pending' record can't linger forever if this is ever hit.
-    console.log(`[RESERVATION] Booking ${record.b.ref} — retry with no live M-Pesa credentials, guest pays at hotel`)
-    await store.updateStatus(record.b.ref, 'reservation')
-    res.json({ ref: record.b.ref, live })
+      // Should be unreachable from the client (reservation mode never enters
+      // a 'failed' payState to retry from) — kept as a safe fallback so a
+      // stuck 'pending' record can't linger forever if this is ever hit.
+      console.log(`[RESERVATION] Booking ${record.b.ref} — retry with no live M-Pesa credentials, guest pays at hotel`)
+      await store.updateStatus(record.b.ref, 'reservation')
 
-    // Fire-and-forget — see /initiate for why this must not be awaited
-    // before responding.
-    store.getByRef(record.b.ref)
-      .then(r => sendEmails(r, { paid: false }))
-      .catch(e => console.error('Email error:', e.message))
+      // Fire-and-forget — see /initiate for why this must not be awaited
+      // before responding.
+      store.getByRef(record.b.ref)
+        .then(r => sendEmails(r, { paid: false }))
+        .catch(e => console.error('Email error:', e.message))
+
+      return { status: 200, body: { ref: record.b.ref, live } }
+    })
+
+    res.status(status).json(body)
   } catch (err) {
     console.error('Booking retry error:', err)
     res.status(500).json({ message: 'Server error. Please try again.' })
@@ -343,7 +437,7 @@ router.post('/:ref/retry', stkLimiter, async (req, res) => {
 })
 
 // ── GET /api/booking/status/:ref ──────────────────────────────────────────────
-router.get('/status/:ref', async (req, res) => {
+router.get('/status/:ref', statusLimiter, async (req, res) => {
   const record = await store.getByRef(req.params.ref)
   if (!record) return res.status(404).json({ status: 'not_found' })
 
