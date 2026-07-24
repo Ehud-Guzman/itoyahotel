@@ -16,6 +16,30 @@ function kes(n) {
   return `KES ${Number(n).toLocaleString('en-KE')}`
 }
 
+// Render's free tier spins the backend down after ~15 min idle. During a
+// cold start, Render's own proxy can bounce a request with a bare 502
+// before the app is even listening — that response carries none of our
+// CORS headers, so the browser blocks it and fetch() throws a raw
+// "Failed to fetch" TypeError. That's a transient infra hiccup, not a real
+// failure, so retry through it a few times before surfacing anything to
+// the guest (the keep-alive ping every 10 min makes this rare, but GitHub
+// Actions cron isn't exact, so gaps past 15 min do happen).
+async function fetchWithRetry(url, options, { retries = 4, delayMs = 4000 } = {}) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(url, options)
+      if (!res.ok && [502, 503, 504].includes(res.status) && attempt < retries) {
+        await new Promise(r => setTimeout(r, delayMs))
+        continue
+      }
+      return res
+    } catch (err) {
+      if (attempt >= retries) throw err
+      await new Promise(r => setTimeout(r, delayMs))
+    }
+  }
+}
+
 function normalisePhone(raw) {
   const n = raw.replace(/\D/g, '')
   if (n.startsWith('254') && n.length === 12) return n
@@ -99,8 +123,10 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
     }))
 
     // Check once per open whether live payment collection is configured, so
-    // step 4 can render the right flow before the guest ever submits.
-    fetch(`${API}/api/booking/config`)
+    // step 4 can render the right flow before the guest ever submits. Uses
+    // a short retry so a cold-start blip doesn't wrongly fall back to
+    // reservation-only mode for a site that's actually taking live payments.
+    fetchWithRetry(`${API}/api/booking/config`, undefined, { retries: 2, delayMs: 2000 })
       .then(r => r.json())
       .then(cfg => setPaymentsLive(Boolean(cfg.live)))
       .catch(() => setPaymentsLive(false))
@@ -193,7 +219,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
         // Retrying after a previous failed attempt — reuse the existing
         // booking record instead of creating a duplicate with fresh ID
         // uploads and a brand-new reference.
-        const res  = await fetch(`${API}/api/booking/${ref}/retry`, {
+        const res  = await fetchWithRetry(`${API}/api/booking/${ref}/retry`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mpesaPhone: normalisePhone(phone) }),
@@ -216,7 +242,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
         fd.append('idFront', data.idFront)
         fd.append('idBack',  data.idBack)
 
-        const res  = await fetch(`${API}/api/booking/initiate`, { method: 'POST', body: fd })
+        const res  = await fetchWithRetry(`${API}/api/booking/initiate`, { method: 'POST', body: fd })
         const json = await res.json()
         if (!res.ok) {
           const e = new Error(json.message || 'Server error')
@@ -259,16 +285,25 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
       clearTimeout(slowConnectTimer.current); setSlowConnect(false)
       setSubmitting(false)
 
+      // A raw fetch()-level failure (network drop, or all retries in
+      // fetchWithRetry exhausted) has a generic browser message like
+      // "Failed to fetch" — never show that verbatim to a guest.
+      const isNetworkError = !(typeof err.step === 'number') && !err.field
+        && (err.name === 'TypeError' || /fetch|network/i.test(err.message || ''))
+      const friendlyMessage = isNetworkError
+        ? 'Could not reach the booking system. Please check your connection and try again.'
+        : err.message
+
       // Errors that trace back to an earlier step (bad room, invalid dates,
       // a rejected ID upload) belong on that step, not bolted onto the
       // M-Pesa phone field where they'd be unreadable and unfixable.
       if (typeof err.step === 'number' && err.step !== 4) {
         setPayState('idle')
         setStep(err.step)
-        setErrors({ [err.field || '_general']: err.message })
+        setErrors({ [err.field || '_general']: friendlyMessage })
       } else {
         setPayState('failed')
-        setErr(err.field || '_general', err.message || 'Could not initiate payment. Please try again.')
+        setErr(err.field || '_general', friendlyMessage || 'Could not initiate payment. Please try again.')
       }
     }
   }
@@ -707,9 +742,13 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
           <FiAlertCircle size={22} className="text-red-400" />
         </div>
         <div className="space-y-2">
-          <h3 className="font-serif text-xl text-ink">Payment Failed</h3>
+          <h3 className="font-serif text-xl text-ink">
+            {paymentsLive ? 'Payment Failed' : 'Could Not Submit'}
+          </h3>
           <p className="text-[13px] text-ink/50 max-w-[17rem] mx-auto leading-relaxed">
-            {msg || 'The transaction was not confirmed. Please check your M-Pesa balance and try again.'}
+            {msg || (paymentsLive
+              ? 'The transaction was not confirmed. Please check your M-Pesa balance and try again.'
+              : 'Something went wrong sending your reservation. Please try again.')}
           </p>
         </div>
       </div>
