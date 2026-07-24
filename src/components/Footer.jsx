@@ -144,6 +144,10 @@ export default function Footer() {
               © {year} Hotel Itoya. All rights reserved. Busia, Kenya.
             </p>
             <span aria-hidden="true" className="hidden sm:inline text-white/20">|</span>
+            <a href="/privacy" className="font-sans text-xs text-white/90 hover:text-gold transition-colors duration-150">
+              Privacy Policy
+            </a>
+            <span aria-hidden="true" className="hidden sm:inline text-white/20">|</span>
             <span className="font-sans text-xs text-white/90">
               Created &amp; managed by{' '}
               <a

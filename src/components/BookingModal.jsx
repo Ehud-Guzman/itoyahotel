@@ -606,7 +606,12 @@ function StepId({ data, handleFile, errors }) {
           Kenyan law requires hotels to verify guest identity.
           Please upload both sides of a valid government-issued ID.
         </p>
-        <p className="text-[10.5px] text-ink/35">JPG, PNG or PDF · Max 6 MB each</p>
+        <p className="text-[10.5px] text-ink/35">
+          JPG, PNG or PDF · Max 6 MB each · See our{' '}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-ink/60">
+            Privacy Policy
+          </a>
+        </p>
       </div>
 
       <Zone label="Front of ID" file={data.idFront} preview={data.idFrontPreview}
