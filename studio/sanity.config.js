@@ -3,12 +3,7 @@ import { structureTool } from 'sanity/structure'
 import { visionTool } from '@sanity/vision'
 import { schemas } from './schemas'
 
-// ─── TODO ──────────────────────────────────────────────────────────────────
-// 1. Go to https://sanity.io/manage → create a project called "Hotel Itoya"
-// 2. Copy the Project ID and paste it below (replace 'YOUR_PROJECT_ID')
-// 3. Run:  npm install  then  npm run deploy
-// ───────────────────────────────────────────────────────────────────────────
-const PROJECT_ID = 'yd71nxev'
+const PROJECT_ID = 'okmatxt0'
 
 export default defineConfig({
   name:       'hotel-itoya',
