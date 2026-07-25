@@ -5,5 +5,5 @@ export default defineCliConfig({
     projectId: 'okmatxt0',
     dataset:   'production',
   },
-  studioHost: 'hotel-itoya',
+  studioHost: 'hotel-itoya-cms',
 })

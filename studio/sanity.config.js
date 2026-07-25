@@ -8,7 +8,7 @@ const PROJECT_ID = 'okmatxt0'
 export default defineConfig({
   name:       'hotel-itoya',
   title:      'Hotel Itoya CMS',
-  studioHost: 'hotel-itoya',
+  studioHost: 'hotel-itoya-cms',
 
   projectId: PROJECT_ID,
   dataset:   'production',
