@@ -62,8 +62,8 @@ export default function BookingBar({ onBookNow }) {
 
             {/* Room Type */}
             <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-[8.5px] uppercase tracking-[0.28em] text-ink/55 font-sans font-medium flex items-center gap-1.5">
-                <FiBriefcase size={9} /> Room Type
+              <label className="text-[9.5px] uppercase tracking-[0.2em] text-ink/80 font-sans font-semibold flex items-center gap-1.5">
+                <FiBriefcase size={10} /> Room Type
               </label>
               <div className="border border-stone/35 bg-white hover:border-gold/60 transition-colors duration-200 flex items-center px-3 gap-2">
                 <select
@@ -75,7 +75,7 @@ export default function BookingBar({ onBookNow }) {
                     <option key={r.id} value={r.id}>{r.label}</option>
                   ))}
                 </select>
-                <FiChevronDown size={12} className="text-ink/35 shrink-0 pointer-events-none" />
+                <FiChevronDown size={12} className="text-ink/60 shrink-0 pointer-events-none" />
               </div>
             </div>
 
@@ -83,11 +83,11 @@ export default function BookingBar({ onBookNow }) {
 
             {/* Check In */}
             <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-[8.5px] uppercase tracking-[0.28em] text-ink/55 font-sans font-medium flex items-center gap-1.5">
-                <FiCalendar size={9} /> Check In
+              <label className="text-[9.5px] uppercase tracking-[0.2em] text-ink/80 font-sans font-semibold flex items-center gap-1.5">
+                <FiCalendar size={10} /> Check In
               </label>
               <div className="border border-stone/35 bg-white hover:border-gold/60 transition-colors duration-200 flex items-center px-3 gap-2">
-                <FiCalendar size={12} className="text-ink/35 shrink-0" />
+                <FiCalendar size={12} className="text-ink/60 shrink-0" />
                 <input
                   type="date"
                   value={checkIn}
@@ -107,11 +107,11 @@ export default function BookingBar({ onBookNow }) {
 
             {/* Check Out */}
             <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-[8.5px] uppercase tracking-[0.28em] text-ink/55 font-sans font-medium flex items-center gap-1.5">
-                <FiCalendar size={9} /> Check Out
+              <label className="text-[9.5px] uppercase tracking-[0.2em] text-ink/80 font-sans font-semibold flex items-center gap-1.5">
+                <FiCalendar size={10} /> Check Out
               </label>
               <div className="border border-stone/35 bg-white hover:border-gold/60 transition-colors duration-200 flex items-center px-3 gap-2">
-                <FiCalendar size={12} className="text-ink/35 shrink-0" />
+                <FiCalendar size={12} className="text-ink/60 shrink-0" />
                 <input
                   type="date"
                   value={checkOut}
@@ -124,11 +124,11 @@ export default function BookingBar({ onBookNow }) {
 
             {/* Rooms & Guests */}
             <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-[8.5px] uppercase tracking-[0.28em] text-ink/55 font-sans font-medium flex items-center gap-1.5">
-                <FiUsers size={9} /> Rooms &amp; Guests
+              <label className="text-[9.5px] uppercase tracking-[0.2em] text-ink/80 font-sans font-semibold flex items-center gap-1.5">
+                <FiUsers size={10} /> Rooms &amp; Guests
               </label>
               <div className="border border-stone/35 bg-white hover:border-gold/60 transition-colors duration-200 flex items-center px-3 gap-2">
-                <FiUsers size={12} className="text-ink/35 shrink-0" />
+                <FiUsers size={12} className="text-ink/60 shrink-0" />
                 <select
                   value={guests}
                   onChange={e => setGuests(e.target.value)}
@@ -138,7 +138,7 @@ export default function BookingBar({ onBookNow }) {
                     <option key={o} value={o}>{o}</option>
                   ))}
                 </select>
-                <FiChevronDown size={12} className="text-ink/35 shrink-0 pointer-events-none" />
+                <FiChevronDown size={12} className="text-ink/60 shrink-0 pointer-events-none" />
               </div>
             </div>
 
@@ -146,7 +146,7 @@ export default function BookingBar({ onBookNow }) {
 
             {/* Price + CTA */}
             <div className="flex flex-col gap-1.5 shrink-0">
-              <span className="text-[8.5px] uppercase tracking-[0.28em] text-ink/55 font-sans font-medium">
+              <span className="text-[9.5px] uppercase tracking-[0.2em] text-ink/80 font-sans font-semibold">
                 Rate Per Night
               </span>
               <div className="flex items-stretch">
@@ -154,7 +154,7 @@ export default function BookingBar({ onBookNow }) {
                   <span className="text-[15px] font-serif text-ink leading-tight">
                     KES {selectedRoom.price.toLocaleString('en-KE')}
                   </span>
-                  <span className="text-[9px] font-sans text-ink/45 tracking-[0.12em]">
+                  <span className="text-[9.5px] font-sans text-ink/70 tracking-[0.1em]">
                     {selectedRoom.label}
                   </span>
                 </div>

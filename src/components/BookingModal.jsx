@@ -68,7 +68,7 @@ function fmtDate(str) {
 // ─── Shared input style ───────────────────────────────────────────────────────
 const inp = (err) =>
   `w-full border px-4 py-3 text-sm text-ink bg-white outline-none
-   transition-colors focus:border-ink placeholder:text-ink/30
+   transition-colors focus:border-ink placeholder:text-ink/65
    ${err ? 'border-red-300' : 'border-stone/40 hover:border-stone/70'}`
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -369,7 +369,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
                 )) return
                 onClose()
               }}
-              className="mt-0.5 text-ink/30 hover:text-ink transition-colors p-1"
+              className="mt-0.5 text-ink/65 hover:text-ink transition-colors p-1"
             >
               <FiX size={18} />
             </button>
@@ -392,7 +392,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
                 </div>
               ))}
             </div>
-            <p className="text-[10px] tracking-[0.22em] uppercase text-ink/40">
+            <p className="text-[11.5px] tracking-[0.16em] uppercase text-ink/85 font-medium">
               {step + 1} / 5 — {STEPS[step]}
             </p>
           </div>
@@ -419,7 +419,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
               {step > 0 && !(step === 4 && (payState === 'connecting' || payState === 'waiting')) ? (
                 <button
                   onClick={back}
-                  className="flex items-center gap-1.5 text-[11px] tracking-[0.15em] uppercase text-ink/40 hover:text-ink transition-colors"
+                  className="flex items-center gap-1.5 text-[11px] tracking-[0.15em] uppercase text-ink/72 hover:text-ink transition-colors"
                 >
                   <FiChevronLeft size={13} /> Back
                 </button>
@@ -495,13 +495,13 @@ function StepRoom({ data, set, errors, clearErr, today, minCheckout, room, night
                     {r.label}
                   </p>
                   {r.note && (
-                    <p className={`text-[10.5px] mt-0.5 ${selected ? 'text-white/60' : 'text-ink/40'}`}>
+                    <p className={`text-[10.5px] mt-0.5 ${selected ? 'text-white/60' : 'text-ink/72'}`}>
                       {r.note}
                     </p>
                   )}
                 </div>
                 <p className={`text-sm font-medium shrink-0 ml-4 ${selected ? 'text-white' : 'text-primary'}`}>
-                  {kes(r.price)}<span className={`text-[10px] ml-0.5 ${selected ? 'text-white/90' : 'text-ink/60'}`}>/night</span>
+                  {kes(r.price)}<span className={`text-[10px] ml-0.5 ${selected ? 'text-white/90' : 'text-ink/80'}`}>/night</span>
                 </p>
               </button>
             )
@@ -543,15 +543,15 @@ function StepRoom({ data, set, errors, clearErr, today, minCheckout, room, night
       {/* Total */}
       {nights > 0 && room && (
         <div className="border border-stone/30 p-5">
-          <div className="flex justify-between text-sm text-ink/55">
+          <div className="flex justify-between text-sm text-ink/78">
             <span>{room.label}</span>
             <span>{kes(room.price)} × {nights} night{nights !== 1 ? 's' : ''}</span>
           </div>
           {room.note && (
-            <p className="text-[10.5px] text-ink/35 mt-1">{room.note}</p>
+            <p className="text-[10.5px] text-ink/68 mt-1">{room.note}</p>
           )}
           <div className="flex justify-between items-baseline mt-4 pt-4 border-t border-stone/25">
-            <span className="text-xs tracking-[0.2em] uppercase text-ink/50">Total</span>
+            <span className="text-xs tracking-[0.2em] uppercase text-ink/75">Total</span>
             <span className="font-serif text-2xl text-ink">{kes(total)}</span>
           </div>
         </div>
@@ -564,7 +564,7 @@ function StepRoom({ data, set, errors, clearErr, today, minCheckout, room, night
 function StepDetails({ data, set, errors, clearErr }) {
   return (
     <div className="space-y-5">
-      <p className="text-[13px] text-ink/50 leading-relaxed">
+      <p className="text-[13px] text-ink/75 leading-relaxed">
         The hotel will use these details to confirm and coordinate your reservation.
       </p>
 
@@ -591,7 +591,7 @@ function StepDetails({ data, set, errors, clearErr }) {
           placeholder="Early check-in, dietary needs, room preferences…"
           onChange={e => set('requests', e.target.value)}
           className={`${inp(false)} resize-none`} />
-        <p className="text-[10.5px] text-ink/30 mt-1.5">Optional</p>
+        <p className="text-[10.5px] text-ink/65 mt-1.5">Optional</p>
       </Field>
     </div>
   )
@@ -602,13 +602,13 @@ function StepId({ data, handleFile, errors }) {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <p className="text-[13px] text-ink/55 leading-relaxed">
+        <p className="text-[13px] text-ink/78 leading-relaxed">
           Kenyan law requires hotels to verify guest identity.
           Please upload both sides of a valid government-issued ID.
         </p>
-        <p className="text-[10.5px] text-ink/35">
+        <p className="text-[10.5px] text-ink/68">
           JPG, PNG or PDF · Max 6 MB each · See our{' '}
-          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-ink/60">
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-ink/80">
             Privacy Policy
           </a>
         </p>
@@ -652,23 +652,23 @@ function Zone({ label, file, preview, error, onChange }) {
             {isImg && preview
               ? <img src={preview} alt="" className="h-14 w-20 object-cover" />
               : <div className="h-14 w-20 bg-stone/15 flex items-center justify-center shrink-0">
-                  <span className="text-[9px] uppercase tracking-widest text-ink/40">PDF</span>
+                  <span className="text-[9px] uppercase tracking-widest text-ink/72">PDF</span>
                 </div>
             }
             <div>
               <p className="text-[13px] text-ink font-medium flex items-center gap-1.5">
                 <FiCheck size={12} className="text-ink" /> {file.name}
               </p>
-              <p className="text-[11px] text-ink/35 mt-0.5">
+              <p className="text-[11px] text-ink/68 mt-0.5">
                 {(file.size / 1024).toFixed(0)} KB · Click to replace
               </p>
             </div>
           </div>
         ) : (
-          <div className="py-9 flex flex-col items-center gap-2 text-ink/40">
+          <div className="py-9 flex flex-col items-center gap-2 text-ink/72">
             <FiUpload size={20} />
             <p className="text-[13px]">Click to upload</p>
-            <p className="text-xs text-ink/25">or drag & drop</p>
+            <p className="text-xs text-ink/65">or drag & drop</p>
           </div>
         )}
       </div>
@@ -681,7 +681,7 @@ function Zone({ label, file, preview, error, onChange }) {
 function StepReview({ data, room, nights, total }) {
   return (
     <div className="space-y-6">
-      <p className="text-[13px] text-ink/50">Review your details before payment.</p>
+      <p className="text-[13px] text-ink/75">Review your details before payment.</p>
 
       <div className="divide-y divide-stone/20 border border-stone/25">
         {[
@@ -697,19 +697,19 @@ function StepReview({ data, room, nights, total }) {
           ...(data.requests ? [['Requests', data.requests]] : []),
         ].map(([label, value]) => (
           <div key={label} className="flex justify-between items-start px-5 py-3 gap-6">
-            <span className="text-[11px] uppercase tracking-[0.18em] text-ink/40 shrink-0 mt-0.5">{label}</span>
+            <span className="text-[11px] uppercase tracking-[0.18em] text-ink/72 shrink-0 mt-0.5">{label}</span>
             <span className={`text-[13px] text-right ${label === 'ID' ? 'text-ink font-medium' : 'text-ink/75'}`}>
               {value}
             </span>
           </div>
         ))}
         <div className="flex justify-between items-center px-5 py-4 bg-stone/8">
-          <span className="text-[11px] uppercase tracking-[0.18em] text-ink/50">Total</span>
+          <span className="text-[11px] uppercase tracking-[0.18em] text-ink/75">Total</span>
           <span className="font-serif text-xl text-ink">{kes(total)}</span>
         </div>
       </div>
 
-      <p className="text-[11px] text-ink/35 leading-relaxed">
+      <p className="text-[11px] text-ink/68 leading-relaxed">
         The hotel will contact you after payment to confirm your reservation.
       </p>
     </div>
@@ -726,13 +726,13 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
           <h3 className="font-serif text-xl text-ink">
             {paymentsLive ? 'Connecting…' : 'Submitting…'}
           </h3>
-          <p className="text-[13px] text-ink/50 leading-relaxed max-w-[17rem] mx-auto">
+          <p className="text-[13px] text-ink/75 leading-relaxed max-w-[17rem] mx-auto">
             {paymentsLive
               ? 'Sending your payment request to our secure booking system.'
               : 'Sending your reservation to Hotel Itoya.'}
           </p>
           {slowConnect && (
-            <p className="text-[12px] text-ink/40 leading-relaxed max-w-[18rem] mx-auto pt-2">
+            <p className="text-[12px] text-ink/72 leading-relaxed max-w-[18rem] mx-auto pt-2">
               This is taking longer than usual — our booking system may be waking up.
               Please stay on this page, it can take up to a minute.
             </p>
@@ -748,12 +748,12 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
         <div className="w-12 h-12 border-2 border-ink border-t-transparent rounded-full animate-spin" />
         <div className="space-y-2">
           <h3 className="font-serif text-xl text-ink">Check Your Phone</h3>
-          <p className="text-[13px] text-ink/50 leading-relaxed max-w-[17rem] mx-auto">
+          <p className="text-[13px] text-ink/75 leading-relaxed max-w-[17rem] mx-auto">
             An M-Pesa prompt has been sent to <strong className="text-ink">{data.mpesaPhone || data.phone}</strong>.
             Enter your PIN to complete payment.
           </p>
         </div>
-        <p className="text-[11px] text-ink/30">Do not close this window — it will update automatically.</p>
+        <p className="text-[11px] text-ink/65">Do not close this window — it will update automatically.</p>
       </div>
     )
   }
@@ -773,7 +773,7 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
           <h3 className="font-serif text-xl text-ink">
             {paymentsLive ? 'Payment Failed' : 'Could Not Submit'}
           </h3>
-          <p className="text-[13px] text-ink/50 max-w-[17rem] mx-auto leading-relaxed">
+          <p className="text-[13px] text-ink/75 max-w-[17rem] mx-auto leading-relaxed">
             {msg || (paymentsLive
               ? 'The transaction was not confirmed. Please check your M-Pesa balance and try again.'
               : 'Something went wrong sending your reservation. Please try again.')}
@@ -788,7 +788,7 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
       <div className="space-y-7">
         {/* Amount */}
         <div className="text-center py-6 border border-stone/25">
-          <p className="text-[9.5px] tracking-[0.35em] uppercase text-ink/40">Amount Due at Check-in</p>
+          <p className="text-[10.5px] tracking-[0.26em] uppercase text-ink/80">Amount Due at Check-in</p>
           <p className="font-serif text-[2.75rem] text-ink leading-none mt-2">{kes(total)}</p>
         </div>
 
@@ -798,17 +798,17 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
           </div>
           <div>
             <p className="text-[13px] font-medium text-ink">Reserve now, pay at the hotel</p>
-            <p className="text-[11px] text-ink/40">Cash or M-Pesa, on arrival</p>
+            <p className="text-[11px] text-ink/72">Cash or M-Pesa, on arrival</p>
           </div>
         </div>
 
-        <p className="text-[13px] text-ink/55 leading-relaxed">
+        <p className="text-[13px] text-ink/78 leading-relaxed">
           Online payment isn't required to reserve — your room is held once
           the hotel confirms your booking by phone or email. Please have{' '}
           <strong className="text-ink">{kes(total)}</strong> ready at check-in.
         </p>
 
-        <p className="text-[11px] text-ink/35 leading-relaxed">
+        <p className="text-[11px] text-ink/68 leading-relaxed">
           By clicking Confirm Reservation you agree to Hotel Itoya's booking terms.
         </p>
       </div>
@@ -819,7 +819,7 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
     <div className="space-y-7">
       {/* Amount */}
       <div className="text-center py-6 border border-stone/25">
-        <p className="text-[9.5px] tracking-[0.35em] uppercase text-ink/40">Amount Due</p>
+        <p className="text-[10.5px] tracking-[0.26em] uppercase text-ink/80">Amount Due</p>
         <p className="font-serif text-[2.75rem] text-ink leading-none mt-2">{kes(total)}</p>
       </div>
 
@@ -830,7 +830,7 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
         </div>
         <div>
           <p className="text-[13px] font-medium text-ink">Pay via M-Pesa</p>
-          <p className="text-[11px] text-ink/40">You will receive a prompt on your phone</p>
+          <p className="text-[11px] text-ink/72">You will receive a prompt on your phone</p>
         </div>
       </div>
 
@@ -840,10 +840,10 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
           placeholder="+254 7XX XXX XXX"
           onChange={e => { set('mpesaPhone', e.target.value); clearErr('mpesaPhone') }}
           className={inp(errors.mpesaPhone)} />
-        <p className="text-[10.5px] text-ink/30 mt-1.5">Must be the number registered with M-Pesa</p>
+        <p className="text-[10.5px] text-ink/65 mt-1.5">Must be the number registered with M-Pesa</p>
       </Field>
 
-      <p className="text-[11px] text-ink/35 leading-relaxed">
+      <p className="text-[11px] text-ink/68 leading-relaxed">
         By clicking Pay you agree to Hotel Itoya's booking terms.
         An STK push will prompt you to enter your M-Pesa PIN.
       </p>
@@ -882,7 +882,7 @@ function StepDone({ bookingRef, data, room, nights, total, paid, onClose }) {
         <h3 className="font-serif text-2xl text-ink">
           {paid ? 'Booking Received' : 'Reservation Received'}
         </h3>
-        <p className="text-[13px] text-ink/50 leading-relaxed max-w-[20rem] mx-auto">
+        <p className="text-[13px] text-ink/75 leading-relaxed max-w-[20rem] mx-auto">
           {paid
             ? 'Payment confirmed. Hotel Itoya will review your booking and contact you to finalise your stay.'
             : `Hotel Itoya will review your reservation and contact you to confirm. Please have ${kes(total)} ready to pay at check-in (cash or M-Pesa).`}
@@ -891,7 +891,7 @@ function StepDone({ bookingRef, data, room, nights, total, paid, onClose }) {
 
       {/* Reference */}
       <div className="w-full border border-stone/30 py-5 px-6">
-        <p className="text-[9.5px] tracking-[0.35em] uppercase text-ink/40">Booking Reference</p>
+        <p className="text-[10.5px] tracking-[0.26em] uppercase text-ink/80">Booking Reference</p>
         <p className="font-serif text-xl text-ink tracking-wider mt-1.5">{bookingRef}</p>
       </div>
 
@@ -902,7 +902,7 @@ function StepDone({ bookingRef, data, room, nights, total, paid, onClose }) {
           `Hotel will contact you on ${data.phone}`,
           `Keep your reference for any enquiries`,
         ].map(msg => (
-          <p key={msg} className="flex items-start gap-2.5 text-[12.5px] text-ink/55">
+          <p key={msg} className="flex items-start gap-2.5 text-[12.5px] text-ink/78">
             <FiCheck size={13} className="text-ink shrink-0 mt-0.5" />
             {msg}
           </p>
@@ -932,7 +932,7 @@ function StepDone({ bookingRef, data, room, nights, total, paid, onClose }) {
 
 // ─── Micro components ─────────────────────────────────────────────────────────
 function Label({ children }) {
-  return <p className="text-[10px] tracking-[0.28em] uppercase text-ink/50 mb-2">{children}</p>
+  return <p className="text-[10.5px] tracking-[0.2em] uppercase text-ink/85 font-medium mb-2">{children}</p>
 }
 
 function Field({ label, error, children }) {
@@ -940,7 +940,7 @@ function Field({ label, error, children }) {
     <div>
       {label ? (
         <label className="block">
-          <span className="block text-[10px] tracking-[0.28em] uppercase text-ink/50 mb-2">{label}</span>
+          <span className="block text-[10.5px] tracking-[0.2em] uppercase text-ink/85 font-medium mb-2">{label}</span>
           {children}
         </label>
       ) : children}
