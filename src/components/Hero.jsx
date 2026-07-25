@@ -117,7 +117,6 @@ export default function Hero() {
             fetchPriority={i === 0 ? 'high' : 'low'}
           />
         ))}
-        <div className="absolute inset-0 bg-black/25 pointer-events-none" />
       </div>
 
       {/* Main Content */}
