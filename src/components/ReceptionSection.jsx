@@ -33,8 +33,8 @@ export default function ReceptionSection() {
               loading="lazy"
             />
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/10 to-transparent" />
           </div>
 
           {/* Floating Content Overlay */}
