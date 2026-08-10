@@ -5,6 +5,7 @@ import { ROOM_CATALOG } from '../lib/rooms';
 
 const PHONE_1 = '+254 714 302 777';
 const PHONE_2 = '+254 714 666 222';
+const PHONE_3 = '+254 714 777 333';
 const EMAIL = 'hotel.itoya@ayotigroup.com';
 const WA_URL = 'https://wa.me/254714302777';
 
@@ -382,7 +383,7 @@ const FAQ = [
   // ── Contact & About ─────────────────────────────────────────────────────
   {
     keywords: ['contact','phone','call','email','reach','telephone','number','reception','front desk'],
-    answer: `Our reception is open **24/7**:\n\n📞 ${PHONE_1}\n📞 ${PHONE_2}\n✉️ ${EMAIL}\n\nOr WhatsApp us for a quick response.`,
+    answer: `Our reception is open **24/7**:\n\n📞 ${PHONE_1}\n📞 ${PHONE_2}\n📞 ${PHONE_3}\n✉️ ${EMAIL}\n\nOr WhatsApp us for a quick response.`,
   },
   {
     keywords: ['whatsapp','whats app','message us','text us','chat with us'],

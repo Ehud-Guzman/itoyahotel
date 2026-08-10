@@ -30,7 +30,8 @@ export async function downloadReceipt({
   doc.text('Hotel Itoya', margin, y)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...grey)
   doc.text('B1 Kisumu-Busia Road, Busia, Kenya', margin, y + 16)
-  doc.text('+254 714 302 777  ·  hotel.itoya@ayotigroup.com', margin, y + 29)
+  doc.text('+254 714 302 777  ·  +254 714 666 222  ·  +254 714 777 333', margin, y + 23)
+  doc.text('hotel.itoya@ayotigroup.com', margin, y + 35)
 
   doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...ink)
   doc.text(paid ? 'PAYMENT RECEIPT' : 'RESERVATION RECEIPT', pageWidth - margin, y - 4, { align: 'right' })

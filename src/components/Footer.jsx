@@ -117,6 +117,7 @@ export default function Footer() {
                 <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Phone</p>
                 <a href="tel:+254714302777" className="block font-sans font-light text-sm text-white hover:text-gold transition-colors duration-150">+254 714 302 777</a>
                 <a href="tel:+254714666222" className="block font-sans font-light text-sm text-white/80 hover:text-gold transition-colors duration-150 mt-0.5">+254 714 666 222</a>
+                <a href="tel:+254714777333" className="block font-sans font-light text-sm text-white/60 hover:text-gold transition-colors duration-150 mt-0.5">+254 714 777 333</a>
               </div>
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Email</p>

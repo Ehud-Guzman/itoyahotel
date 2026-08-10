@@ -284,7 +284,7 @@ async function sendEmails(booking, { paid = true } = {}) {
       ${summary}
       <p style="font-family:sans-serif;font-size:14px;color:#555;margin-top:24px">
         If you have any questions, please call us on
-        <strong>+254 714 302 777</strong> or email
+        <strong>+254 714 302 777 · +254 714 666 222 · +254 714 777 333</strong> or email
         <a href="mailto:hotel.itoya@ayotigroup.com">hotel.itoya@ayotigroup.com</a>.
       </p>
       <p style="font-family:sans-serif;font-size:12px;color:#aaa;margin-top:32px">

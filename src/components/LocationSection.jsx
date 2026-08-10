@@ -11,6 +11,11 @@ const details = [
     href: 'tel:+254714302777',
   },
   {
+    label: 'Phone',
+    value: '+254 714 777 333',
+    href: 'tel:+254714777333',
+  },
+  {
     label: 'Email',
     value: 'hotel.itoya@ayotigroup.com',
     href: 'mailto:hotel.itoya@ayotigroup.com',

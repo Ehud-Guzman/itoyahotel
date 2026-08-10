@@ -95,6 +95,9 @@ export default function ContactSection() {
                 <a href="tel:+254714666222" className="block font-sans text-white/90 hover:text-gold transition-colors duration-200 mt-1">
                   +254 714 666 222
                 </a>
+                <a href="tel:+254714777333" className="block font-sans text-white/80 hover:text-gold transition-colors duration-200 mt-1">
+                  +254 714 777 333
+                </a>
               </div>
 
               <div>

@@ -83,7 +83,9 @@ export default function PrivacyPolicy() {
           <a href="mailto:hotel.itoya@ayotigroup.com" className="text-primary hover:text-primary-dark underline">
             hotel.itoya@ayotigroup.com
           </a>{' '}or call{' '}
-          <a href="tel:+254714302777" className="text-primary hover:text-primary-dark underline">+254 714 302 777</a>.</p>
+          <a href="tel:+254714302777" className="text-primary hover:text-primary-dark underline">+254 714 302 777</a>,{' '}
+          <a href="tel:+254714666222" className="text-primary hover:text-primary-dark underline">+254 714 666 222</a>, or{' '}
+          <a href="tel:+254714777333" className="text-primary hover:text-primary-dark underline">+254 714 777 333</a>.</p>
         </Section>
       </main>
     </div>
