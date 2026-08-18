@@ -640,37 +640,61 @@ export default function ChatBot() {
                     ? 'bg-gold text-white rounded-br-sm'
                     : 'bg-stone/30 text-ink/80 border border-stone/20 rounded-bl-sm'
                 }`}>
-                  {msg.isFallback ? (
-                    <span>
-                      <span className="block">
-                        Hmm, I'm not sure about that one — but our team will know! Reach us directly and we'll sort you out:
-                      </span>
-                      <span className="mt-2.5 flex flex-col gap-1.5">
-                        <a
-                          href={WA_URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 rounded-lg bg-green-500 px-3 py-2 text-white text-xs font-medium hover:bg-green-600 transition-colors"
-                        >
-                          <FaWhatsapp size={13} /> Chat on WhatsApp
-                        </a>
-                        <a
-                          href={`tel:${PHONE_1.replace(/\s+/g, '')}`}
-                          className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-white text-xs font-medium hover:bg-ink/80 transition-colors"
-                        >
-                          <FaPhoneAlt size={11} /> Call {PHONE_1}
-                        </a>
-                        <a
-                          href={`mailto:${EMAIL}`}
-                          className="inline-flex items-center gap-2 rounded-lg border border-gold/60 bg-gold/10 px-3 py-2 text-ink text-xs font-medium hover:bg-gold hover:text-white transition-colors"
-                        >
-                          <FaEnvelope size={11} /> {EMAIL}
-                        </a>
-                      </span>
-                    </span>
-                  ) : (
-                    <MsgText text={msg.content} />
-                  )}
+       {msg.isFallback ? (
+  <span>
+    <span className="block">
+      Need further assistance or clarification? Our dedicated team is always happy to help. Please reach out to us directly, and we’ll be delighted to assist you:
+    </span>
+
+    <span className="mt-2.5 flex flex-col gap-1.5">
+
+      {/* WhatsApp */}
+      <a
+        href={WA_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 rounded-lg bg-green-500 px-3 py-2 text-white text-xs font-medium hover:bg-green-600 transition-colors"
+      >
+        <FaWhatsapp size={13} /> Chat on WhatsApp
+      </a>
+
+      {/* Phone 1 */}
+      <a
+        href={`tel:${PHONE_1.replace(/\s+/g, '')}`}
+        className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-white text-xs font-medium hover:bg-ink/80 transition-colors"
+      >
+        <FaPhoneAlt size={11} /> Call {PHONE_1}
+      </a>
+
+      {/* Phone 2 */}
+      <a
+        href={`tel:${PHONE_2.replace(/\s+/g, '')}`}
+        className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-white text-xs font-medium hover:bg-ink/80 transition-colors"
+      >
+        <FaPhoneAlt size={11} /> Call {PHONE_2}
+      </a>
+
+      {/* Phone 3 */}
+      <a
+        href={`tel:${PHONE_3.replace(/\s+/g, '')}`}
+        className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-white text-xs font-medium hover:bg-ink/80 transition-colors"
+      >
+        <FaPhoneAlt size={11} /> Call {PHONE_3}
+      </a>
+
+      {/* Email */}
+      <a
+        href={`mailto:${EMAIL}`}
+        className="inline-flex items-center gap-2 rounded-lg border border-gold/60 bg-gold/10 px-3 py-2 text-ink text-xs font-medium hover:bg-gold hover:text-white transition-colors"
+      >
+        <FaEnvelope size={11} /> {EMAIL}
+      </a>
+
+    </span>
+  </span>
+) : (
+  <MsgText text={msg.content} />
+)}
                 </div>
               </div>
             ))}
