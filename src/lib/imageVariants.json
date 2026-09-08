@@ -189,6 +189,54 @@
       960
     ]
   },
+  "/images/hero/homeland-dining.webp": {
+    "w": 4000,
+    "h": 2256,
+    "widths": [
+      640,
+      960,
+      1600,
+      2560
+    ]
+  },
+  "/images/hero/homeland-event-karen.webp": {
+    "w": 2560,
+    "h": 1440,
+    "widths": [
+      640,
+      960,
+      1600
+    ]
+  },
+  "/images/hero/homeland-front-view.webp": {
+    "w": 4000,
+    "h": 2256,
+    "widths": [
+      640,
+      960,
+      1600,
+      2560
+    ]
+  },
+  "/images/hero/itoya-dining.webp": {
+    "w": 3840,
+    "h": 2160,
+    "widths": [
+      640,
+      960,
+      1600,
+      2560
+    ]
+  },
+  "/images/hero/karen-wedding.webp": {
+    "w": 2560,
+    "h": 1707,
+    "widths": [
+      640,
+      960,
+      1600
+    ]
+  },
   "/images/lobby/lobby-1.webp": {
     "w": 1280,
     "h": 720,

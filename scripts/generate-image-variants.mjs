@@ -12,7 +12,7 @@ import path from 'node:path'
 
 const ROOT = path.resolve('public/images')
 const MANIFEST = path.resolve('src/lib/imageVariants.json')
-const WIDTHS = [640, 960]
+const WIDTHS = [640, 960, 1600, 2560]
 const QUALITY = 82
 
 const files = []

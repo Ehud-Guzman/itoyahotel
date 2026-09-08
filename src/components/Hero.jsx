@@ -9,17 +9,19 @@ export default function Hero() {
   const mottoTimer   = useRef(null)
 
   const slides = [
-    '/images/exterior/hotel-exterior-1.webp',
-    '/images/lobby/lobby-2.webp',
-    '/images/lounge/lounge-1.webp',
-    '/images/lobby/lobby-1.webp',
+    '/images/hero/homeland-event-karen.webp',
+    '/images/hero/itoya-dining.webp',
     '/images/rooms/sitting-area-1.webp',
     '/images/rooms/executive-room-1.webp',
+    '/images/hero/homeland-front-view.webp',
+    '/images/hero/homeland-dining.webp',
+    
     '/images/dining/restaurant-1.webp',
     '/images/reception/reception-2.webp',
     '/images/dining/food-1.webp',
     '/images/conference/conference-1.webp',
     '/images/exterior/layout-1.webp',
+    '/images/hero/karen-wedding.webp',
     '/images/events/events-1.webp',
     '/images/events/events-3.webp',
     '/images/events/homeland-1.webp',
