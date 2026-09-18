@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "images": "node scripts/generate-image-variants.mjs"
+    "images": "node scripts/generate-image-variants.mjs",
+    "images:hero": "node scripts/import-hero-images.mjs"
   },
   "dependencies": {
     "@sanity/client": "^7.23.0",

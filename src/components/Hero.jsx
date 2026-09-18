@@ -8,24 +8,27 @@ export default function Hero() {
   const welcomeTimer = useRef(null)
   const mottoTimer   = useRef(null)
 
+  // Full-screen slideshow. Every entry must be at least 2560px wide: the
+  // images are object-cover'd across the whole viewport, so a 1280px photo is
+  // scaled past its native size on any ordinary desktop and reads as soft.
+  // Text slides (index % 3 === 2) hold longer and carry the Welcome → Motto
+  // sequence, so they use the darker, more even photos where white type keeps
+  // its contrast.
   const slides = [
-    '/images/hero/homeland-event-karen.webp',
-    '/images/hero/itoya-dining.webp',
-    '/images/rooms/sitting-area-1.webp',
-    '/images/rooms/executive-room-1.webp',
     '/images/hero/homeland-front-view.webp',
+    '/images/hero/lobby-chairs.webp',
+    '/images/hero/restaurant-hall.webp',
+
+    '/images/hero/lounge.webp',
+    '/images/hero/corridor.webp',
+    '/images/hero/banquet-hall.webp',
+
+    '/images/hero/itoya-dining.webp',
     '/images/hero/homeland-dining.webp',
-    
-    '/images/dining/restaurant-1.webp',
-    '/images/reception/reception-2.webp',
-    '/images/dining/food-1.webp',
-    '/images/conference/conference-1.webp',
-    '/images/exterior/layout-1.webp',
+    '/images/hero/building-view.webp',
+
     '/images/hero/karen-wedding.webp',
-    '/images/events/events-1.webp',
-    '/images/events/events-3.webp',
-    '/images/events/homeland-1.webp',
-    '/images/events/homeland-setup.webp',
+    '/images/hero/homeland-event-karen.webp',
   ]
 
   const prefersReducedMotion = typeof window !== 'undefined'

@@ -1,12 +1,4 @@
 {
-  "/images/conference/conference-1.webp": {
-    "w": 1280,
-    "h": 720,
-    "widths": [
-      640,
-      960
-    ]
-  },
   "/images/conference/conference-2.webp": {
     "w": 1280,
     "h": 720,
@@ -173,7 +165,7 @@
       960
     ]
   },
-  "/images/exterior/layout-1.webp": {
+  "/images/exterior/private-1.webp": {
     "w": 1280,
     "h": 720,
     "widths": [
@@ -181,12 +173,34 @@
       960
     ]
   },
-  "/images/exterior/private-1.webp": {
-    "w": 1280,
-    "h": 720,
+  "/images/hero/banquet-hall.webp": {
+    "w": 3840,
+    "h": 2160,
     "widths": [
       640,
-      960
+      960,
+      1600,
+      2560
+    ]
+  },
+  "/images/hero/building-view.webp": {
+    "w": 3840,
+    "h": 2160,
+    "widths": [
+      640,
+      960,
+      1600,
+      2560
+    ]
+  },
+  "/images/hero/corridor.webp": {
+    "w": 3840,
+    "h": 2160,
+    "widths": [
+      640,
+      960,
+      1600,
+      2560
     ]
   },
   "/images/hero/homeland-dining.webp": {
@@ -235,6 +249,36 @@
       640,
       960,
       1600
+    ]
+  },
+  "/images/hero/lobby-chairs.webp": {
+    "w": 3840,
+    "h": 2160,
+    "widths": [
+      640,
+      960,
+      1600,
+      2560
+    ]
+  },
+  "/images/hero/lounge.webp": {
+    "w": 3840,
+    "h": 2160,
+    "widths": [
+      640,
+      960,
+      1600,
+      2560
+    ]
+  },
+  "/images/hero/restaurant-hall.webp": {
+    "w": 3840,
+    "h": 2160,
+    "widths": [
+      640,
+      960,
+      1600,
+      2560
     ]
   },
   "/images/lobby/lobby-1.webp": {
