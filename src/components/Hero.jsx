@@ -25,7 +25,7 @@ export default function Hero() {
 
     '/images/hero/itoya-dining.webp',
     '/images/hero/homeland-dining.webp',
-    '/images/hero/building-view.webp',
+    
 
     '/images/hero/karen-wedding.webp',
     '/images/hero/homeland-event-karen.webp',
