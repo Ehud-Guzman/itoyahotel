@@ -15,7 +15,7 @@ export default function Hero() {
   // sequence, so they use the darker, more even photos where white type keeps
   // its contrast.
   const slides = [
-    '/images/hero/homeland-front-view.webp',
+    
     '/images/hero/lobby-chairs.webp',
     '/images/hero/restaurant-hall.webp',
 
