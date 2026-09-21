@@ -1,1 +1,35 @@
-/*    /index.html   200
+# ─────────────────────────────────────────────────────────────────────────────
+# SEO: one URL per page.
+#
+# The public site is a single page — all in-page navigation uses #hash anchors
+# — plus /privacy and the staff /admin app. The old catch-all
+# (`/*  /index.html  200`) answered EVERY other path with HTTP 200 and a clone
+# of the homepage, which is what fed Search Console the endless stream of
+# "Alternate page with proper canonical tag" duplicates of https://hotelitoya.co.ke/
+#
+# Rules are evaluated top to bottom; the first one that matches wins.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# `/index.html` is a real file in the publish directory, so these need the `!`
+# (force) flag. The homepage is only ever reachable as `/`.
+/index.html          /           301!
+/index.htm           /           301!
+/index.php           /           301!
+
+# Alternate / legacy privacy URLs (the footer used to link /privacy-policy)
+/privacy/index.html  /privacy    301!
+/privacy/            /privacy    301!
+/privacy-policy      /privacy    301!
+
+# Staff app — canonical trailing-slash form
+/admin/              /admin      301!
+
+# App routes that need a real HTML document on a direct hit.
+# /privacy is a built file (privacy/index.html) carrying its own canonical tag.
+/privacy             /privacy/index.html   200!
+/admin               /index.html           200
+/admin/*             /index.html           200
+
+# Everything else falls through to dist/404.html with a genuine HTTP 404
+# status, so Google drops unknown URLs instead of filing them as duplicates.
+

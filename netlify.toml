@@ -27,3 +27,17 @@
     X-Frame-Options = "DENY"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Staff-only area — served the public app shell (which carries index,follow and
+# canonical "/" meta tags), so override them at the edge. Kept out via noindex
+# rather than a robots.txt Disallow: a disallowed URL can still be indexed if
+# anything links to it, whereas noindex is respected.
+[[headers]]
+  for = "/admin"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
