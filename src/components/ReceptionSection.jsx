@@ -24,8 +24,8 @@ export default function ReceptionSection() {
           {/* Hero Image */}
           <div className="relative h-[320px] md:h-[420px] lg:h-[520px]">
             <img
-              src="/images/reception/reception-2.webp"
-              srcSet={srcSet('/images/reception/reception-2.webp')}
+              src="/images/hero/itoya-dining.webp"
+              srcSet={srcSet('/images/hero/itoya-dining.webp')}
               /* fixed-height cover banner: needed width = height × 16/9 per breakpoint */
               sizes="(min-width: 1024px) 926px, (min-width: 768px) 748px, 570px"
               alt="Hotel Itoya Reception and Lobby"
