@@ -6,14 +6,18 @@ import { fileURLToPath } from 'node:url'
 // so that its <link rel="canonical"> lives in the raw HTML instead of being
 // injected by JavaScript (Search Console was filing /privacy as an "alternate
 // page" because it inherited the homepage's canonical through shared HTML).
-export default defineConfig({
+export default defineConfig(({ isSsrBuild }) => ({
   plugins: [react()],
   build: {
-    rollupOptions: {
-      input: {
-        main:    fileURLToPath(new URL('./index.html', import.meta.url)),
-        privacy: fileURLToPath(new URL('./privacy/index.html', import.meta.url)),
-      },
-    },
+    // The SSR build (src/entry-server.jsx, used by scripts/prerender.mjs) has its
+    // own entry and must not be handed the HTML inputs.
+    rollupOptions: isSsrBuild
+      ? {}
+      : {
+          input: {
+            main:    fileURLToPath(new URL('./index.html', import.meta.url)),
+            privacy: fileURLToPath(new URL('./privacy/index.html', import.meta.url)),
+          },
+        },
   },
-})
+}))

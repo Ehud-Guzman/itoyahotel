@@ -27,8 +27,10 @@
 # App routes that need a real HTML document on a direct hit.
 # /privacy is a built file (privacy/index.html) carrying its own canonical tag.
 /privacy             /privacy/index.html   200!
-/admin               /index.html           200
-/admin/*             /index.html           200
+# The homepage in index.html is prerendered, so the staff app gets the plain
+# app shell (scripts/prerender.mjs writes it) rather than the baked-in homepage.
+/admin               /app-shell.html 200
+/admin/*             /app-shell.html 200
 
 # Everything else falls through to dist/404.html with a genuine HTTP 404
 # status, so Google drops unknown URLs instead of filing them as duplicates.

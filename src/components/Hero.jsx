@@ -119,7 +119,7 @@ export default function Hero() {
               currentSlide === i ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-105 -translate-y-3'
             }`}
             loading={i === 0 ? 'eager' : 'lazy'}
-            fetchPriority={i === 0 ? 'high' : 'low'}
+            fetchpriority={i === 0 ? 'high' : 'low'}
           />
         ))}
       </div>

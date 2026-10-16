@@ -1,5 +1,5 @@
 import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, hydrateRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import AdminApp from './admin/AdminApp.jsx'
@@ -19,10 +19,21 @@ if (isAdmin) {
   document.querySelector('link[rel="canonical"]')?.remove()
 }
 
-createRoot(document.getElementById('root')).render(
+const rootEl = document.getElementById('root')
+
+const tree = (
   <StrictMode>
     <ErrorBoundary>
       {isAdmin ? <AdminApp /> : isPrivacy ? <PrivacyPolicy /> : <App />}
     </ErrorBoundary>
-  </StrictMode>,
+  </StrictMode>
 )
+
+// The homepage is prerendered at build time (scripts/prerender.mjs), so #root
+// already holds its HTML: hydrate it. /admin and /privacy are never prerendered
+// and start empty, so they mount normally.
+if (!isAdmin && !isPrivacy && rootEl.hasChildNodes()) {
+  hydrateRoot(rootEl, tree)
+} else {
+  createRoot(rootEl).render(tree)
+}

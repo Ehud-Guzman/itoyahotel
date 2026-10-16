@@ -37,6 +37,12 @@
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"
 
+# The plain app shell used for /admin must never be indexed as a duplicate page.
+[[headers]]
+  for = "/app-shell.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
 [[headers]]
   for = "/admin/*"
   [headers.values]
