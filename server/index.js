@@ -36,7 +36,7 @@ app.use(cors({
     'http://localhost:5173',
   ],
 }))
-app.use(express.json())
+app.use(express.json({ limit: '50kb' }))   // JSON bodies here are tiny (contact form, retry, M-Pesa callback)
 
 app.get('/health', (_, res) => res.json({ ok: true }))
 
@@ -57,8 +57,41 @@ app.use('/api/mpesa',   mpesaRouter)
 app.use('/api/contact', contactLimiter, contactRouter)
 app.use('/api/admin',   adminRouter)
 
+// ── ID document retention ─────────────────────────────────────────────────────
+// Guest ID photos are only needed to register the guest and for a short window
+// afterwards. The privacy policy promises they are deleted once no longer
+// needed; this is what does it. OFF unless ID_RETENTION_DAYS is set, because the
+// right period is a legal/record-keeping decision for the hotel and deletion
+// can't be undone. Removes the images only; the booking record itself stays.
+//   ID_RETENTION_DAYS            days after check-out to keep IDs for paid/reserved stays
+//   ID_ABANDONED_RETENTION_DAYS  days to keep IDs from bookings that were never completed (default 7)
+function startIdRetention() {
+  const retentionDays = Number.parseInt(process.env.ID_RETENTION_DAYS, 10)
+  if (!(retentionDays > 0)) {
+    console.log('ID retention: off (set ID_RETENTION_DAYS to delete guest ID images automatically).')
+    return
+  }
+  const abandonedDays = Number.parseInt(process.env.ID_ABANDONED_RETENTION_DAYS, 10) > 0
+    ? Number.parseInt(process.env.ID_ABANDONED_RETENTION_DAYS, 10)
+    : 7
+  const run = async () => {
+    try {
+      const purged = await store.purgeIdDocuments({ retentionDays, abandonedDays })
+      if (purged > 0) console.log(`ID retention: removed ID images from ${purged} booking(s).`)
+    } catch (err) {
+      console.error('ID retention run failed:', err.message)
+    }
+  }
+  console.log(`ID retention: on (${retentionDays} days after check-out, ${abandonedDays} days for unfinished bookings).`)
+  setTimeout(run, 60_000).unref()                    // shortly after boot
+  setInterval(run, 6 * 60 * 60 * 1000).unref()       // then every 6 hours
+}
+
 store.init()
-  .then(() => app.listen(PORT, () => console.log(`Hotel Itoya server running on :${PORT}`)))
+  .then(() => {
+    app.listen(PORT, () => console.log(`Hotel Itoya server running on :${PORT}`))
+    startIdRetention()
+  })
   .catch((err) => {
     console.error('Failed to initialize booking store:', err.message)
     process.exit(1)

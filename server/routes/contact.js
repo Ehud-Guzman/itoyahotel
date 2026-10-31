@@ -1,5 +1,6 @@
 const express = require('express')
 const { createTransporter } = require('../lib/mailer')
+const { LIMITS, isEmail, isPhone, tooLong } = require('../lib/validate')
 
 const router = express.Router()
 
@@ -36,6 +37,20 @@ router.post('/', async (req, res) => {
     if (!name || !email || !message) {
       return res.status(400).json({ message: 'Name, email and message are required' })
     }
+    // Everything below is interpolated into an email the hotel reads, so keep it
+    // to plain strings of a sane size (this route is unauthenticated).
+    for (const [label, value] of [['Name', name], ['Email', email], ['Message', message]]) {
+      if (typeof value !== 'string') return res.status(400).json({ message: `${label} is invalid.` })
+    }
+    if (tooLong(name, LIMITS.name))       return res.status(400).json({ message: `Name must be ${LIMITS.name} characters or fewer.` })
+    if (!isEmail(email))                  return res.status(400).json({ message: 'Please enter a valid email address.' })
+    if (tooLong(message, LIMITS.message)) return res.status(400).json({ message: `Message must be ${LIMITS.message} characters or fewer.` })
+    if (phone && !isPhone(phone))         return res.status(400).json({ message: 'Please enter a valid phone number.' })
+    for (const value of [checkin, checkout, guests, type]) {
+      if (value != null && (typeof value !== 'string' || tooLong(value, LIMITS.short))) {
+        return res.status(400).json({ message: 'Some of the details you entered are invalid.' })
+      }
+    }
 
     const transporter = createTransporter()
     const enquiryType  = ENQUIRY_LABELS[type] || 'General Enquiry'
@@ -44,7 +59,7 @@ router.post('/', async (req, res) => {
       from:    `"Hotel Itoya Website" <${process.env.EMAIL_USER}>`,
       to:      process.env.HOTEL_EMAIL,
       replyTo: email,
-      subject: `New Enquiry — ${enquiryType} — ${name}`,
+      subject: `New Enquiry — ${enquiryType} — ${name.replace(/\s+/g, ' ').trim()}`,
       html: `
         <h2 style="font-family:serif;color:#a4733c">New Website Enquiry</h2>
         <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px">

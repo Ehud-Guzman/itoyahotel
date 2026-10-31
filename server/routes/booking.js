@@ -5,6 +5,9 @@ const rateLimit  = require('express-rate-limit')
 const store      = require('../store')
 const { createTransporter } = require('../lib/mailer')
 const { ROOM_CATALOG } = require('../roomCatalog')
+const {
+  LIMITS, isEmail, isPhone, isMpesaPhone, tooLong, validateStay, safeFilePart, safeExtension,
+} = require('../lib/validate')
 
 const router  = express.Router()
 
@@ -263,8 +266,8 @@ async function sendEmails(booking, { paid = true } = {}) {
       </p>
     `,
     attachments: [
-      { filename: `ID-front-${b.name}.${idFrontName.split('.').pop()}`, content: idFrontBuffer },
-      { filename: `ID-back-${b.name}.${idBackName.split('.').pop()}`,  content: idBackBuffer  },
+      { filename: `ID-front-${safeFilePart(b.name)}.${safeExtension(idFrontName)}`, content: idFrontBuffer },
+      { filename: `ID-back-${safeFilePart(b.name)}.${safeExtension(idBackName)}`,  content: idBackBuffer  },
     ],
   })
 
@@ -292,6 +295,40 @@ async function sendEmails(booking, { paid = true } = {}) {
       </p>
     `,
   })
+}
+
+// How long a sent STK prompt is treated as still answerable. Safaricom keeps the
+// prompt on the guest's phone for roughly a minute; two minutes leaves margin.
+const STK_PROMPT_WINDOW_MS = 2 * 60 * 1000
+
+// Asks Safaricom directly whether a pending booking has been paid and, if so,
+// settles it. Only the "definitely paid" answer is trusted: anything else
+// (including query errors, which commonly just mean "still processing") is
+// left for the real callback or the next poll to resolve, so a slow-but-live
+// transaction is never mis-marked as failed.
+//
+// Settling goes through transitionStatus, so when this races Safaricom's own
+// callback exactly one of them wins and only that one sends the emails.
+// Returns true when the booking is (now) paid.
+async function settleIfPaid(record) {
+  if (record.status === 'success') return true
+  if (record.status !== 'pending' || !record.checkoutRequestId) return false
+  try {
+    const result = await queryStkStatus({ checkoutRequestId: record.checkoutRequestId })
+    if (String(result.ResultCode) !== '0') return false
+    const mpesaRef = result.CallbackMetadata?.Item?.find?.(i => i.Name === 'MpesaReceiptNumber')?.Value || ''
+    const won = await store.transitionStatus(record.b.ref, ['pending'], 'success', { mpesaRef })
+    if (won) {
+      record.status = 'success'
+      record.b.mpesaRef = mpesaRef
+      // Fire-and-forget: callers are polled every 3s by a waiting guest, so an
+      // SMTP hang here must not stall them.
+      sendEmails(record).catch(e => console.error('Reconciliation email error:', e.message))
+    }
+    return true
+  } catch {
+    return false
+  }
 }
 
 // Maps a validation failure to the modal step/field it belongs to, so the
@@ -322,12 +359,18 @@ router.post(
         guests, name, phone, email, requests, mpesaPhone, clientRequestId,
       } = req.body
 
-      if (!room)     return fail(res, 400, 'Please select a room type.', 0, 'room')
+      if (!room || typeof room !== 'string') return fail(res, 400, 'Please select a room type.', 0, 'room')
       if (!checkIn)  return fail(res, 400, 'Select a check-in date.', 0, 'checkIn')
       if (!checkOut) return fail(res, 400, 'Select a check-out date.', 0, 'checkOut')
-      if (!name)     return fail(res, 400, 'Full name is required.', 1, 'name')
+      if (!name || typeof name !== 'string' || !name.trim()) return fail(res, 400, 'Full name is required.', 1, 'name')
+      if (tooLong(name, LIMITS.name))   return fail(res, 400, `Name must be ${LIMITS.name} characters or fewer.`, 1, 'name')
       if (!phone)    return fail(res, 400, 'Phone number is required.', 1, 'phone')
+      if (!isPhone(phone))              return fail(res, 400, 'Enter a valid phone number.', 1, 'phone')
       if (!email)    return fail(res, 400, 'Email is required.', 1, 'email')
+      if (!isEmail(email))              return fail(res, 400, 'Enter a valid email address.', 1, 'email')
+      if (tooLong(requests, LIMITS.requests)) {
+        return fail(res, 400, `Special requests must be ${LIMITS.requests} characters or fewer.`, 1, 'requests')
+      }
       if (!req.files?.idFront)
         return fail(res, 400, 'The front of your ID could not be uploaded — please use a JPG, PNG, or PDF file.', 2, 'idFront')
       if (!req.files?.idBack)
@@ -338,16 +381,10 @@ router.post(
       if (!catalogEntry) {
         return fail(res, 400, 'Unknown room type.', 0, 'room')
       }
-      const checkInDate  = new Date(`${checkIn}T00:00:00Z`)
-      const checkOutDate = new Date(`${checkOut}T00:00:00Z`)
-      const nights = Math.round((checkOutDate - checkInDate) / 86_400_000)
-      if (!(nights > 0)) {
-        return fail(res, 400, 'Check-out must be after check-in.', 0, 'checkOut')
-      }
-      const todayUTC = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00Z')
-      if (checkInDate < todayUTC) {
-        return fail(res, 400, 'Check-in date cannot be in the past.', 0, 'checkIn')
-      }
+      // Strict dates, "today" in Nairobi time, and a sane length/lead time for a stay.
+      const stay = validateStay({ checkIn, checkOut })
+      if (stay.error) return fail(res, 400, stay.error, 0, stay.field)
+      const { nights } = stay
       const guestsNum = Number(guests)
       if (!Number.isInteger(guestsNum) || guestsNum < 1) {
         return fail(res, 400, 'Enter a valid number of guests.', 0, 'guests')
@@ -356,6 +393,12 @@ router.post(
         return fail(res, 400, `${catalogEntry.label} fits up to ${catalogEntry.maxGuests} guests.`, 0, 'guests')
       }
       const amount = catalogEntry.price * nights
+
+      // Only the live flow pushes a prompt to this number, so only then does its
+      // format matter (the client sends it in 2547XXXXXXXX form).
+      if (mpesaIsLive() && !isMpesaPhone(mpesaPhone)) {
+        return fail(res, 400, 'Enter a valid Kenyan M-Pesa phone number.', 4, 'mpesaPhone')
+      }
 
       const idFrontFile = req.files.idFront[0]
       const idBackFile  = req.files.idBack[0]
@@ -441,8 +484,31 @@ router.post('/:ref/retry', stkLimiter, async (req, res) => {
     const live = mpesaIsLive()
     const clientRequestId = req.body?.clientRequestId
 
+    if (live && !isMpesaPhone(phone)) {
+      return fail(res, 400, 'Enter a valid Kenyan M-Pesa phone number.', 4, 'mpesaPhone')
+    }
+
     const { status, body } = await withIdempotency(clientRequestId, async () => {
       if (live) {
+        // A payment prompt may already be on the guest's phone for this very
+        // booking (the client's poll timed out, or they hit Try Again early).
+        // Pushing a second one risks charging them twice, so first ask
+        // Safaricom whether the first already went through, and otherwise wait
+        // out the prompt's lifetime before sending another.
+        if (record.status === 'pending' && record.checkoutRequestId) {
+          if (await settleIfPaid(record)) {
+            return { status: 200, body: { ref: record.b.ref, live } }
+          }
+          if (record.stkRequestedAt && Date.now() - record.stkRequestedAt < STK_PROMPT_WINDOW_MS) {
+            return {
+              status: 409,
+              body: {
+                message: 'A payment request was just sent to your phone. Please complete it there, or wait a minute before trying again.',
+                step: 4, field: '_general',
+              },
+            }
+          }
+        }
         try {
           const ckId = await initiateSTKPush({ phone, amount: record.b.amount, ref: record.b.ref })
           await store.updateStatus(record.b.ref, 'pending', { checkoutRequestId: ckId })
@@ -479,38 +545,26 @@ router.post('/:ref/retry', stkLimiter, async (req, res) => {
 
 // ── GET /api/booking/status/:ref ──────────────────────────────────────────────
 router.get('/status/:ref', statusLimiter, async (req, res) => {
+  try {
+    await respondWithStatus(req, res)
+  } catch (err) {
+    console.error('Booking status error:', err)
+    res.status(500).json({ status: 'error' })
+  }
+})
+
+async function respondWithStatus(req, res) {
   const record = await store.getByRef(req.params.ref)
   if (!record) return res.status(404).json({ status: 'not_found' })
 
-  // Safety net: don't rely solely on Safaricom's callback landing. If the
-  // booking is still pending and we have a CheckoutRequestID, ask Daraja
-  // directly — covers callback delivery failures (cold starts, a briefly
-  // misconfigured MPESA_CALLBACK_URL, transient network issues) that would
-  // otherwise leave a guest who actually paid staring at a timeout. Only the
-  // "definitely paid" result is trusted here; anything else (including query
-  // errors, which commonly just mean "still processing") is left for the
-  // real callback or the next poll to resolve, so we never mis-mark a
-  // slow-but-live transaction as failed.
-  if (record.status === 'pending' && record.checkoutRequestId) {
-    try {
-      const result = await queryStkStatus({ checkoutRequestId: record.checkoutRequestId })
-      if (String(result.ResultCode) === '0') {
-        const mpesaRef = result.CallbackMetadata?.Item?.find?.(i => i.Name === 'MpesaReceiptNumber')?.Value || ''
-        await store.updateStatus(record.b.ref, 'success', { mpesaRef })
-        record.status = 'success'
-        record.b.mpesaRef = mpesaRef
-        // Fire-and-forget — this response is polled every 3s by a waiting
-        // guest; an SMTP hang here must not stall that poll.
-        sendEmails(record).catch(e => console.error('Reconciliation email error:', e.message))
-      }
-    } catch {
-      // Still processing (Daraja errors on an in-flight query) or the query
-      // itself failed — trust whatever the webhook has already recorded.
-    }
-  }
+  // Safety net: don't rely solely on Safaricom's callback landing. Covers
+  // callback delivery failures (cold starts, a briefly misconfigured
+  // MPESA_CALLBACK_URL, transient network issues) that would otherwise leave a
+  // guest who actually paid staring at a timeout. See settleIfPaid.
+  await settleIfPaid(record)
 
   res.json({ status: record.status })
-})
+}
 
 module.exports = router
 module.exports.sendEmails = sendEmails
