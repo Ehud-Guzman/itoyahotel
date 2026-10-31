@@ -26,6 +26,11 @@
   [headers.values]
     Cache-Control = "public, max-age=300, must-revalidate"
 
+[[headers]]
+  for = "/season-art.css"
+  [headers.values]
+    Cache-Control = "public, max-age=300, must-revalidate"
+
 # Baseline security headers site-wide
 [[headers]]
   for = "/*"

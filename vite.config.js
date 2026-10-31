@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath } from 'node:url'
+import fs from 'node:fs'
 import { SEASONS, resolveSeason } from './src/data/seasons.js'
 
 // The festive theme can't be decided at build time (the page is static and the
@@ -26,12 +27,21 @@ const seasonBootSource = () => `(function () {
     d.setAttribute("data-season-name", season.name);
     d.setAttribute("data-season-phase", season.phase);
     d.setAttribute("data-season-year", String(season.year));
-    if (read("localStorage", "season-off") !== "1") d.setAttribute("data-season", season.name);
+    if (read("localStorage", "season-off") !== "1") {
+      d.setAttribute("data-season", season.name);
+      // The festive artwork is its own file, fetched only in season (see src/season-art.css).
+      var art = document.createElement("link");
+      art.rel = "stylesheet";
+      art.href = "/season-art.css";
+      document.head.appendChild(art);
+    }
     if (read("localStorage", "season-bar") === season.key) d.setAttribute("data-season-bar", "closed");
     if (read("localStorage", "season-snow") === "off") d.setAttribute("data-season-snow", "off");
   } catch (e) {}
 })();
 `
+
+const seasonArtSource = () => fs.readFileSync(fileURLToPath(new URL('./src/season-art.css', import.meta.url)), 'utf8')
 
 const seasonBoot = () => ({
   name: 'season-boot',
@@ -40,9 +50,14 @@ const seasonBoot = () => ({
       res.setHeader('Content-Type', 'application/javascript')
       res.end(seasonBootSource())
     })
+    server.middlewares.use('/season-art.css', (_req, res) => {
+      res.setHeader('Content-Type', 'text/css')
+      res.end(seasonArtSource())
+    })
   },
   generateBundle() {
     this.emitFile({ type: 'asset', fileName: 'season-boot.js', source: seasonBootSource() })
+    this.emitFile({ type: 'asset', fileName: 'season-art.css', source: seasonArtSource() })
   },
 })
 

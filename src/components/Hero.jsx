@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { srcSet } from '../lib/responsive'
+import { useSeason } from '../lib/season'
 
 export default function Hero() {
+  const season = useSeason()
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [welcomePhase,    setWelcomePhase]    = useState(false)
   const isFirstRun   = useRef(true)
@@ -158,6 +160,11 @@ export default function Hero() {
               ${showWelcome ? '' : 'max-lg:opacity-100 max-lg:translate-y-0 max-lg:pointer-events-auto max-lg:delay-[600ms]'}
             `}
           >
+            {/* Festive greeting: only while the Christmas theme is on */}
+            {season.active && season.copy?.hero && (
+              <p className="season-hero-greeting">{season.copy.hero}</p>
+            )}
+
             <div className="flex justify-center mb-6">
               <div className="h-[2px] w-16 bg-gold/80" />
             </div>

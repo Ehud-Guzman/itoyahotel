@@ -22,8 +22,8 @@ export default function Footer() {
 
   return (
     <footer className="relative bg-primary">
-      {/* Ribbon along the top edge (Christmas season only; see season.css) */}
-      <div className="season-ribbon" aria-hidden="true" />
+      {/* Garland draped along the top edge (Christmas season only; see season.css) */}
+      <div className="season-garland season-garland--footer" aria-hidden="true" />
       {/* Main footer */}
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-14">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8">

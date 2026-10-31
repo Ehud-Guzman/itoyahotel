@@ -60,7 +60,13 @@ export function useSeason() {
       barClosed: bar === 'closed',
       snowOn: snow !== 'off',
       features: (name && SEASON_FEATURES[name]) || {},
-      copy: raw && { ...raw, text: fill(raw.text), short: fill(raw.short) },
+      copy: raw && {
+        ...raw,
+        text: fill(raw.text),
+        short: fill(raw.short),
+        hero: fill(raw.hero),
+        festive: { ...raw.festive, title: fill(raw.festive.title), body: fill(raw.festive.body) },
+      },
     }
   }, [snapshot])
 }

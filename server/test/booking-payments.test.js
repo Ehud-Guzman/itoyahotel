@@ -3,7 +3,7 @@
 //   1. /retry never fires a second STK push while the first prompt may be live
 //   2. a booking is confirmed (and emailed) exactly once, however the callback
 //      and the status poll race
-delete process.env.DATABASE_URL
+const { usingPostgres, sql, resetBookings, closeHelpers } = require('./helpers')
 Object.assign(process.env, {
   NODE_ENV: 'test', MPESA_ENV: 'production', MPESA_CONSUMER_KEY: 'k', MPESA_CONSUMER_SECRET: 's',
   MPESA_SHORTCODE: '174379', MPESA_PASSKEY: 'p', MPESA_CALLBACK_URL: 'https://example.test/cb',
@@ -34,6 +34,7 @@ const mpesaRouter = require('../routes/mpesa')
 
 let server, base
 test.before(async () => {
+  await resetBookings()
   await store.init()
   const app = express()
   app.use(express.json())
@@ -43,7 +44,11 @@ test.before(async () => {
   await new Promise((r) => server.listen(0, r))
   base = `http://127.0.0.1:${server.address().port}`
 })
-test.after(() => server.close())
+test.after(async () => {
+  server.close()
+  await store.close()
+  await closeHelpers()
+})
 
 const settle = () => new Promise((r) => setTimeout(r, 30))   // let fire-and-forget emails finish
 const post = (path, body) => fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -56,7 +61,13 @@ async function pendingBooking(ref, { ageMs = 0 } = {}) {
     status: 'pending', checkoutRequestId: null,
   })
   await store.updateStatus(ref, 'pending', { checkoutRequestId: `ck-${ref}` })
-  if (ageMs) (await store.getByRef(ref)).stkRequestedAt = Date.now() - ageMs
+  if (ageMs) {
+    if (usingPostgres) {
+      await sql(`UPDATE bookings SET stk_requested_at = now() - ($2::int * interval '1 millisecond') WHERE ref = $1`, [ref, ageMs])
+    } else {
+      (await store.getByRef(ref)).stkRequestedAt = Date.now() - ageMs
+    }
+  }
 }
 
 test.beforeEach(() => {

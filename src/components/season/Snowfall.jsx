@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from 'react'
 // compositor and costs the main thread nothing. It is loaded lazily, only in
 // season, waits for the browser to be idle so it can never touch LCP or input
 // delay, and skips itself for people and devices that would not enjoy it.
+//
+// Two kinds of flake: soft dots (most of them) and "crystals", real six-armed
+// snowflakes in frosted gold that turn slowly as they fall.
 
 const prefersCalm = () => {
   const connection = navigator.connection
@@ -16,22 +19,28 @@ const prefersCalm = () => {
 
 const random = (min, max) => min + Math.random() * (max - min)
 
-const makeFlakes = (count) =>
-  Array.from({ length: count }, () => {
-    const size = random(2.5, 6.8)
-    // Bigger flakes are "closer": they fall faster, sway wider and look brighter.
-    const depth = (size - 2.5) / 4.3
-    return {
-      near: size > 5.4,
-      x: `${random(0, 100).toFixed(1)}%`,
-      size: `${size.toFixed(1)}px`,
-      duration: `${(random(20, 28) - depth * 12).toFixed(1)}s`,
-      sway: `${random(2.4, 4.2).toFixed(1)}s`,
-      delay: `${(-random(0, 26)).toFixed(1)}s`,
-      drift: `${(14 + depth * 26 + random(0, 14)).toFixed(0)}px`,
-      opacity: (0.4 + depth * 0.5).toFixed(2),
-    }
-  })
+function makeFlake(crystal) {
+  // Bigger flakes are "closer": they fall faster, sway wider and look brighter.
+  const size = crystal ? random(11, 20) : random(2.5, 6.8)
+  const depth = crystal ? (size - 11) / 9 : (size - 2.5) / 4.3
+  return {
+    crystal,
+    near: !crystal && size > 5.4,
+    x: `${random(0, 100).toFixed(1)}%`,
+    size: `${size.toFixed(1)}px`,
+    duration: `${(random(22, 32) - depth * (crystal ? 10 : 12)).toFixed(1)}s`,
+    sway: `${random(2.6, 4.6).toFixed(1)}s`,
+    spin: `${random(9, 18).toFixed(1)}s`,
+    delay: `${(-random(0, 30)).toFixed(1)}s`,
+    drift: `${(14 + depth * 26 + random(0, 14)).toFixed(0)}px`,
+    opacity: (crystal ? 0.55 + depth * 0.4 : 0.4 + depth * 0.5).toFixed(2),
+  }
+}
+
+const makeFlakes = (dots, crystals) => [
+  ...Array.from({ length: dots }, () => makeFlake(false)),
+  ...Array.from({ length: crystals }, () => makeFlake(true)),
+]
 
 export default function Snowfall() {
   const [ready, setReady] = useState(false)
@@ -49,10 +58,10 @@ export default function Snowfall() {
   }, [])
 
   // Fewer flakes on phones. Generated once on the client.
-  const flakes = useMemo(
-    () => (ready ? makeFlakes(window.matchMedia('(max-width: 639px)').matches ? 16 : 30) : []),
-    [ready],
-  )
+  const flakes = useMemo(() => {
+    if (!ready) return []
+    return window.matchMedia('(max-width: 639px)').matches ? makeFlakes(14, 6) : makeFlakes(30, 12)
+  }, [ready])
 
   if (!ready) return null
 
@@ -61,17 +70,20 @@ export default function Snowfall() {
       {flakes.map((flake, index) => (
         <i
           key={index}
-          className={flake.near ? 'near' : undefined}
+          className={flake.crystal ? 'crystal' : flake.near ? 'near' : undefined}
           style={{
             '--x': flake.x,
             '--s': flake.size,
             '--d': flake.duration,
             '--sway': flake.sway,
+            '--spin': flake.spin,
             '--delay': flake.delay,
             '--dx': flake.drift,
             '--o': flake.opacity,
           }}
-        />
+        >
+          <b />
+        </i>
       ))}
     </div>
   )

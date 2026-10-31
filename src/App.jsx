@@ -15,6 +15,7 @@ import ReceptionSection from './components/ReceptionSection'
 import BookingModal from './components/BookingModal'
 import BookingBar   from './components/BookingBar'
 import SeasonLayer  from './components/season/SeasonLayer'
+import FestiveSection from './components/season/FestiveSection'
 
 const GallerySection  = lazy(() => import('./components/GallerySection'))
 const Testimonials    = lazy(() => import('./components/Testimonials'))
@@ -44,6 +45,7 @@ export default function App() {
       <Navbar onBookNow={() => openBooking()} />
       <main id="main-content" tabIndex={-1} className="outline-none">
         <Hero onBookNow={() => openBooking()} />
+        <FestiveSection onBookNow={() => openBooking()} />
         <ReceptionSection />
         <AboutSection />
         <RoomsPreview onBookRoom={openBooking} />

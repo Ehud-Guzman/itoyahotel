@@ -1,6 +1,7 @@
-// Runs against the in-memory store (no DATABASE_URL), which implements the same
-// contract as the Postgres one.
-delete process.env.DATABASE_URL
+// Runs against the in-memory store by default. Set TEST_DATABASE_URL to a local
+// throwaway Postgres to run the very same assertions against the real SQL
+// (see helpers.js).
+const { usingPostgres, sql, resetBookings, closeHelpers } = require('./helpers')
 process.env.NODE_ENV = 'test'
 
 const test = require('node:test')
@@ -19,7 +20,23 @@ function booking(ref, { status = 'pending', checkOut = isoDay(2) } = {}) {
   }
 }
 
-test.before(() => store.init())
+test.before(async () => {
+  await resetBookings()
+  await store.init()
+})
+test.after(async () => {
+  await store.close()
+  await closeHelpers()
+})
+
+// create() stamps createdAt itself, so back-date a stored booking after the fact.
+async function backdate(ref, days) {
+  if (usingPostgres) {
+    await sql('UPDATE bookings SET created_at = now() - make_interval(days => $2::int) WHERE ref = $1', [ref, days])
+  } else {
+    ;(await store.getByRef(ref)).createdAt = new Date(Date.now() - days * DAY).toISOString()
+  }
+}
 
 test('transitionStatus: only one of two racing settlers wins', async () => {
   await store.create(booking('R1'))
@@ -55,8 +72,7 @@ test('purgeIdDocuments removes IDs by retention rule and keeps the booking', asy
   await store.create(booking('P-NEW-PAID',   { status: 'reservation', checkOut: isoDay(-10) }))
   await store.create(booking('P-FUTURE',     { status: 'success',     checkOut: isoDay(5) }))
   await store.create(booking('P-OLD-ABAND',  { status: 'failed' }))
-  // create() stamps createdAt itself, so back-date it on the stored record
-  ;(await store.getByRef('P-OLD-ABAND')).createdAt = new Date(Date.now() - 30 * DAY).toISOString()
+  await backdate('P-OLD-ABAND', 30)
   await store.create(booking('P-NEW-ABAND',  { status: 'pending' }))
 
   const purged = await store.purgeIdDocuments({ retentionDays: 90, abandonedDays: 7 })

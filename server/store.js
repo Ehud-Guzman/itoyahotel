@@ -244,7 +244,12 @@ async function deleteByRef(ref) {
   else memory.delete(ref)
 }
 
+// Lets tests (and graceful shutdowns) release the connection pool.
+async function close() {
+  if (pool) await pool.end()
+}
+
 module.exports = {
-  init, create, getByRef, getByCheckoutRequestId, updateStatus, transitionStatus,
+  close, init, create, getByRef, getByCheckoutRequestId, updateStatus, transitionStatus,
   deleteByRef, listAll, purgeIdDocuments,
 }

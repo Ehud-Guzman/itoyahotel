@@ -39,8 +39,10 @@ test('every phase of every season has copy, and the copy promises no price or di
     for (const phase of season.phases) {
       const copy = SEASON_COPY[season.name]?.[phase.id]
       assert.ok(copy, `${season.name}/${phase.id} has no copy`)
-      assert.ok(copy.text && copy.short && copy.cta?.label)
-      assert.doesNotMatch(`${copy.text} ${copy.short}`, /%|KES|discount|offer|free/i, 'no invented offers in seasonal copy')
+      assert.ok(copy.text && copy.short && copy.cta?.label && copy.hero)
+      assert.ok(copy.festive?.eyebrow && copy.festive.title && copy.festive.body, `${phase.id} is missing festive-section copy`)
+      const all = [copy.text, copy.short, copy.cta.label, copy.hero, ...Object.values(copy.festive)].join(' ')
+      assert.doesNotMatch(all, /%|KES|discount|offer|free/i, 'no invented offers in seasonal copy')
     }
   }
 })

@@ -26,8 +26,10 @@ export const SEASON_FEATURES = {
 
 // Tokens: {next} is the year a season that began in December leads into
 // (Dec 2026 and Jan 2027 -> 2027).
-// The message is a greeting plus a way to book. It deliberately promises no
-// price, discount or menu: add those here only once the hotel has set them.
+// Per phase:  text/short/cta = the announcement bar,  hero = the line above the
+// homepage headline,  festive = the dedicated section under the hero.
+// The wording is greetings and an invitation to book. It deliberately promises
+// no price, discount or menu: add those here only once the hotel has set them.
 export const SEASON_COPY = {
   christmas: {
     greeting: {
@@ -35,18 +37,36 @@ export const SEASON_COPY = {
       text: "Season's greetings from Hotel Itoya. Spend the festive season with us in Busia.",
       short: "Season's greetings from Hotel Itoya",
       cta: { label: 'Book a festive stay' },
+      hero: "Season's Greetings",
+      festive: {
+        eyebrow: 'The Festive Season',
+        title: 'Celebrate Christmas in Busia',
+        body: 'Gather your family, friends or team at Hotel Itoya this season. Stay with us, share a meal, or host your year-end celebration under one roof.',
+      },
     },
     christmas: {
       icon: 'gift',
       text: 'Merry Christmas from all of us at Hotel Itoya, Busia.',
       short: 'Merry Christmas from Hotel Itoya',
       cta: { label: 'Book your stay' },
+      hero: 'Merry Christmas',
+      festive: {
+        eyebrow: 'Christmas at Hotel Itoya',
+        title: 'Merry Christmas from all of us',
+        body: 'Wishing you and your loved ones a joyful Christmas. Our team is here to host your stay, your meals and your celebrations.',
+      },
     },
     newyear: {
       icon: 'party',
       text: 'Happy New Year {next} from Hotel Itoya. We look forward to hosting you.',
       short: 'Happy New Year from Hotel Itoya',
       cta: { label: 'Book your stay' },
+      hero: 'Happy New Year {next}',
+      festive: {
+        eyebrow: 'A New Year Begins',
+        title: 'Welcome in {next} with us',
+        body: 'Start the year in comfort. Book your stay, or plan your first gathering of {next} with the Hotel Itoya team.',
+      },
     },
   },
 }

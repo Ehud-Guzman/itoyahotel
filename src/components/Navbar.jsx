@@ -58,7 +58,8 @@ export default function Navbar({ onBookNow }) {
           <div className="flex items-center justify-between gap-8">
 
             {/* Hotel Itoya — left */}
-            <a href="#home" className="shrink-0 group flex flex-col items-start gap-1">
+            <a href="#home" className="relative shrink-0 group flex flex-col items-start gap-1">
+              <span className="season-holly" aria-hidden="true" />
               <img
                 src="/logos/hotel-itoya-logo.webp"
                 alt="Hotel Itoya"
@@ -120,7 +121,8 @@ export default function Navbar({ onBookNow }) {
                 ${scrolled ? '' : 'lg:opacity-0 lg:pointer-events-none'}
               `}
             >
-              <a href="#home" className="group shrink-0">
+              <a href="#home" className="relative group shrink-0">
+                <span className="season-holly" aria-hidden="true" />
                 <img
                   src="/logos/hotel-itoya-logo.webp"
                   alt="Hotel Itoya"
@@ -248,8 +250,14 @@ export default function Navbar({ onBookNow }) {
         </nav>
       </div>
 
-      {/* String lights (decoration, Christmas season only; see season.css) */}
-      <div className="season-lights" aria-hidden="true" />
+      {/* Garland and hanging baubles (decoration, Christmas season only; see season.css) */}
+      <div className={`season-garland ${scrolled ? 'season-garland--compact' : ''}`} aria-hidden="true" />
+      <div className={`season-baubles season-baubles--left ${scrolled ? 'season-baubles--compact' : ''}`} aria-hidden="true">
+        <i className="b-burgundy" /><i className="b-gold" /><i className="b-pine" />
+      </div>
+      <div className={`season-baubles season-baubles--right ${scrolled ? 'season-baubles--compact' : ''}`} aria-hidden="true">
+        <i className="b-pine" /><i className="b-gold" /><i className="b-burgundy" />
+      </div>
 
     </header>
   )
