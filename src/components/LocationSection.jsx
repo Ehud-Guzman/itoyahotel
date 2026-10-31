@@ -84,7 +84,7 @@ export default function LocationSection() {
                       {d.href ? (
                         <a
                           href={d.href}
-                          className="font-sans text-sm text-ink/70 hover:text-primary transition-colors duration-200"
+                          className="inline-block py-1.5 font-sans text-sm text-ink/70 hover:text-primary transition-colors duration-200"
                         >
                           {d.value}
                         </a>

@@ -1,4 +1,5 @@
 import { useState, useEffect, Fragment } from 'react'
+import SeasonBar from './season/SeasonBar'
 
 const navLinks = [
   { label: 'Home',       href: '#home' },
@@ -41,6 +42,9 @@ export default function Navbar({ onBookNow }) {
 
   return (
     <header className="fixed inset-x-0 top-0 z-50">
+
+      {/* Seasonal announcement: zero height (display: none) outside a season */}
+      <SeasonBar onBookNow={onBookNow} />
 
       {/* ── PARTNERSHIP BAR ─────────────────────────────────────────── */}
       <div
@@ -243,6 +247,9 @@ export default function Navbar({ onBookNow }) {
           </button>
         </nav>
       </div>
+
+      {/* String lights (decoration, Christmas season only; see season.css) */}
+      <div className="season-lights" aria-hidden="true" />
 
     </header>
   )

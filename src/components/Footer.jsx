@@ -1,4 +1,5 @@
 /* Footer — minimal premium footer */
+import FestiveSwitch from './season/FestiveSwitch'
 
 const footerLinks = {
   Hotel: [
@@ -20,7 +21,9 @@ export default function Footer() {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="bg-primary">
+    <footer className="relative bg-primary">
+      {/* Ribbon along the top edge (Christmas season only; see season.css) */}
+      <div className="season-ribbon" aria-hidden="true" />
       {/* Main footer */}
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-14">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8">
@@ -96,12 +99,12 @@ export default function Footer() {
           {Object.entries(footerLinks).map(([heading, links]) => (
             <div key={heading}>
               <p className="font-sans text-xs tracking-widest uppercase text-white mb-5">{heading}</p>
-              <ul className="space-y-3">
+              <ul className="space-y-1">
                 {links.map(({ label, href }) => (
                   <li key={label}>
                     {href
-                      ? <a href={href} className="font-sans font-light text-sm text-white hover:text-gold transition-colors duration-150">{label}</a>
-                      : <span className="font-sans font-light text-sm text-white/60">{label}</span>
+                      ? <a href={href} className="inline-block py-1.5 font-sans font-light text-sm text-white hover:text-gold transition-colors duration-150">{label}</a>
+                      : <span className="inline-block py-1.5 font-sans font-light text-sm text-white/60">{label}</span>
                     }
                   </li>
                 ))}
@@ -160,6 +163,8 @@ export default function Footer() {
                 Glimmerink Creations
               </a>
             </span>
+            {/* Renders nothing outside a season */}
+            <FestiveSwitch />
           </div>
         </div>
       </div>

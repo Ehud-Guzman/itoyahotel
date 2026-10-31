@@ -186,6 +186,7 @@ export default function ContactSection() {
                         type="text"
                         name="name"
                         required
+                        maxLength={100}
                         placeholder="John Doe"
                         value={formData.name}
                         onChange={handleChange}
@@ -197,6 +198,7 @@ export default function ContactSection() {
                         type="email"
                         name="email"
                         required
+                        maxLength={254}
                         placeholder="you@example.com"
                         value={formData.email}
                         onChange={handleChange}
@@ -210,6 +212,7 @@ export default function ContactSection() {
                       <input
                         type="tel"
                         name="phone"
+                        maxLength={20}
                         placeholder="+254 700 000 000"
                         value={formData.phone}
                         onChange={handleChange}
@@ -271,6 +274,7 @@ export default function ContactSection() {
                     <textarea
                       name="message"
                       rows={5}
+                      maxLength={3000}
                       placeholder="Tell us about your stay, requirements, or any special requests..."
                       value={formData.message}
                       onChange={handleChange}

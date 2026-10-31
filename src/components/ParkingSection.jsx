@@ -91,7 +91,7 @@ export default function ParkingSection() {
             </ul>
             <a
               href="#contact"
-              className="inline-block mt-8 font-sans text-[11px] uppercase tracking-[0.25em] text-primary hover:text-primary-dark border-b border-primary/30 hover:border-primary transition-colors pb-1"
+              className="inline-block mt-6 pt-2 font-sans text-[11px] uppercase tracking-[0.25em] text-primary hover:text-primary-dark border-b border-primary/30 hover:border-primary transition-colors pb-2"
             >
               Enquire about parking →
             </a>
@@ -129,7 +129,7 @@ export default function ParkingSection() {
             </ul>
             <a
               href="#contact"
-              className="inline-block mt-8 font-sans text-[11px] uppercase tracking-[0.25em] text-primary hover:text-primary-dark border-b border-primary/30 hover:border-primary transition-colors pb-1"
+              className="inline-block mt-6 pt-2 font-sans text-[11px] uppercase tracking-[0.25em] text-primary hover:text-primary-dark border-b border-primary/30 hover:border-primary transition-colors pb-2"
             >
               Explore catering options →
             </a>

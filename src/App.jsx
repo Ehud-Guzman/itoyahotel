@@ -14,6 +14,7 @@ import ParkingSection from './components/ParkingSection'
 import ReceptionSection from './components/ReceptionSection'
 import BookingModal from './components/BookingModal'
 import BookingBar   from './components/BookingBar'
+import SeasonLayer  from './components/season/SeasonLayer'
 
 const GallerySection  = lazy(() => import('./components/GallerySection'))
 const Testimonials    = lazy(() => import('./components/Testimonials'))
@@ -63,6 +64,9 @@ export default function App() {
       <Footer />
 
       <BookingBar onBookNow={() => openBooking()} />
+
+      {/* Snow: lazy, motion-safe, and only mounted while the festive season is on */}
+      <SeasonLayer />
 
       <Suspense fallback={null}>
         <ChatBot />

@@ -570,25 +570,25 @@ function StepDetails({ data, set, errors, clearErr }) {
       </p>
 
       <Field label="Full Name" error={errors.name}>
-        <input type="text" value={data.name} placeholder="As on your ID"
+        <input type="text" maxLength={100} value={data.name} placeholder="As on your ID"
           onChange={e => { set('name', e.target.value); clearErr('name') }}
           className={inp(errors.name)} />
       </Field>
 
       <Field label="Phone Number" error={errors.phone}>
-        <input type="tel" value={data.phone} placeholder="+254 7XX XXX XXX"
+        <input type="tel" maxLength={20} value={data.phone} placeholder="+254 7XX XXX XXX"
           onChange={e => { set('phone', e.target.value); clearErr('phone') }}
           className={inp(errors.phone)} />
       </Field>
 
       <Field label="Email Address" error={errors.email}>
-        <input type="email" value={data.email} placeholder="you@example.com"
+        <input type="email" maxLength={254} value={data.email} placeholder="you@example.com"
           onChange={e => { set('email', e.target.value); clearErr('email') }}
           className={inp(errors.email)} />
       </Field>
 
       <Field label="Special Requests">
-        <textarea rows={3} value={data.requests}
+        <textarea rows={3} maxLength={1000} value={data.requests}
           placeholder="Early check-in, dietary needs, room preferences…"
           onChange={e => set('requests', e.target.value)}
           className={`${inp(false)} resize-none`} />

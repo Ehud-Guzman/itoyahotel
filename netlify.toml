@@ -19,6 +19,13 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# Fixed filename (not content-hashed), so keep it short-lived: it carries the
+# festive-season dates and must pick up a change within minutes, not a year.
+[[headers]]
+  for = "/season-boot.js"
+  [headers.values]
+    Cache-Control = "public, max-age=300, must-revalidate"
+
 # Baseline security headers site-wide
 [[headers]]
   for = "/*"
@@ -27,6 +34,21 @@
     X-Frame-Options = "DENY"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+    # Content-Security-Policy. When something stops working after a change, check
+    # the browser console for a "Refused to ..." line, then widen the matching
+    # directive here. What each allowance is for:
+    #   script-src   only our own files. The one hash covers the inline
+    #                `onload="this.media='all'"` that loads Google Fonts without
+    #                blocking render (index.html, privacy/index.html). If that
+    #                handler's text ever changes, recompute the hash.
+    #   style-src    Google Fonts CSS, plus inline styles (React style props,
+    #                Tailwind arbitrary values, the snow animation variables)
+    #   img-src      our images, data:/blob: (ID photo previews), Sanity CMS images
+    #   connect-src  the booking API on Render (VITE_API_URL) and Sanity's API.
+    #                Move the API to another host and this must change with it.
+    #   frame-src    the Google Maps embed on the Location section
+    Content-Security-Policy = """default-src 'self'; script-src 'self' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cdn.sanity.io; connect-src 'self' https://itoyahotel-1wiy.onrender.com https://*.apicdn.sanity.io https://*.api.sanity.io; frame-src https://maps.google.com https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"""
 
 # Staff-only area — served the public app shell (which carries index,follow and
 # canonical "/" meta tags), so override them at the edge. Kept out via noindex

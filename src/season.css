@@ -1,0 +1,288 @@
+/* ----------------------------------- */
+/*  Seasonal (festive) theme           */
+/* ----------------------------------- */
+/*
+  Everything here is gated on html[data-season], which /season-boot.js sets only
+  while a season is running (see src/data/seasons.js and the season-boot plugin
+  in vite.config.js). Outside a season nothing below applies, so the page is
+  exactly what it always was. The decoration (announcement bar, string lights,
+  candle-gold ribbon, glow, snow) is Christmas only. The hotel's own brown and
+  gold stay the brand colours; burgundy and pine are accents only.
+*/
+
+:root {
+  --season-bar-h: 0px;
+}
+
+html[data-season] {
+  --season-bar-h: 2.25rem;
+}
+
+html[data-season="christmas"] {
+  --season-red: #8a1c26;
+  --season-pine: #1f5a3d;
+  --season-gold: #e6c887;
+  --season-bar-bg: linear-gradient(90deg, #5a1119 0%, #8a1c26 50%, #5a1119 100%);
+  --season-bar-line: rgb(230 200 135 / 0.55);
+}
+
+html[data-season][data-season-bar="closed"] {
+  --season-bar-h: 0px;
+}
+
+html[data-season="christmas"] ::selection {
+  background: rgb(138 28 38 / 0.2);
+}
+
+/* ---- Announcement strip (top of the fixed header) ---- */
+
+.season-bar {
+  position: relative;
+  height: var(--season-bar-h);
+  overflow: hidden;
+  color: #fff;
+  background: var(--season-bar-bg);
+  box-shadow: inset 0 -1px 0 var(--season-bar-line);
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html:not([data-season]) .season-bar {
+  display: none;
+}
+
+.season-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 35%, rgb(255 255 255 / 0.14) 50%, transparent 65%);
+  transform: translateX(-100%);
+  animation: season-shimmer 9s ease-in-out 2s infinite;
+}
+
+.season-bar__inner {
+  position: relative;
+  z-index: 1;
+}
+
+.season-bar .season-bar__cta,
+.season-bar .season-bar__cta:hover {
+  color: var(--season-gold);
+}
+
+.season-bar__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: rgb(255 255 255 / 0.85);
+  transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.season-bar__btn:hover {
+  background: rgb(255 255 255 / 0.16);
+  color: #fff;
+}
+
+.season-bar__snow[data-on="false"] {
+  opacity: 0.55;
+}
+
+/* Keyboard focus must stay visible on the dark red. */
+.season-bar *:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+@keyframes season-shimmer {
+  0%,
+  65% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ---- String lights hanging under the header ---- */
+
+.season-lights {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 20px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+html[data-season="christmas"] .season-lights {
+  display: block;
+}
+
+.season-lights::before,
+.season-lights::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat-x;
+  background-position: 50% 0;
+  background-size: 96px 20px;
+}
+
+/* Two layers with opposite bulbs lit, crossfading, so the lights twinkle. */
+.season-lights::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='20' viewBox='0 0 96 20'%3E%3Cpath d='M0 2Q24 12 48 2Q72 12 96 2' fill='none' stroke='%238a7a5a' stroke-width='1'/%3E%3Crect x='11' y='5.25' width='2' height='3' rx='.5' fill='%236b5d3f'/%3E%3Ccircle cx='12' cy='10.75' r='5' fill='%23ef4444' opacity='.28'/%3E%3Cellipse cx='12' cy='10.75' rx='2.3' ry='2.8' fill='%23ef4444' opacity='1'/%3E%3Crect x='23' y='6.5' width='2' height='3' rx='.5' fill='%236b5d3f'/%3E%3Cellipse cx='24' cy='12' rx='2.3' ry='2.8' fill='%23e6c887' opacity='0.32'/%3E%3Crect x='35' y='5.25' width='2' height='3' rx='.5' fill='%236b5d3f'/%3E%3Ccircle cx='36' cy='10.75' r='5' fill='%2322c55e' opacity='.28'/%3E%3Cellipse cx='36' cy='10.75' rx='2.3' ry='2.8' fill='%2322c55e' opacity='1'/%3E%3Crect x='59' y='5.25' width='2' height='3' rx='.5' fill='%236b5d3f'/%3E%3Cellipse cx='60' cy='10.75' rx='2.3' ry='2.8' fill='%23fff1cc' opacity='0.32'/%3E%3Crect x='71' y='6.5' width='2' height='3' rx='.5' fill='%236b5d3f'/%3E%3Ccircle cx='72' cy='12' r='5' fill='%23ef4444' opacity='.28'/%3E%3Cellipse cx='72' cy='12' rx='2.3' ry='2.8' fill='%23ef4444' opacity='1'/%3E%3Crect x='83' y='5.25' width='2' height='3' rx='.5' fill='%236b5d3f'/%3E%3Cellipse cx='84' cy='10.75' rx='2.3' ry='2.8' fill='%23e6c887' opacity='0.32'/%3E%3C/svg%3E");
+  animation: season-twinkle 2.6s ease-in-out infinite;
+}
+
+.season-lights::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat-x;
+  background-position: 50% 0;
+  background-size: 96px 20px;
+}
+
+@keyframes season-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ---- Footer ribbon (burgundy and brand gold) ---- */
+
+.season-ribbon {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: repeating-linear-gradient(135deg, #8a1c26 0 10px, #e6c887 10px 20px);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+html[data-season="christmas"] .season-ribbon {
+  display: block;
+}
+
+/* ---- Soft burgundy / pine glow along the top of the viewport ---- */
+
+html[data-season="christmas"] body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 280px;
+  z-index: 30;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 100% at 12% 0%, rgb(138 28 38 / 0.07), transparent 70%),
+    radial-gradient(ellipse 55% 100% at 88% 0%, rgb(31 90 61 / 0.07), transparent 70%);
+}
+
+/* ---- Snowfall (flakes are rendered by components/season/Snowfall.jsx) ---- */
+
+.snowfall {
+  position: fixed;
+  inset: 0;
+  z-index: 45;            /* above the booking bar (40), below the header, chat and modals (50+) */
+  overflow: hidden;
+  contain: strict;
+  pointer-events: none;
+  animation: season-fade-in 1.6s ease both;
+}
+
+/* Each flake is two moving parts so the motion feels natural: the <i> falls in a
+   straight line, and its ::before sways side to side with easing. */
+.snowfall i {
+  position: absolute;
+  top: 0;
+  left: var(--x);
+  width: var(--s);
+  height: var(--s);
+  opacity: var(--o);
+  will-change: transform;
+  animation: season-fall var(--d) linear var(--delay) infinite;
+}
+
+.snowfall i::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #fff;
+  /* A warm ring keeps white flakes visible on the cream background. */
+  box-shadow: 0 0 0 1px rgb(199 165 107 / 0.55), 0 0 5px rgb(230 200 135 / 0.7);
+  animation: season-sway var(--sway) ease-in-out var(--delay) infinite alternate;
+}
+
+/* The biggest flakes are "close to the camera", so they are slightly out of focus. */
+.snowfall i.near::before {
+  filter: blur(0.7px);
+}
+
+@keyframes season-fall {
+  from {
+    transform: translate3d(0, -6vh, 0);
+  }
+  to {
+    transform: translate3d(0, 106vh, 0);
+  }
+}
+
+@keyframes season-sway {
+  from {
+    transform: translate3d(calc(var(--dx) * -1), 0, 0);
+  }
+  to {
+    transform: translate3d(var(--dx), 0, 0);
+  }
+}
+
+@keyframes season-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---- People who ask for less motion get a still version ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  .season-bar::after,
+  .season-lights::before,
+  .season-lights::after {
+    animation: none;
+  }
+  .season-lights::after {
+    display: none;
+  }
+  .season-bar__snow {
+    display: none;
+  }
+}
+
+@media print {
+  .snowfall,
+  .season-bar,
+  .season-lights,
+  .season-ribbon {
+    display: none !important;
+  }
+  html[data-season="christmas"] body::before {
+    display: none;
+  }
+}
