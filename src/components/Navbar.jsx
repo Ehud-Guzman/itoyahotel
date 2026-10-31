@@ -189,7 +189,7 @@ export default function Navbar({ onBookNow }) {
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
                 aria-label="Toggle menu"
-                className="lg:hidden flex flex-col gap-[5px] p-2 group"
+                className="lg:hidden flex flex-col items-center justify-center gap-[5px] min-w-[44px] min-h-[44px] group"
               >
                 <span className={`block w-5 h-px bg-ink/50 group-hover:bg-gold transition-all duration-300 ${menuOpen ? 'rotate-45 translate-y-[6px]' : ''}`} />
                 <span className={`block w-5 h-px bg-ink/50 group-hover:bg-gold transition-all duration-300 ${menuOpen ? 'opacity-0' : ''}`} />

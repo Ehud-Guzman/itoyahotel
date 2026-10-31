@@ -1,10 +1,12 @@
-import { StrictMode } from 'react'
+import { StrictMode, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
-import AdminApp from './admin/AdminApp.jsx'
 import PrivacyPolicy from './legal/PrivacyPolicy.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
+
+// Staff-only dashboard: kept out of the public bundle so guests don't download it.
+const AdminApp = lazy(() => import('./admin/AdminApp.jsx'))
 
 const isAdmin   = /^\/admin(\/|$)/.test(window.location.pathname)
 const isPrivacy = /^\/privacy(\/|$)/.test(window.location.pathname)
@@ -22,7 +24,9 @@ if (isAdmin) {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>
-      {isAdmin ? <AdminApp /> : isPrivacy ? <PrivacyPolicy /> : <App />}
+      {isAdmin
+        ? <Suspense fallback={null}><AdminApp /></Suspense>
+        : isPrivacy ? <PrivacyPolicy /> : <App />}
     </ErrorBoundary>
   </StrictMode>,
 )

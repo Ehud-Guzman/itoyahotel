@@ -13,13 +13,21 @@ const GUEST_OPTIONS = [
   '3 Rooms, 6 Guests',
 ]
 
+// Local calendar date as YYYY-MM-DD. toISOString() would give the UTC date,
+// which is still "yesterday" in Kenya (UTC+3) between midnight and 3am.
+function toDateStr(d) {
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+function addDays(dateStr, n) {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return toDateStr(new Date(y, m - 1, d + n))
+}
 function todayStr() {
-  return new Date().toISOString().split('T')[0]
+  return toDateStr(new Date())
 }
 function tomorrowStr() {
-  const d = new Date()
-  d.setDate(d.getDate() + 1)
-  return d.toISOString().split('T')[0]
+  return addDays(todayStr(), 1)
 }
 
 // The quick-search bar supports multi-room phrasing ("2 Rooms, 3 Guests")
@@ -62,11 +70,12 @@ export default function BookingBar({ onBookNow }) {
 
             {/* Room Type */}
             <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-[9.5px] uppercase tracking-[0.2em] text-ink/80 font-sans font-semibold flex items-center gap-1.5">
+              <label htmlFor="bb-room" className="text-[9.5px] uppercase tracking-[0.2em] text-ink/80 font-sans font-semibold flex items-center gap-1.5">
                 <FiBriefcase size={10} /> Room Type
               </label>
               <div className="border border-stone/35 bg-white hover:border-gold/60 transition-colors duration-200 flex items-center px-3 gap-2">
                 <select
+                  id="bb-room"
                   value={roomId}
                   onChange={e => setRoomId(e.target.value)}
                   className="w-full py-[9px] text-[12.5px] font-sans text-ink bg-transparent outline-none cursor-pointer appearance-none"
@@ -83,21 +92,20 @@ export default function BookingBar({ onBookNow }) {
 
             {/* Check In */}
             <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-[9.5px] uppercase tracking-[0.2em] text-ink/80 font-sans font-semibold flex items-center gap-1.5">
+              <label htmlFor="bb-checkin" className="text-[9.5px] uppercase tracking-[0.2em] text-ink/80 font-sans font-semibold flex items-center gap-1.5">
                 <FiCalendar size={10} /> Check In
               </label>
               <div className="border border-stone/35 bg-white hover:border-gold/60 transition-colors duration-200 flex items-center px-3 gap-2">
                 <FiCalendar size={12} className="text-ink/60 shrink-0" />
                 <input
+                  id="bb-checkin"
                   type="date"
                   value={checkIn}
                   min={todayStr()}
                   onChange={e => {
                     setCheckIn(e.target.value)
                     if (e.target.value >= checkOut) {
-                      const next = new Date(e.target.value)
-                      next.setDate(next.getDate() + 1)
-                      setCheckOut(next.toISOString().split('T')[0])
+                      setCheckOut(addDays(e.target.value, 1))
                     }
                   }}
                   className="w-full py-[9px] text-[12.5px] font-sans text-ink bg-transparent outline-none cursor-pointer"
@@ -107,12 +115,13 @@ export default function BookingBar({ onBookNow }) {
 
             {/* Check Out */}
             <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-[9.5px] uppercase tracking-[0.2em] text-ink/80 font-sans font-semibold flex items-center gap-1.5">
+              <label htmlFor="bb-checkout" className="text-[9.5px] uppercase tracking-[0.2em] text-ink/80 font-sans font-semibold flex items-center gap-1.5">
                 <FiCalendar size={10} /> Check Out
               </label>
               <div className="border border-stone/35 bg-white hover:border-gold/60 transition-colors duration-200 flex items-center px-3 gap-2">
                 <FiCalendar size={12} className="text-ink/60 shrink-0" />
                 <input
+                  id="bb-checkout"
                   type="date"
                   value={checkOut}
                   min={checkIn}
@@ -124,12 +133,13 @@ export default function BookingBar({ onBookNow }) {
 
             {/* Rooms & Guests */}
             <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-[9.5px] uppercase tracking-[0.2em] text-ink/80 font-sans font-semibold flex items-center gap-1.5">
+              <label htmlFor="bb-guests" className="text-[9.5px] uppercase tracking-[0.2em] text-ink/80 font-sans font-semibold flex items-center gap-1.5">
                 <FiUsers size={10} /> Rooms &amp; Guests
               </label>
               <div className="border border-stone/35 bg-white hover:border-gold/60 transition-colors duration-200 flex items-center px-3 gap-2">
                 <FiUsers size={12} className="text-ink/60 shrink-0" />
                 <select
+                  id="bb-guests"
                   value={guests}
                   onChange={e => setGuests(e.target.value)}
                   className="w-full py-[9px] text-[12.5px] font-sans text-ink bg-transparent outline-none cursor-pointer appearance-none"

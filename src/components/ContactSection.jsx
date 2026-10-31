@@ -89,20 +89,20 @@ export default function ContactSection() {
 
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.3em] text-white/90 mb-2">Phone</p>
-                <a href="tel:+254714302777" className="block font-sans text-white hover:text-gold transition-colors duration-200">
+                <a href="tel:+254714302777" className="block py-1.5 font-sans text-white hover:text-gold transition-colors duration-200">
                   +254 714 302 777
                 </a>
-                <a href="tel:+254714666222" className="block font-sans text-white/90 hover:text-gold transition-colors duration-200 mt-1">
+                <a href="tel:+254714666222" className="block py-1.5 font-sans text-white/90 hover:text-gold transition-colors duration-200">
                   +254 714 666 222
                 </a>
-                <a href="tel:+254714777333" className="block font-sans text-white/80 hover:text-gold transition-colors duration-200 mt-1">
+                <a href="tel:+254714777333" className="block py-1.5 font-sans text-white/80 hover:text-gold transition-colors duration-200">
                   +254 714 777 333
                 </a>
               </div>
 
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.3em] text-white/90 mb-2">Email</p>
-                <a href="mailto:hotel.itoya@ayotigroup.com" className="font-sans text-white hover:text-gold transition-colors duration-200 break-all">
+                <a href="mailto:hotel.itoya@ayotigroup.com" className="inline-block py-1.5 font-sans text-white hover:text-gold transition-colors duration-200 break-all">
                   hotel.itoya@ayotigroup.com
                 </a>
               </div>

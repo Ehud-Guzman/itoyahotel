@@ -100,7 +100,8 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
     mpesaPhone: '',
   })
 
-  const today       = new Date().toISOString().split('T')[0]
+  // Local date (not UTC) so the picker's minimum is correct in Kenya (UTC+3) after midnight
+  const today       = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().split('T')[0]
   const room        = ROOMS.find(r => r.id === data.room)
   const nights      = data.checkIn && data.checkOut
     ? Math.max(0, Math.ceil((new Date(data.checkOut) - new Date(data.checkIn)) / 86_400_000))

@@ -130,13 +130,16 @@ export default function Hero() {
         {/* Shared text area — Motto defines the space, Welcome overlays it */}
         <div className="relative max-w-2xl w-full">
 
-          {/* Welcome — brief overlay on all breakpoints, timed with the motto */}
+          {/* Welcome — brief overlay on all breakpoints, timed with the motto.
+              The incoming text carries a 600ms delay so the outgoing one has
+              mostly faded first; a straight crossfade leaves both half-visible
+              on top of each other. */}
           <div
             className={`
               flex flex-col items-center justify-center
               absolute inset-0
               transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]
-              ${showWelcome ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'}
+              ${showWelcome ? 'opacity-100 translate-y-0 delay-[600ms]' : 'opacity-0 translate-y-3 pointer-events-none'}
             `}
           >
             <p className="font-serif italic font-light text-white/85 text-3xl sm:text-4xl md:text-5xl xl:text-6xl tracking-[0.15em] sm:tracking-[0.2em] text-center drop-shadow-lg">
@@ -151,8 +154,8 @@ export default function Hero() {
           <div
             className={`
               transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]
-              ${showMotto ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'}
-              ${showWelcome ? '' : 'max-lg:opacity-100 max-lg:translate-y-0 max-lg:pointer-events-auto'}
+              ${showMotto ? 'opacity-100 translate-y-0 lg:delay-[600ms]' : 'opacity-0 translate-y-3 pointer-events-none'}
+              ${showWelcome ? '' : 'max-lg:opacity-100 max-lg:translate-y-0 max-lg:pointer-events-auto max-lg:delay-[600ms]'}
             `}
           >
             <div className="flex justify-center mb-6">

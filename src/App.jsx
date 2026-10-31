@@ -34,8 +34,14 @@ export default function App() {
 
   return (
     <>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:text-xs focus:tracking-[0.15em] focus:uppercase"
+      >
+        Skip to main content
+      </a>
       <Navbar onBookNow={() => openBooking()} />
-      <main>
+      <main id="main-content" tabIndex={-1} className="outline-none">
         <Hero onBookNow={() => openBooking()} />
         <ReceptionSection />
         <AboutSection />

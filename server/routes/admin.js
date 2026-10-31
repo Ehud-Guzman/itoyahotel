@@ -85,6 +85,8 @@ router.get('/bookings/:ref/id/:side', requireAdmin, async (req, res) => {
 
     const ext = (filename || '').split('.').pop()?.toLowerCase()
     res.set('Content-Type', MIME_BY_EXT[ext] || 'application/octet-stream')
+    // Guest ID documents: never let a browser or intermediary cache them.
+    res.set('Cache-Control', 'private, no-store')
     res.send(buffer)
   } catch (err) {
     console.error('Admin ID image error:', err)

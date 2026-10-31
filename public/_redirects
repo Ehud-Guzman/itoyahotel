@@ -18,11 +18,14 @@
 
 # Alternate / legacy privacy URLs (the footer used to link /privacy-policy)
 /privacy/index.html  /privacy    301!
-/privacy/            /privacy    301!
 /privacy-policy      /privacy    301!
 
-# Staff app — canonical trailing-slash form
-/admin/              /admin      301!
+# NOTE: do NOT add trailing-slash rules such as `/privacy/  /privacy  301!` or
+# `/admin/  /admin  301!`. Netlify matches rules with or without a trailing
+# slash, so those also match `/privacy` and `/admin` themselves and redirect
+# them to themselves — an infinite loop that took both pages down. `/privacy/`
+# and `/admin/` are served by the 200 rules below instead; /privacy's own
+# canonical tag and /admin's noindex header cover the duplicate URL.
 
 # App routes that need a real HTML document on a direct hit.
 # /privacy is a built file (privacy/index.html) carrying its own canonical tag.
