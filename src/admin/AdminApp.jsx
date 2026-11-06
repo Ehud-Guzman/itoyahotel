@@ -5,9 +5,11 @@ import { useFocusTrap } from '../lib/useFocusTrap'
 const API         = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 const TOKEN_KEY    = 'itoya_admin_token'
 
-function kes(n) {
-  return `KES ${Number(n).toLocaleString('en-KE')}`
+// Bookings carry their own currency: Kenyan residents pay in KES, international visitors in USD.
+function money(b) {
+  return `${b.currency || 'KES'} ${Number(b.amount).toLocaleString('en-KE', { maximumFractionDigits: 2 })}`
 }
+const PLAN_NAMES = { bb: 'Bed & Breakfast', hb: 'Half Board', fb: 'Full Board' }
 
 function fmtDate(str) {
   if (!str) return '—'
@@ -319,13 +321,18 @@ function Dashboard({ token, onLogout }) {
                       <div className="text-ink/50 text-xs">{b.phone}</div>
                       <div className="text-ink/50 text-xs">{b.email}</div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-ink/80">{b.roomLabel}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-ink/80">
+                      {b.roomLabel}
+                      <div className="text-ink/50 text-xs">
+                        {PLAN_NAMES[b.plan] || 'Bed & Breakfast'}{b.residency === 'international' ? ' · International' : ''}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 whitespace-nowrap text-ink/80">
                       {fmtDate(b.checkIn)} → {fmtDate(b.checkOut)}
                       <div className="text-ink/50 text-xs">{b.nights} night{b.nights === 1 ? '' : 's'}</div>
                     </td>
                     <td className="px-4 py-3 text-ink/80">{b.guests}</td>
-                    <td className="px-4 py-3 whitespace-nowrap font-medium text-ink">{kes(b.amount)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap font-medium text-ink">{money(b)}</td>
                     <td className="px-4 py-3">
                       <StatusBadge status={b.status} />
                       {b.mpesaRef && <div className="text-ink/40 text-[11px] mt-1">{b.mpesaRef}</div>}

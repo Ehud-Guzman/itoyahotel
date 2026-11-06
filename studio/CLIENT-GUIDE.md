@@ -29,12 +29,29 @@ Full house? Renovation? Switch **Accept online bookings** to **off** and publish
 
 There is one entry for each of the four bookable rooms (Standard, Deluxe, Super Deluxe, Executive). Open one to change:
 
-- **Price Per Night**: this is the price guests are shown **and charged**. It updates the room cards, the quick-booking bar, the booking form and the chatbot together.
+### Rates: two groups, three meal plans
+
+Each room has its rates in two boxes of the form:
+
+| Group | Currency | Plans |
+|---|---|---|
+| **Rates for Kenyan residents** | Kenya Shillings (KES) | Bed & Breakfast, Half Board, Full Board |
+| **Rates for international visitors** | US Dollars (USD) | Bed & Breakfast, Half Board, Full Board |
+
+- A rate is the price **per night for the room**. It is what guests are shown **and charged**, and it updates the room cards, the room popup, the booking form, the chatbot and the booking emails together.
+- **Leave a rate box blank** to keep the rate the website already has. Every room already has its Bed & Breakfast, Half Board and Full Board rates, except **Super Deluxe**, which so far has only Bed & Breakfast for Kenyan residents and no dollar rates. Fill in its other boxes when you are ready and the extra plans appear on the booking form.
+- **Enter 0** to stop offering that plan.
+- The booking form only shows the plans that have a rate. A guest picks *Kenyan resident* or *International visitor*, then a meal plan, and sees the total in the right currency. A room with no dollar rates at all (Super Deluxe, until you add them) shows "Please enquire" to international visitors.
+- **International visitors reserve online and pay at the hotel.** They are never sent an M-Pesa request. The booking, the confirmation email and your admin list all show the dollar amount, the meal plan and "International".
+- The hotel confirms a guest's residency at check-in with their ID or passport. International visitors upload their passport photo page (a second page, such as the visa, is optional).
+
+### The rest of the room
+
 - **Maximum guests**: the booking form will not accept more.
 - **Available for online booking**: switch **off** when that room type is full or out of service. It then shows as *Unavailable* and cannot be booked online. Switch on again to reopen it.
-- **Price note** (for example "Bed & Breakfast included"), the room's **name**, **description** and **photos**. Leave description and photos empty to keep the ones already on the website.
+- **Price note**, the room's **name**, **description** and **photos**. Leave description and photos empty to keep the ones already on the website.
 
-If a guest is in the middle of booking when you change a price, they are not charged the old price by surprise: they are told the rate has been updated, shown the new total, and asked to confirm.
+If a guest is in the middle of booking when you change a rate, they are not charged the old price by surprise: they are told the rate has been updated, shown the new total, and asked to confirm.
 
 You cannot create a fifth room type or a second entry for the same room. The Studio will tell you if you try.
 

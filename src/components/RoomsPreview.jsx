@@ -4,7 +4,7 @@ import RoomModal from './RoomModal'
 import { useSanity, imgUrl } from '../lib/sanity'
 import { srcSet } from '../lib/responsive'
 import { useHotel } from '../lib/hotel'
-import { DEFAULT_ROOMS } from '../lib/hotelData'
+import { DEFAULT_ROOMS, availablePlans, formatMoney, lowestRate } from '../lib/hotelData'
 
 const ROOMS_QUERY = `*[_type == "room"] | order(order asc) {
   _id, roomType, title, tag, description, longDescription,
@@ -133,6 +133,7 @@ export default function RoomsPreview({ onBookRoom }) {
       title: live?.label ?? fallback.title,
       tag: live?.tag ?? fallback.tag,
       pricePerNight: live?.price,
+      rates: live?.rates,                      // Kenyan (KES) and international (USD) rate tables
       available: live?.available !== false,
     }
   })
@@ -212,9 +213,15 @@ export default function RoomsPreview({ onBookRoom }) {
 
                   {/* Price: the live rate from the Studio (the same one booking charges) */}
                   {room.pricePerNight && (
-                    <p className="font-sans text-sm font-semibold text-primary mb-3">
-                      KES {room.pricePerNight.toLocaleString()}
+                    <p className={`font-sans text-sm font-semibold text-primary ${room.rates && lowestRate(room, 'international') != null ? 'mb-1' : 'mb-3'}`}>
+                      {room.rates && availablePlans(room, 'local').length > 1 ? 'From ' : ''}KES {(room.rates ? lowestRate(room, 'local') : room.pricePerNight).toLocaleString()}
                       <span className="font-normal text-ink/60 ml-1">/ night</span>
+                    </p>
+                  )}
+                  {room.rates && lowestRate(room, 'international') != null && (
+                    <p className="font-sans text-xs text-ink/70 mb-3">
+                      International visitors: from {formatMoney(lowestRate(room, 'international'), 'USD')}
+                      <span className="text-ink/60 ml-1">/ night</span>
                     </p>
                   )}
                   {room.available === false && (

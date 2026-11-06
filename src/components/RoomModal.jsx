@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useFocusTrap } from '../lib/useFocusTrap'
 import { srcSet } from '../lib/responsive'
 import { useHotel } from '../lib/hotel'
-import { waLink } from '../lib/hotelData'
+import { waLink, PLANS, formatMoney, rateFor } from '../lib/hotelData'
 
 export default function RoomModal({ room, onClose, onBookRoom }) {
   const { settings } = useHotel()
@@ -101,15 +101,40 @@ export default function RoomModal({ room, onClose, onBookRoom }) {
               <h2 id="room-modal-title" className="font-serif text-3xl lg:text-4xl text-ink leading-tight">{room.title}</h2>
               <div className="w-10 h-px bg-gold mt-4 mb-3" />
 
-              {price && (
-                <div className="flex items-baseline gap-2 mb-4">
-                  <p className="font-serif text-2xl text-primary">
-                    KES {price.toLocaleString()}
+              {room.rates ? (
+                // Every rate on offer, side by side: shillings for Kenyan residents, dollars for international visitors
+                <div className="mb-5">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="font-sans text-[10px] uppercase tracking-[0.2em] text-ink/60">
+                        <th className="py-2 pr-3 font-medium">Per night</th>
+                        <th className="py-2 pr-3 font-medium">Kenyan residents</th>
+                        <th className="py-2 font-medium">International</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {PLANS.map((pl) => {
+                        const local = rateFor(room, 'local', pl.id)
+                        const intl = rateFor(room, 'international', pl.id)
+                        if (local == null && intl == null) return null
+                        return (
+                          <tr key={pl.id} className="border-t border-stone/40">
+                            <td className="py-2.5 pr-3 font-sans text-xs text-ink/70">{pl.label}</td>
+                            <td className="py-2.5 pr-3 font-serif text-lg text-primary">{local != null ? formatMoney(local, 'KES') : <span className="text-ink/30">—</span>}</td>
+                            <td className="py-2.5 font-serif text-lg text-primary">{intl != null ? formatMoney(intl, 'USD') : <span className="text-ink/30">—</span>}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                  <p className="font-sans text-[10.5px] text-ink/55 mt-2">
+                    International rates apply to guests who are not Kenyan residents; the hotel confirms this at check-in.
                   </p>
+                </div>
+              ) : price && (
+                <div className="flex items-baseline gap-2 mb-4">
+                  <p className="font-serif text-2xl text-primary">KES {price.toLocaleString()}</p>
                   <p className="font-sans text-xs text-ink/60">per night</p>
-                  {room.tag === 'Standard' && (
-                    <p className="font-sans text-[10px] text-primary">· Bed & Breakfast</p>
-                  )}
                 </div>
               )}
 

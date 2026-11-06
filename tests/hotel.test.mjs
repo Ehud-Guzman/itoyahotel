@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import {
-  DEFAULT_ROOMS, DEFAULT_SETTINGS, mergeRooms, mergeSettings, telHref, waLink, kesFormat, PRICE_MIN, PRICE_MAX,
+  DEFAULT_ROOMS, DEFAULT_SETTINGS, mergeRooms, mergeSettings, telHref, waLink, kesFormat, PRICE_MIN, PRICE_MAX, USD_MIN, USD_MAX,
+  rateFor, availablePlans, lowestRate, formatMoney, currencyOf, planLabel,
 } from '../src/lib/hotelData.js'
 import { buildSeed } from '../scripts/generate-studio-seed.mjs'
 
@@ -56,8 +57,10 @@ test('helpers', () => {
 test('parity: built-in rooms and settings are identical on the website and the server', () => {
   for (const r of DEFAULT_ROOMS) {
     const { id, ...rest } = r
-    assert.deepEqual(server.DEFAULT_ROOMS[id], rest, `room ${id}`)
+    assert.deepEqual(server.DEFAULT_ROOMS[id], rest, `room ${id}`)          // includes the KES and USD rate tables
   }
+  assert.equal(server.USD_MIN, USD_MIN)
+  assert.equal(server.USD_MAX, USD_MAX)
   assert.equal(Object.keys(server.DEFAULT_ROOMS).length, DEFAULT_ROOMS.length)
   assert.deepEqual(server.DEFAULT_SETTINGS, DEFAULT_SETTINGS)
   assert.equal(server.PRICE_MIN, PRICE_MIN)
@@ -72,6 +75,8 @@ test('parity: the same CMS data gives the same rooms and settings on the website
     [{ roomType: 'penthouse', pricePerNight: 9999 }, { roomType: 'executive', pricePerNight: 12345 }],
     [{ roomType: 'deluxe', pricePerNight: 6000 }, { roomType: 'deluxe', pricePerNight: 9000 }],
     ...awkward.map((v) => [{ roomType: 'super-deluxe', pricePerNight: v, maxGuests: v, available: v, title: v, tag: v, priceNote: v }]),
+    ...awkward.map((v) => [{ roomType: 'standard', halfBoardPrice: v, fullBoardPrice: v, intlBedAndBreakfast: v, intlHalfBoard: v, intlFullBoard: v }]),
+    [{ roomType: 'deluxe', intlHalfBoard: 82.555, intlFullBoard: 0, halfBoardPrice: 4800.4, fullBoardPrice: 0 }],
   ]
   for (const raw of roomSets) {
     const web = Object.fromEntries(mergeRooms(raw).map(({ id, ...r }) => [id, r]))
@@ -99,4 +104,58 @@ test('studio/seed.ndjson matches the site\'s built-in values (regenerate with sc
   assert.equal(docs.filter((d) => d._type === 'room').length, 4)
   assert.equal(docs.filter((d) => d._type === 'siteSettings').length, 1)
   assert.ok(docs.every((d) => d._id), 'every document has a fixed _id, so re-importing never duplicates')
+})
+
+// ---------- rates: guest types, meal plans, currencies ----------
+
+test('the dollar rates are exactly the ones the hotel quoted', () => {
+  const intl = (id) => DEFAULT_ROOMS.find((r) => r.id === id).rates.intl
+  assert.deepEqual(intl('standard'), { bb: 62, hb: 80, fb: 97 })
+  assert.deepEqual(intl('deluxe'), { bb: 106, hb: 124, fb: 142 })
+  assert.deepEqual(intl('executive'), { bb: 162, hb: 179, fb: 197 })
+  assert.deepEqual(intl('super-deluxe'), { bb: null, hb: null, fb: null })   // not quoted yet
+})
+
+test('rateFor / availablePlans / lowestRate by guest type', () => {
+  const standard = DEFAULT_ROOMS[0]
+  assert.equal(rateFor(standard, 'local', 'bb'), 3500)
+  assert.equal(rateFor(standard, 'local', 'hb'), 4500)
+  assert.equal(rateFor(standard, 'international', 'hb'), 80)
+  assert.deepEqual(availablePlans(standard, 'local').map((p) => p.id), ['bb', 'hb', 'fb'])
+  assert.deepEqual(availablePlans(standard, 'international').map((p) => p.id), ['bb', 'hb', 'fb'])
+  assert.equal(lowestRate(standard, 'international'), 62)
+  const superDeluxe = DEFAULT_ROOMS.find((r) => r.id === 'super-deluxe')
+  assert.equal(lowestRate(superDeluxe, 'international'), null)               // cannot be booked online at dollar rates
+  assert.equal(lowestRate(superDeluxe, 'local'), 7000)
+  assert.deepEqual(availablePlans(superDeluxe, 'local').map((p) => p.id), ['bb'])         // Super Deluxe: Bed & Breakfast only so far
+  assert.equal(rateFor(null, 'local', 'bb'), null)
+})
+
+test('rates: edits, cents, 0 = stop offering, junk keeps the built-in value', () => {
+  const r = mergeRooms([{ roomType: 'standard', halfBoardPrice: 4800, intlHalfBoard: 82.5, intlFullBoard: 0, intlBedAndBreakfast: 'sixty' }])[0]
+  assert.equal(rateFor(r, 'local', 'hb'), 4800)                              // overrides the built-in KES 4,500
+  assert.equal(rateFor(r, 'international', 'hb'), 82.5)                      // dollars to the cent
+  assert.equal(rateFor(r, 'international', 'fb'), null)                      // 0 stops offering it
+  assert.equal(rateFor(r, 'international', 'bb'), 62)                        // junk falls back to the built-in rate
+  for (const bad of [USD_MIN - 1, USD_MAX + 1, -5, NaN, '80']) {
+    assert.equal(rateFor(mergeRooms([{ roomType: 'standard', intlHalfBoard: bad }])[0], 'international', 'hb'), 80, String(bad))
+  }
+})
+
+test('currency and plan helpers', () => {
+  assert.equal(currencyOf('international'), 'USD')
+  assert.equal(currencyOf('local'), 'KES')
+  assert.equal(currencyOf(undefined), 'KES')
+  assert.equal(planLabel('hb'), 'Half Board')
+  assert.equal(formatMoney(62, 'USD'), 'USD 62')
+  assert.equal(formatMoney(82.5, 'USD'), 'USD 82.5')
+  assert.equal(formatMoney(10000), 'KES 10,000')
+})
+
+test('the Kenyan resident rates are exactly the ones the hotel quoted', () => {
+  const local = (id) => DEFAULT_ROOMS.find((r) => r.id === id).rates.local
+  assert.deepEqual(local('standard'), { bb: 3500, hb: 4500, fb: 5500 })
+  assert.deepEqual(local('deluxe'), { bb: 6000, hb: 7000, fb: 8000 })
+  assert.deepEqual(local('executive'), { bb: 10000, hb: 11000, fb: 12000 })
+  assert.deepEqual(local('super-deluxe'), { bb: 7000, hb: null, fb: null })               // only Bed & Breakfast quoted
 })

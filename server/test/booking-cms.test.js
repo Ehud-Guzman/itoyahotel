@@ -161,7 +161,9 @@ test('/config tells the page whether booking is open and the exact prices the se
   assert.equal(cfg.bookingOpen, true)
   assert.equal(cfg.rooms.standard.price, 4800)
   assert.equal(cfg.rooms.executive.price, 10000)
-  assert.deepEqual(Object.keys(cfg.rooms.standard).sort(), ['available', 'label', 'maxGuests', 'price'])
+  assert.deepEqual(Object.keys(cfg.rooms.standard).sort(), ['available', 'label', 'maxGuests', 'price', 'rates'])
+  assert.equal(cfg.rooms.standard.rates.local.bb, 4800)
+  assert.equal(cfg.rooms.standard.rates.intl.hb, 80)             // dollar rates for international guests
 })
 
 test('guest emails carry the contact details the hotel set in the Studio', async () => {

@@ -4,7 +4,7 @@ const axios      = require('axios')
 const rateLimit  = require('express-rate-limit')
 const store      = require('../store')
 const { createTransporter } = require('../lib/mailer')
-const { getSiteData } = require('../lib/siteData')
+const { getSiteData, rateFor, currencyOf, planLabel, formatMoney, PLANS, RESIDENCIES } = require('../lib/siteData')
 const {
   LIMITS, isEmail, isPhone, isMpesaPhone, tooLong, validateStay, safeFilePart, safeExtension,
 } = require('../lib/validate')
@@ -235,6 +235,8 @@ async function sendEmails(booking, { paid = true } = {}) {
     <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px">
       <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666;width:120px">Reference</td><td style="padding:6px 12px;font-weight:600">${escapeHtml(b.ref)}</td></tr>
       <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Room</td><td style="padding:6px 12px">${escapeHtml(b.roomLabel)}</td></tr>
+      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Meal plan</td><td style="padding:6px 12px">${escapeHtml(planLabel(b.plan || 'bb'))}</td></tr>
+      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Guest rate</td><td style="padding:6px 12px">${b.residency === 'international' ? 'International visitor (USD)' : 'Kenyan resident (KES)'}</td></tr>
       <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Check-in</td><td style="padding:6px 12px">${escapeHtml(b.checkIn)}</td></tr>
       <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Check-out</td><td style="padding:6px 12px">${escapeHtml(b.checkOut)}</td></tr>
       <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Nights</td><td style="padding:6px 12px">${escapeHtml(b.nights)}</td></tr>
@@ -243,7 +245,7 @@ async function sendEmails(booking, { paid = true } = {}) {
       <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Phone</td><td style="padding:6px 12px">${escapeHtml(b.phone)}</td></tr>
       <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Email</td><td style="padding:6px 12px">${escapeHtml(b.email)}</td></tr>
       ${paid ? `<tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">M-Pesa Ref</td><td style="padding:6px 12px">${escapeHtml(b.mpesaRef) || '—'}</td></tr>` : ''}
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">${paid ? 'Amount Paid' : 'Amount Due'}</td><td style="padding:6px 12px;font-weight:600">KES ${Number(b.amount).toLocaleString()}${paid ? '' : ' — pay at hotel'}</td></tr>
+      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">${paid ? 'Amount Paid' : 'Amount Due'}</td><td style="padding:6px 12px;font-weight:600">${escapeHtml(formatMoney(b.amount, b.currency || 'KES'))}${paid ? '' : ' — pay at hotel'}</td></tr>
       ${b.requests ? `<tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Requests</td><td style="padding:6px 12px">${escapeHtml(b.requests)}</td></tr>` : ''}
     </table>
   `
@@ -252,7 +254,7 @@ async function sendEmails(booking, { paid = true } = {}) {
   await transporter.sendMail({
     from,
     to:      hotelEmail,
-    subject: `${paid ? 'New Booking' : 'New Reservation Request'} ${b.ref} — ${b.name} (${b.checkIn} → ${b.checkOut})`,
+    subject: `${paid ? 'New Booking' : 'New Reservation Request'} ${b.ref} — ${b.name} (${b.checkIn} → ${b.checkOut})${b.residency === 'international' ? ' [International]' : ''}`,
     html: `
       <h2 style="font-family:serif;color:#a4733c">${paid ? 'New Confirmed Booking' : 'New Reservation Request — Payment Not Yet Collected'}</h2>
       <p style="font-family:sans-serif;font-size:14px;color:#555">
@@ -267,7 +269,8 @@ async function sendEmails(booking, { paid = true } = {}) {
     `,
     attachments: [
       { filename: `ID-front-${safeFilePart(b.name)}.${safeExtension(idFrontName)}`, content: idFrontBuffer },
-      { filename: `ID-back-${safeFilePart(b.name)}.${safeExtension(idBackName)}`,  content: idBackBuffer  },
+      // A passport has no "back", so international guests may send just the one page.
+      ...(idBackBuffer ? [{ filename: `ID-back-${safeFilePart(b.name)}.${safeExtension(idBackName)}`, content: idBackBuffer }] : []),
     ],
   })
 
@@ -282,7 +285,7 @@ async function sendEmails(booking, { paid = true } = {}) {
         Dear ${escapeHtml(b.name)},<br><br>
         ${paid
           ? 'Thank you for choosing Hotel Itoya. Your payment has been received and your booking is under review. A member of our team will contact you within a few hours to confirm your reservation.'
-          : `Thank you for choosing Hotel Itoya. We've received your reservation request. Payment of <strong>KES ${Number(b.amount).toLocaleString()}</strong> is due at the hotel during check-in (cash or M-Pesa). A member of our team will contact you within a few hours to confirm your reservation.`}
+          : `Thank you for choosing Hotel Itoya. We've received your reservation request. Payment of <strong>${escapeHtml(formatMoney(b.amount, b.currency || 'KES'))}</strong> is due at the hotel during check-in${b.residency === 'international' ? '' : ' (cash or M-Pesa)'}. A member of our team will contact you within a few hours to confirm your reservation.`}
       </p>
       ${summary}
       <p style="font-family:sans-serif;font-size:14px;color:#555;margin-top:24px">
@@ -342,7 +345,7 @@ function fail(res, status, message, step, field, extra = {}) {
 // price the server will charge.
 function publicRooms(rooms) {
   return Object.fromEntries(Object.entries(rooms).map(([id, r]) => [
-    id, { label: r.label, price: r.price, maxGuests: r.maxGuests, available: r.available },
+    id, { label: r.label, price: r.price, maxGuests: r.maxGuests, available: r.available, rates: r.rates },
   ]))
 }
 
@@ -374,6 +377,13 @@ router.post(
       } = req.body
 
       if (!room || typeof room !== 'string') return fail(res, 400, 'Please select a room type.', 0, 'room')
+
+      // Older pages do not send these: they mean "Kenyan resident, Bed & Breakfast".
+      const residency = req.body.residency ?? 'local'
+      const plan      = req.body.plan ?? 'bb'
+      if (!RESIDENCIES.includes(residency)) return fail(res, 400, 'Choose Kenyan resident or International visitor.', 0, 'residency')
+      if (!PLANS.some((p) => p.id === plan)) return fail(res, 400, 'Choose a meal plan.', 0, 'plan')
+      const international = residency === 'international'
       if (!checkIn)  return fail(res, 400, 'Select a check-in date.', 0, 'checkIn')
       if (!checkOut) return fail(res, 400, 'Select a check-out date.', 0, 'checkOut')
       if (!name || typeof name !== 'string' || !name.trim()) return fail(res, 400, 'Full name is required.', 1, 'name')
@@ -386,8 +396,11 @@ router.post(
         return fail(res, 400, `Special requests must be ${LIMITS.requests} characters or fewer.`, 1, 'requests')
       }
       if (!req.files?.idFront)
-        return fail(res, 400, 'The front of your ID could not be uploaded — please use a JPG, PNG, or PDF file.', 2, 'idFront')
-      if (!req.files?.idBack)
+        return fail(res, 400, international
+          ? 'Your passport photo page could not be uploaded — please use a JPG, PNG, or PDF file.'
+          : 'The front of your ID could not be uploaded — please use a JPG, PNG, or PDF file.', 2, 'idFront')
+      // A passport has no back, so for international visitors the second file is optional.
+      if (!req.files?.idBack && !international)
         return fail(res, 400, 'The back of your ID could not be uploaded — please use a JPG, PNG, or PDF file.', 2, 'idBack')
 
       // ── Server-side price authority — never trust client-sent amount/nights ──
@@ -421,7 +434,15 @@ router.post(
       if (catalogEntry.maxGuests && guestsNum > catalogEntry.maxGuests) {
         return fail(res, 400, `${catalogEntry.label} fits up to ${catalogEntry.maxGuests} guests.`, 0, 'guests')
       }
-      let amount = catalogEntry.price * nights
+      const unavailablePlan = (entry) => fail(
+        res, 400,
+        `${planLabel(plan)} is not offered online for the ${entry.label} at ${international ? 'international' : 'Kenyan resident'} rates. Please choose another plan or contact us.`,
+        0, 'plan', { code: 'plan_unavailable' },
+      )
+      let nightly = rateFor(catalogEntry, residency, plan)
+      if (nightly == null) return unavailablePlan(catalogEntry)
+      const currency = currencyOf(residency)
+      let amount = Math.round(nightly * nights * 100) / 100
 
       // The browser sends the total it SHOWED the guest. The server's price is the
       // one that counts, so if they differ, never charge silently: re-read the
@@ -431,25 +452,30 @@ router.post(
       if (Number.isFinite(expected) && expected !== amount) {
         site = await getSiteData({ force: true })
         catalogEntry = lookupRoom(site.rooms, room) || catalogEntry
-        amount = catalogEntry.price * nights
+        nightly = rateFor(catalogEntry, residency, plan)
+        if (nightly == null) return unavailablePlan(catalogEntry)
+        amount = Math.round(nightly * nights * 100) / 100
         if (expected !== amount) {
           return fail(
             res, 409,
-            `The rate for ${catalogEntry.label} has just been updated to KES ${catalogEntry.price.toLocaleString('en-KE')} per night. Your new total is KES ${amount.toLocaleString('en-KE')}. Please review it and confirm.`,
+            `The ${planLabel(plan)} rate for ${catalogEntry.label} has just been updated to ${formatMoney(nightly, currency)} per night. Your new total is ${formatMoney(amount, currency)}. Please review it and confirm.`,
             0, 'room',
-            { code: 'price_changed', amount, nightlyRate: catalogEntry.price, rooms: publicRooms(site.rooms) },
+            { code: 'price_changed', amount, currency, nightlyRate: nightly, rooms: publicRooms(site.rooms) },
           )
         }
       }
 
       // Only the live flow pushes a prompt to this number, so only then does its
       // format matter (the client sends it in 2547XXXXXXXX form).
-      if (mpesaIsLive() && !isMpesaPhone(mpesaPhone)) {
+      // International visitors are quoted in US dollars and pay at the hotel (M-Pesa takes
+      // shillings only), so for them this is always a reservation, even when M-Pesa is live.
+      const payOnline = mpesaIsLive() && !international
+      if (payOnline && !isMpesaPhone(mpesaPhone)) {
         return fail(res, 400, 'Enter a valid Kenyan M-Pesa phone number.', 4, 'mpesaPhone')
       }
 
       const idFrontFile = req.files.idFront[0]
-      const idBackFile  = req.files.idBack[0]
+      const idBackFile  = req.files.idBack?.[0] ?? null
 
       const { status, body } = await withIdempotency(clientRequestId, async () => {
         const ref = genRef()
@@ -457,19 +483,20 @@ router.post(
           b: {
             ref, room, roomLabel: catalogEntry.label, checkIn, checkOut, nights,
             guests: guestsNum, name, phone, email, requests, mpesaPhone, amount,
+            currency, plan, residency,
             mpesaRef: null,
           },
           idFrontBuffer: idFrontFile.buffer,
-          idBackBuffer:  idBackFile.buffer,
+          idBackBuffer:  idBackFile?.buffer ?? null,
           idFrontName:   idFrontFile.originalname,
-          idBackName:    idBackFile.originalname,
+          idBackName:    idBackFile?.originalname ?? null,
           status:        'pending',
           checkoutRequestId: null,
         }
         await store.create(record)
 
         // ── Try real M-Pesa STK Push ────────────────────────────────────────
-        const live = mpesaIsLive()
+        const live = payOnline
 
         if (live) {
           try {
@@ -494,7 +521,7 @@ router.post(
         // credentials switches this back to live STK push with no code
         // changes.
         await store.updateStatus(ref, 'reservation')
-        console.log(`[RESERVATION] Booking ${ref} — no live M-Pesa credentials, guest pays at hotel`)
+        console.log(`[RESERVATION] Booking ${ref} (${residency}, ${currency}) — guest pays at hotel`)
 
         // Fire-and-forget: an SMTP hang or auth failure (e.g. EMAIL_USER/PASS
         // not yet configured) must never block the response the guest is

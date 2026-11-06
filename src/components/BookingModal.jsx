@@ -4,7 +4,9 @@ import {
   FiUpload, FiCheck, FiAlertCircle, FiLoader, FiDownload,
 } from 'react-icons/fi'
 import { useHotel } from '../lib/hotel'
-import { telHref, waLink } from '../lib/hotelData'
+import {
+  telHref, waLink, formatMoney, currencyOf, planLabel, rateFor, lowestRate, availablePlans, RESIDENCIES,
+} from '../lib/hotelData'
 import { useFocusTrap } from '../lib/useFocusTrap'
 import { downloadReceipt } from '../lib/generateReceipt'
 
@@ -13,8 +15,14 @@ const STEPS = ['Room & Dates', 'Your Details', 'Upload ID', 'Review', 'Payment',
 const API = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function kes(n) {
-  return `KES ${Number(n).toLocaleString('en-KE')}`
+// Always spells the currency out ("KES 3,500" / "USD 62") so nobody mistakes one for the other.
+const money = (n, currency = 'KES') => formatMoney(n, currency)
+
+// International guests carry foreign numbers: accept any plausible number with a country code.
+function isValidInternationalPhone(raw) {
+  const t = (raw || '').trim()
+  const digits = t.replace(/\D/g, '')
+  return /^[+\d\s()-]+$/.test(t) && digits.length >= 9 && digits.length <= 15
 }
 
 // Render's free tier spins the backend down after ~15 min idle. During a
@@ -110,6 +118,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
 
   const [data, setData] = useState({
     room: '', checkIn: '', checkOut: '', guests: 1,
+    residency: 'local', plan: 'bb',
     name: '', phone: '', email: '', requests: '',
     idFront: null, idFrontPreview: '',
     idBack:  null, idBackPreview:  '',
@@ -122,7 +131,13 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
   const nights      = data.checkIn && data.checkOut
     ? Math.max(0, Math.ceil((new Date(data.checkOut) - new Date(data.checkIn)) / 86_400_000))
     : 0
-  const total       = room && nights ? room.price * nights : 0
+  // How this stay is priced: guest type (Kenyan resident pays KES, international pays USD) and meal plan.
+  const international = data.residency === 'international'
+  const currency      = currencyOf(data.residency)
+  const nightly       = room ? rateFor(room, data.residency, data.plan) : null
+  const total         = room && nights && nightly != null ? Math.round(nightly * nights * 100) / 100 : 0
+  // International guests are quoted in dollars and pay at the hotel, so M-Pesa never applies to them.
+  const payOnline     = paymentsLive && !international
   const minCheckout = data.checkIn
     ? new Date(new Date(data.checkIn).getTime() + 86_400_000).toISOString().split('T')[0]
     : today
@@ -143,6 +158,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
       checkIn:  preselected.checkIn  || '',
       checkOut: preselected.checkOut || '',
       guests:   preselected.guests   || 1,
+      residency: 'local', plan: 'bb',
     }))
 
     // Check once per open whether live payment collection is configured, so
@@ -183,6 +199,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
     const e = {}
     if (step === 0) {
       if (!data.room)    e.room     = 'Please select a room'
+      else if (room && nightly == null) e.plan = `${planLabel(data.plan)} is not offered online for this room. Please choose another plan.`
       else if (room && room.available === false) e.room = `${room.label} is not available for online booking right now. Please choose another room or call us.`
       if (!data.checkIn) e.checkIn  = 'Select check-in date'
       if (!data.checkOut)e.checkOut = 'Select check-out date'
@@ -193,14 +210,15 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
     if (step === 1) {
       if (!data.name.trim()) e.name = 'Full name is required'
       if (!data.phone.trim()) e.phone = 'Phone number is required'
-      else if (!isValidKenyanPhone(data.phone))
-        e.phone = 'Enter a valid Kenyan phone number'
+      else if (international ? !isValidInternationalPhone(data.phone) : !isValidKenyanPhone(data.phone))
+        e.phone = international ? 'Enter a valid phone number with its country code' : 'Enter a valid Kenyan phone number'
       if (!data.email.trim()) e.email = 'Email is required'
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) e.email = 'Enter a valid email'
     }
     if (step === 2) {
-      if (!data.idFront) e.idFront = 'Upload the front of your ID'
-      if (!data.idBack)  e.idBack  = 'Upload the back of your ID'
+      if (!data.idFront) e.idFront = international ? 'Upload your passport photo page' : 'Upload the front of your ID'
+      // A passport has no back, so for international visitors the second file is optional.
+      if (!data.idBack && !international) e.idBack = 'Upload the back of your ID'
     }
     setErrors(e)
     return Object.keys(e).length === 0
@@ -232,7 +250,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
     // The M-Pesa phone field only appears (and only needs re-validating)
     // when live payment collection is actually configured — in reserve-now
     // mode we just reuse the guest's contact phone from step 1.
-    if (paymentsLive) {
+    if (payOnline) {
       if (!phone) { setErr('mpesaPhone', 'Enter your M-Pesa phone number'); return }
       if (!isValidKenyanPhone(phone)) { setErr('mpesaPhone', 'Enter a valid Kenyan phone number'); return }
     }
@@ -258,7 +276,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
       // happens next — it reflects the mode this booking actually ran
       // under. Falls back to the pre-fetched value (React state updates
       // aren't visible synchronously) only if the response omits it.
-      let live = paymentsLive
+      let live = payOnline
 
       if (ref) {
         // Retrying after a previous failed attempt — reuse the existing
@@ -282,10 +300,11 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
           room: data.room, roomLabel: room?.label, checkIn: data.checkIn,
           checkOut: data.checkOut, nights, guests: data.guests, name: data.name,
           phone: data.phone, email: data.email, requests: data.requests,
+          residency: data.residency, plan: data.plan,
           mpesaPhone: normalisePhone(phone), expectedAmount: total, clientRequestId,
         }).forEach(([k, v]) => fd.append(k, v))
         fd.append('idFront', data.idFront)
-        fd.append('idBack',  data.idBack)
+        if (data.idBack) fd.append('idBack', data.idBack)
 
         const res  = await fetchWithRetry(`${API}/api/booking/initiate`, { method: 'POST', body: fd })
         const json = await res.json()
@@ -298,7 +317,8 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
         live = Boolean(json.live)
       }
 
-      setPaymentsLive(live)
+      // An international booking is always a reservation: don't let it flip the page-wide payment mode.
+      if (!international) setPaymentsLive(live)
       clearTimeout(slowConnectTimer.current); setSlowConnect(false)
       setBookingRef(ref)
 
@@ -476,12 +496,12 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
 
         {/* ── Body ────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto px-8 py-7">
-          {step === 0 && <StepRoom     rooms={ROOMS} data={data} set={set} errors={errors} clearErr={clearErr} today={today} minCheckout={minCheckout} room={room} nights={nights} total={total} />}
-          {step === 1 && <StepDetails  data={data} set={set} errors={errors} clearErr={clearErr} />}
-          {step === 2 && <StepId       data={data} handleFile={handleFile} errors={errors} />}
-          {step === 3 && <StepReview   data={data} room={room} nights={nights} total={total} />}
-          {step === 4 && <StepPayment  data={data} set={set} errors={errors} clearErr={clearErr} total={total} payState={payState} slowConnect={slowConnect} paymentsLive={paymentsLive} />}
-          {step === 5 && <StepDone     bookingRef={bookingRef} data={data} room={room} nights={nights} total={total} paid={paidOnline} onClose={onClose} hotel={settings} />}
+          {step === 0 && <StepRoom     rooms={ROOMS} currency={currency} nightly={nightly} data={data} set={set} errors={errors} clearErr={clearErr} today={today} minCheckout={minCheckout} room={room} nights={nights} total={total} />}
+          {step === 1 && <StepDetails  data={data} set={set} errors={errors} clearErr={clearErr} international={international} />}
+          {step === 2 && <StepId       data={data} handleFile={handleFile} errors={errors} international={international} />}
+          {step === 3 && <StepReview   data={data} room={room} nights={nights} total={total} currency={currency} />}
+          {step === 4 && <StepPayment  data={data} set={set} errors={errors} clearErr={clearErr} total={total} currency={currency} international={international} payState={payState} slowConnect={slowConnect} paymentsLive={payOnline} />}
+          {step === 5 && <StepDone     bookingRef={bookingRef} data={data} room={room} nights={nights} total={total} paid={paidOnline} onClose={onClose} hotel={settings} currency={currency} />}
         </div>
 
         {/* ── Footer ──────────────────────────────────────────────── */}
@@ -511,7 +531,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
                   onClick={next}
                   className="ml-auto bg-ink text-white px-8 py-3 text-[10px] tracking-[0.25em] uppercase hover:bg-ink/80 transition-colors"
                 >
-                  {paymentsLive ? 'Proceed to Payment' : 'Continue'}
+                  {payOnline ? 'Proceed to Payment' : 'Continue'}
                 </button>
               )}
               {step === 4 && payState !== 'failed' && (
@@ -519,12 +539,12 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
                   onClick={handlePay}
                   disabled={submitting}
                   className={`ml-auto flex items-center gap-2 text-white px-8 py-3 text-[10px] tracking-[0.25em] uppercase disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
-                    paymentsLive ? 'bg-[#2d7a30] hover:bg-[#236125]' : 'bg-ink hover:bg-ink/80'
+                    payOnline ? 'bg-[#2d7a30] hover:bg-[#236125]' : 'bg-ink hover:bg-ink/80'
                   }`}
                 >
                   {submitting
                     ? <><FiLoader size={12} className="animate-spin" /> Processing…</>
-                    : paymentsLive ? `Pay ${kes(total)}` : 'Confirm Reservation'}
+                    : payOnline ? `Pay ${money(total, currency)}` : 'Confirm Reservation'}
                 </button>
               )}
               {step === 4 && payState === 'failed' && (
@@ -544,9 +564,46 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
 }
 
 // ─── Step 0 — Room & Dates ────────────────────────────────────────────────────
-function StepRoom({ rooms, data, set, errors, clearErr, today, minCheckout, room, nights, total }) {
+function StepRoom({ rooms, currency, nightly, data, set, errors, clearErr, today, minCheckout, room, nights, total }) {
+  const plans = room ? availablePlans(room, data.residency) : []
+
+  // Switching guest type changes the currency and the plans on offer: keep the choices valid.
+  const chooseResidency = (id) => {
+    set('residency', id)
+    if (room) {
+      const offered = availablePlans(room, id)
+      if (offered.length === 0) set('room', '')
+      else if (!offered.some((p) => p.id === data.plan)) set('plan', offered[0].id)
+    }
+  }
+
   return (
     <div className="space-y-7">
+      {/* Guest type: decides the currency and the rates */}
+      <div>
+        <Label>I am a</Label>
+        <div className="mt-3 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Guest type">
+          {RESIDENCIES.map((r) => {
+            const on = data.residency === r.id
+            return (
+              <button
+                key={r.id} type="button" role="radio" aria-checked={on}
+                onClick={() => chooseResidency(r.id)}
+                className={`px-4 py-3 border text-left transition-all duration-200 ${on ? 'border-ink bg-ink text-white' : 'border-stone/35 hover:border-ink/40 bg-white'}`}
+              >
+                <p className="text-sm font-medium">{r.label}</p>
+                <p className={`text-[10.5px] mt-0.5 ${on ? 'text-white/70' : 'text-ink/70'}`}>
+                  Rates in {r.currency === 'KES' ? 'Kenya Shillings' : 'US Dollars'}
+                </p>
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-[10.5px] text-ink/68 mt-2 leading-relaxed">
+          The hotel confirms this at check-in with your {data.residency === 'international' ? 'passport' : 'ID'}.
+        </p>
+      </div>
+
       {/* Room picker */}
       <div>
         <Label>Select Room</Label>
@@ -554,16 +611,23 @@ function StepRoom({ rooms, data, set, errors, clearErr, today, minCheckout, room
           {rooms.map(r => {
             const selected = data.room === r.id
             const unavailable = r.available === false
+            const rate   = rateFor(r, data.residency, data.plan)
+            const lowest = lowestRate(r, data.residency)
+            const offered = lowest != null                // international guests cannot book every room online
+            // The small line under the room name follows the chosen plan (the room's own note says "Bed & Breakfast included").
+            const subline = rate != null && data.plan !== 'bb' ? planLabel(data.plan) : r.note
             return (
               <button
                 key={r.id} type="button"
-                disabled={unavailable}
+                disabled={unavailable || !offered}
                 onClick={() => {
                   set('room', r.id); clearErr('room')
                   if (data.guests > r.maxGuests) set('guests', r.maxGuests)
+                  const offeredPlans = availablePlans(r, data.residency)
+                  if (!offeredPlans.some((p) => p.id === data.plan)) set('plan', offeredPlans[0]?.id ?? 'bb')
                 }}
                 className={`w-full flex justify-between items-center px-5 py-4 border text-left transition-all duration-200 ${
-                  unavailable
+                  (unavailable || !offered)
                     ? 'border-stone/25 bg-mist/60 cursor-not-allowed opacity-70'
                     : selected
                       ? 'border-ink bg-ink text-white'
@@ -574,17 +638,19 @@ function StepRoom({ rooms, data, set, errors, clearErr, today, minCheckout, room
                   <p className={`text-sm font-medium ${selected ? 'text-white' : 'text-ink'}`}>
                     {r.label}
                   </p>
-                  {r.note && (
+                  {subline && (
                     <p className={`text-[10.5px] mt-0.5 ${selected ? 'text-white/60' : 'text-ink/72'}`}>
-                      {r.note}
+                      {subline}
                     </p>
                   )}
                 </div>
-                {unavailable ? (
-                  <p className="text-[10.5px] tracking-[0.12em] uppercase text-ink/70 shrink-0 ml-4">Unavailable</p>
+                {(unavailable || !offered) ? (
+                  <p className="text-[10.5px] tracking-[0.12em] uppercase text-ink/70 shrink-0 ml-4 text-right">
+                    {unavailable ? 'Unavailable' : 'Please enquire'}
+                  </p>
                 ) : (
                   <p className={`text-sm font-medium shrink-0 ml-4 ${selected ? 'text-white' : 'text-primary'}`}>
-                    {kes(r.price)}<span className={`text-[10px] ml-0.5 ${selected ? 'text-white/90' : 'text-ink/80'}`}>/night</span>
+                    {rate != null ? money(rate, currency) : `from ${money(lowest, currency)}`}<span className={`text-[10px] ml-0.5 ${selected ? 'text-white/90' : 'text-ink/80'}`}>/night</span>
                   </p>
                 )}
               </button>
@@ -593,6 +659,31 @@ function StepRoom({ rooms, data, set, errors, clearErr, today, minCheckout, room
         </div>
         {errors.room && <Err>{errors.room}</Err>}
       </div>
+
+      {/* Meal plan: only the plans actually offered for this room and guest type */}
+      {room && plans.length > 0 && (
+        <div>
+          <Label>Meal plan</Label>
+          <div className="mt-3 space-y-2" role="radiogroup" aria-label="Meal plan">
+            {plans.map((pl) => {
+              const on = data.plan === pl.id
+              return (
+                <button
+                  key={pl.id} type="button" role="radio" aria-checked={on}
+                  onClick={() => { set('plan', pl.id); clearErr('plan') }}
+                  className={`w-full flex justify-between items-center px-5 py-3.5 border text-left transition-all duration-200 ${on ? 'border-ink bg-ink text-white' : 'border-stone/35 hover:border-ink/40 bg-white'}`}
+                >
+                  <span className="text-sm font-medium">{pl.label}</span>
+                  <span className={`text-sm font-medium ${on ? 'text-white' : 'text-primary'}`}>
+                    {money(rateFor(room, data.residency, pl.id), currency)}<span className={`text-[10px] ml-0.5 ${on ? 'text-white/90' : 'text-ink/80'}`}>/night</span>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          {errors.plan && <Err>{errors.plan}</Err>}
+        </div>
+      )}
 
       {/* Dates */}
       <div className="grid grid-cols-2 gap-4">
@@ -628,15 +719,15 @@ function StepRoom({ rooms, data, set, errors, clearErr, today, minCheckout, room
       {nights > 0 && room && (
         <div className="border border-stone/30 p-5">
           <div className="flex justify-between text-sm text-ink/78">
-            <span>{room.label}</span>
-            <span>{kes(room.price)} × {nights} night{nights !== 1 ? 's' : ''}</span>
+            <span>{room.label} · {planLabel(data.plan)}</span>
+            <span>{money(nightly ?? 0, currency)} × {nights} night{nights !== 1 ? 's' : ''}</span>
           </div>
-          {room.note && (
+          {data.plan === 'bb' && room.note && (
             <p className="text-[10.5px] text-ink/68 mt-1">{room.note}</p>
           )}
           <div className="flex justify-between items-baseline mt-4 pt-4 border-t border-stone/25">
             <span className="text-xs tracking-[0.2em] uppercase text-ink/75">Total</span>
-            <span className="font-serif text-2xl text-ink">{kes(total)}</span>
+            <span className="font-serif text-2xl text-ink">{money(total, currency)}</span>
           </div>
         </div>
       )}
@@ -645,7 +736,7 @@ function StepRoom({ rooms, data, set, errors, clearErr, today, minCheckout, room
 }
 
 // ─── Step 1 — Guest Details ───────────────────────────────────────────────────
-function StepDetails({ data, set, errors, clearErr }) {
+function StepDetails({ data, set, errors, clearErr, international }) {
   return (
     <div className="space-y-5">
       <p className="text-[13px] text-ink/75 leading-relaxed">
@@ -659,7 +750,7 @@ function StepDetails({ data, set, errors, clearErr }) {
       </Field>
 
       <Field label="Phone Number" error={errors.phone}>
-        <input type="tel" maxLength={20} value={data.phone} placeholder="+254 7XX XXX XXX"
+        <input type="tel" maxLength={20} value={data.phone} placeholder={international ? '+44 7700 900123 (with country code)' : '+254 7XX XXX XXX'}
           onChange={e => { set('phone', e.target.value); clearErr('phone') }}
           className={inp(errors.phone)} />
       </Field>
@@ -682,13 +773,15 @@ function StepDetails({ data, set, errors, clearErr }) {
 }
 
 // ─── Step 2 — ID Upload ───────────────────────────────────────────────────────
-function StepId({ data, handleFile, errors }) {
+function StepId({ data, handleFile, errors, international }) {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
         <p className="text-[13px] text-ink/78 leading-relaxed">
           Kenyan law requires hotels to verify guest identity.
-          Please upload both sides of a valid government-issued ID.
+          {international
+            ? ' Please upload the photo page of your passport. A second page (such as your visa) is optional.'
+            : ' Please upload both sides of a valid government-issued ID.'}
         </p>
         <p className="text-[10.5px] text-ink/68">
           JPG, PNG or PDF · Max 6 MB each · See our{' '}
@@ -698,9 +791,9 @@ function StepId({ data, handleFile, errors }) {
         </p>
       </div>
 
-      <Zone label="Front of ID" file={data.idFront} preview={data.idFrontPreview}
+      <Zone label={international ? 'Passport photo page' : 'Front of ID'} file={data.idFront} preview={data.idFrontPreview}
         error={errors.idFront} onChange={f => handleFile('idFront', 'idFrontPreview', f)} />
-      <Zone label="Back of ID"  file={data.idBack}  preview={data.idBackPreview}
+      <Zone label={international ? 'Visa or second page (optional)' : 'Back of ID'}  file={data.idBack}  preview={data.idBackPreview}
         error={errors.idBack}  onChange={f => handleFile('idBack',  'idBackPreview',  f)} />
     </div>
   )
@@ -762,7 +855,7 @@ function Zone({ label, file, preview, error, onChange }) {
 }
 
 // ─── Step 3 — Review ──────────────────────────────────────────────────────────
-function StepReview({ data, room, nights, total }) {
+function StepReview({ data, room, nights, total, currency }) {
   return (
     <div className="space-y-6">
       <p className="text-[13px] text-ink/75">Review your details before payment.</p>
@@ -770,6 +863,8 @@ function StepReview({ data, room, nights, total }) {
       <div className="divide-y divide-stone/20 border border-stone/25">
         {[
           ['Room',      room?.label || '—'],
+          ['Meal plan', planLabel(data.plan)],
+          ['Rate',      data.residency === 'international' ? 'International visitor (USD)' : 'Kenyan resident (KES)'],
           ['Check-in',  fmtDate(data.checkIn)],
           ['Check-out', fmtDate(data.checkOut)],
           ['Duration',  `${nights} night${nights !== 1 ? 's' : ''}`],
@@ -777,7 +872,7 @@ function StepReview({ data, room, nights, total }) {
           ['Name',      data.name],
           ['Phone',     data.phone],
           ['Email',     data.email],
-          ['ID',        '✓ Both sides uploaded'],
+          ['ID',        data.idBack ? '✓ Both sides uploaded' : '✓ Passport page uploaded'],
           ...(data.requests ? [['Requests', data.requests]] : []),
         ].map(([label, value]) => (
           <div key={label} className="flex justify-between items-start px-5 py-3 gap-6">
@@ -789,7 +884,7 @@ function StepReview({ data, room, nights, total }) {
         ))}
         <div className="flex justify-between items-center px-5 py-4 bg-stone/8">
           <span className="text-[11px] uppercase tracking-[0.18em] text-ink/75">Total</span>
-          <span className="font-serif text-xl text-ink">{kes(total)}</span>
+          <span className="font-serif text-xl text-ink">{money(total, currency)}</span>
         </div>
       </div>
 
@@ -801,7 +896,7 @@ function StepReview({ data, room, nights, total }) {
 }
 
 // ─── Step 4 — Payment ─────────────────────────────────────────────────────────
-function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect, paymentsLive }) {
+function StepPayment({ data, set, errors, clearErr, total, currency, international, payState, slowConnect, paymentsLive }) {
   if (payState === 'connecting') {
     return (
       <div className="py-12 flex flex-col items-center text-center gap-6">
@@ -873,7 +968,7 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
         {/* Amount */}
         <div className="text-center py-6 border border-stone/25">
           <p className="text-[10.5px] tracking-[0.26em] uppercase text-ink/80">Amount Due at Check-in</p>
-          <p className="font-serif text-[2.75rem] text-ink leading-none mt-2">{kes(total)}</p>
+          <p className="font-serif text-[2.75rem] text-ink leading-none mt-2">{money(total, currency)}</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -882,14 +977,14 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
           </div>
           <div>
             <p className="text-[13px] font-medium text-ink">Reserve now, pay at the hotel</p>
-            <p className="text-[11px] text-ink/72">Cash or M-Pesa, on arrival</p>
+            <p className="text-[11px] text-ink/72">{international ? 'Payable at the hotel on arrival' : 'Cash or M-Pesa, on arrival'}</p>
           </div>
         </div>
 
         <p className="text-[13px] text-ink/78 leading-relaxed">
           Online payment isn't required to reserve — your room is held once
           the hotel confirms your booking by phone or email. Please have{' '}
-          <strong className="text-ink">{kes(total)}</strong> ready at check-in.
+          <strong className="text-ink">{money(total, currency)}</strong> ready at check-in.
         </p>
 
         <p className="text-[11px] text-ink/68 leading-relaxed">
@@ -904,7 +999,7 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
       {/* Amount */}
       <div className="text-center py-6 border border-stone/25">
         <p className="text-[10.5px] tracking-[0.26em] uppercase text-ink/80">Amount Due</p>
-        <p className="font-serif text-[2.75rem] text-ink leading-none mt-2">{kes(total)}</p>
+        <p className="font-serif text-[2.75rem] text-ink leading-none mt-2">{money(total, currency)}</p>
       </div>
 
       {/* M-Pesa label */}
@@ -936,7 +1031,7 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
 }
 
 // ─── Step 5 — Confirmation ────────────────────────────────────────────────────
-function StepDone({ bookingRef, data, room, nights, total, paid, onClose, hotel }) {
+function StepDone({ bookingRef, data, room, nights, total, paid, onClose, hotel, currency }) {
   const [downloading, setDownloading] = useState(false)
 
   const handleDownload = async () => {
@@ -946,7 +1041,7 @@ function StepDone({ bookingRef, data, room, nights, total, paid, onClose, hotel 
         ref: bookingRef, roomLabel: room?.label || '—',
         checkIn: data.checkIn, checkOut: data.checkOut, nights, guests: data.guests,
         name: data.name, phone: data.phone, email: data.email,
-        total, paid, hotel,
+        total, paid, hotel, currency, plan: data.plan, residency: data.residency,
       })
     } catch (e) {
       console.error('Receipt generation failed:', e)
@@ -969,7 +1064,7 @@ function StepDone({ bookingRef, data, room, nights, total, paid, onClose, hotel 
         <p className="text-[13px] text-ink/75 leading-relaxed max-w-[20rem] mx-auto">
           {paid
             ? 'Payment confirmed. Hotel Itoya will review your booking and contact you to finalise your stay.'
-            : `Hotel Itoya will review your reservation and contact you to confirm. Please have ${kes(total)} ready to pay at check-in (cash or M-Pesa).`}
+            : `Hotel Itoya will review your reservation and contact you to confirm. Please have ${money(total, currency)} ready to pay at check-in${data.residency === 'international' ? '' : ' (cash or M-Pesa)'}.`}
         </p>
       </div>
 

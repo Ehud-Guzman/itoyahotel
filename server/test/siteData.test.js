@@ -13,8 +13,12 @@ test('rooms: valid edits are applied per room type', () => {
     { roomType: 'standard', title: 'Garden Room', tag: 'Garden', pricePerNight: 4200, maxGuests: 3, available: true, priceNote: 'Breakfast included' },
     { roomType: 'executive', pricePerNight: 12000.4 },
   ])
-  assert.deepEqual(rooms.standard, { tag: 'Garden', label: 'Garden Room', price: 4200, maxGuests: 3, note: 'Breakfast included', available: true })
+  assert.deepEqual(rooms.standard, {
+    tag: 'Garden', label: 'Garden Room', price: 4200, maxGuests: 3, note: 'Breakfast included', available: true,
+    rates: { local: { bb: 4200, hb: 4500, fb: 5500 }, intl: DEFAULT_ROOMS.standard.rates.intl },   // dollar rates untouched
+  })
   assert.equal(rooms.executive.price, 12000)                   // rounded
+  assert.equal(rooms.executive.rates.local.bb, 12000)
   assert.equal(rooms.executive.label, 'Executive Room')        // untouched fields keep defaults
   assert.deepEqual(rooms.deluxe, DEFAULT_ROOMS.deluxe)         // rooms without a document keep defaults
 })

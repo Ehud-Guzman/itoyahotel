@@ -34,6 +34,9 @@ const SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS idx_bookings_checkout_request ON bookings (checkout_request_id);
   ALTER TABLE bookings ADD COLUMN IF NOT EXISTS stk_requested_at TIMESTAMPTZ;
+  ALTER TABLE bookings ADD COLUMN IF NOT EXISTS currency  TEXT NOT NULL DEFAULT 'KES';
+  ALTER TABLE bookings ADD COLUMN IF NOT EXISTS plan      TEXT NOT NULL DEFAULT 'bb';
+  ALTER TABLE bookings ADD COLUMN IF NOT EXISTS residency TEXT NOT NULL DEFAULT 'local';
 `
 
 async function init() {
@@ -73,6 +76,7 @@ function rowToRecord(row) {
       nights: row.nights, guests: row.guests, name: row.name, phone: row.phone,
       email: row.email, requests: row.requests, mpesaPhone: row.mpesa_phone,
       amount: Number(row.amount), mpesaRef: row.mpesa_ref,
+      currency: row.currency, plan: row.plan, residency: row.residency,
     },
     idFrontBuffer: row.id_front, idBackBuffer: row.id_back,
     idFrontName: row.id_front_name, idBackName: row.id_back_name,
@@ -88,13 +92,14 @@ async function create(record) {
       `INSERT INTO bookings
          (ref, room, room_label, check_in, check_out, nights, guests, name, phone, email,
           requests, mpesa_phone, amount, status, checkout_request_id,
-          id_front, id_back, id_front_name, id_back_name)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+          id_front, id_back, id_front_name, id_back_name, currency, plan, residency)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)`,
       [
         b.ref, b.room, b.roomLabel, b.checkIn, b.checkOut, b.nights, b.guests,
         b.name, b.phone, b.email, b.requests || null, b.mpesaPhone, b.amount,
         record.status, record.checkoutRequestId,
         record.idFrontBuffer, record.idBackBuffer, record.idFrontName, record.idBackName,
+        b.currency || 'KES', b.plan || 'bb', b.residency || 'local',
       ],
     )
   } else {
@@ -110,7 +115,8 @@ async function listAll() {
       `SELECT ref, room, room_label, check_in, check_out, nights, guests,
               name, phone, email, requests, mpesa_phone, amount, mpesa_ref,
               status, (id_front IS NOT NULL) AS has_id_front,
-              (id_back IS NOT NULL) AS has_id_back, created_at
+              (id_back IS NOT NULL) AS has_id_back, created_at,
+              currency, plan, residency
        FROM bookings ORDER BY created_at DESC`,
     )
     return rows.map((row) => ({
@@ -120,6 +126,7 @@ async function listAll() {
       nights: row.nights, guests: row.guests, name: row.name, phone: row.phone,
       email: row.email, requests: row.requests, mpesaPhone: row.mpesa_phone,
       amount: Number(row.amount), mpesaRef: row.mpesa_ref, status: row.status,
+      currency: row.currency, plan: row.plan, residency: row.residency,
       hasIdFront: row.has_id_front, hasIdBack: row.has_id_back,
       createdAt: row.created_at.toISOString(),
     }))

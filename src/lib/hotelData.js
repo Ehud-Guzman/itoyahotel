@@ -3,25 +3,52 @@
 //
 // Pure functions only (no React, no network) so they can be unit-tested. The
 // server has its own copy of the same rules in server/lib/siteData.js (the
-// server deploys on its own, so it cannot import from src/); tests/hotel-parity
+// server deploys on its own, so it cannot import from src/); tests/hotel.test.mjs
 // fails if the two ever drift apart.
 //
 // Rule of thumb: a bad value in the CMS must never reach a guest. Every field is
 // validated one by one, and a field that fails falls back to the built-in value
 // for that field alone, so a typo in one place cannot take the rest down.
 
-export const PRICE_MIN = 500
+export const PRICE_MIN = 500        // KES per night
 export const PRICE_MAX = 200000
+export const USD_MIN = 10           // USD per night
+export const USD_MAX = 5000
 export const GUESTS_MIN = 1
 export const GUESTS_MAX = 10
 
+// ---- how a stay is priced ----
+// Two kinds of guest, three meal plans. Kenyan residents pay in shillings,
+// international visitors in US dollars. Which kind a guest is gets confirmed at
+// the front desk with their ID or passport.
+export const RESIDENCIES = [
+  { id: 'local',         label: 'Kenyan resident',     currency: 'KES' },
+  { id: 'international', label: 'International visitor', currency: 'USD' },
+]
+export const PLANS = [
+  { id: 'bb', label: 'Bed & Breakfast' },
+  { id: 'hb', label: 'Half Board' },
+  { id: 'fb', label: 'Full Board' },
+]
+
+const NONE = { bb: null, hb: null, fb: null }
+
 // The four bookable room types. The ids are what the server and the Studio's
-// "Room type" dropdown agree on; the rest is the built-in default.
+// "Room type" dropdown agree on; the rest is the built-in default. `rates` is
+// per room per night; null means "not offered online".
+const room = (id, tag, label, maxGuests, local, intl) => ({
+  id, tag, label, maxGuests,
+  price: local.bb,                      // the Kenyan-resident Bed & Breakfast rate (kept for older code paths)
+  note: 'Bed & Breakfast included',
+  available: true,
+  rates: { local: { ...local }, intl: { ...intl } },
+})
+
 export const DEFAULT_ROOMS = [
-  { id: 'standard',     tag: 'Standard',     label: 'Standard Room',     price: 3500,  maxGuests: 2, note: 'Bed & Breakfast included', available: true },
-  { id: 'deluxe',       tag: 'Deluxe',       label: 'Deluxe Room',       price: 6000,  maxGuests: 3, note: 'Bed & Breakfast included', available: true },
-  { id: 'super-deluxe', tag: 'Super Deluxe', label: 'Super Deluxe Room', price: 7000,  maxGuests: 3, note: 'Bed & Breakfast included', available: true },
-  { id: 'executive',    tag: 'Executive',    label: 'Executive Room',    price: 10000, maxGuests: 4, note: 'Bed & Breakfast included', available: true },
+  room('standard',     'Standard',     'Standard Room',     2, { bb: 3500,  hb: 4500,  fb: 5500 },  { bb: 62,  hb: 80,  fb: 97 }),
+  room('deluxe',       'Deluxe',       'Deluxe Room',       3, { bb: 6000,  hb: 7000,  fb: 8000 },  { bb: 106, hb: 124, fb: 142 }),
+  room('super-deluxe', 'Super Deluxe', 'Super Deluxe Room', 3, { bb: 7000,  hb: null, fb: null }, NONE),
+  room('executive',    'Executive',    'Executive Room',    4, { bb: 10000, hb: 11000, fb: 12000 }, { bb: 162, hb: 179, fb: 197 }),
 ]
 
 export const DEFAULT_SETTINGS = {
@@ -91,6 +118,17 @@ const guests = (value) => {
   return Number.isInteger(n) && n >= GUESTS_MIN && n <= GUESTS_MAX ? n : undefined
 }
 
+// An optional rate. A number in range is used (KES whole shillings, USD to the cent);
+// 0 means "stop offering this plan"; anything else (blank, junk, out of range) keeps
+// the built-in value for that plan.
+const optionalRate = (value, min, max, builtIn, decimals) => {
+  if (value === 0) return null
+  const n = typeof value === 'number' ? value : Number.NaN
+  if (!Number.isFinite(n) || n < min || n > max) return builtIn
+  const f = 10 ** decimals
+  return Math.round(n * f) / f
+}
+
 const pick = (value, fallback) => (value === undefined ? fallback : value)
 
 /** Settings document from Sanity (or null) -> a complete, safe settings object. */
@@ -124,18 +162,56 @@ export function mergeRooms(rawRooms) {
   const list = Array.isArray(rawRooms) ? rawRooms : []
   return DEFAULT_ROOMS.map((base) => {
     const doc = list.find((r) => r && r.roomType === base.id)
-    if (!doc) return { ...base }
+    if (!doc) return { ...base, rates: { local: { ...base.rates.local }, intl: { ...base.rates.intl } } }
+    const bb = pick(price(doc.pricePerNight), base.price)
+    const l = base.rates.local
+    const i = base.rates.intl
     return {
       id: base.id,
       tag: pick(text(doc.tag, 24), base.tag),
       label: pick(text(doc.title, 60), base.label),
-      price: pick(price(doc.pricePerNight), base.price),
+      price: bb,
       maxGuests: pick(guests(doc.maxGuests), base.maxGuests),
       note: pick(text(doc.priceNote, 60), base.note),
       available: doc.available !== false,
+      rates: {
+        local: {
+          bb,
+          hb: optionalRate(doc.halfBoardPrice, PRICE_MIN, PRICE_MAX, l.hb, 0),
+          fb: optionalRate(doc.fullBoardPrice, PRICE_MIN, PRICE_MAX, l.fb, 0),
+        },
+        intl: {
+          bb: optionalRate(doc.intlBedAndBreakfast, USD_MIN, USD_MAX, i.bb, 2),
+          hb: optionalRate(doc.intlHalfBoard, USD_MIN, USD_MAX, i.hb, 2),
+          fb: optionalRate(doc.intlFullBoard, USD_MIN, USD_MAX, i.fb, 2),
+        },
+      },
     }
   })
 }
+
+// ---- rates ----
+
+const bucket = (residency) => (residency === 'international' ? 'intl' : 'local')
+
+export const currencyOf = (residency) => (residency === 'international' ? 'USD' : 'KES')
+export const planLabel = (plan) => PLANS.find((p) => p.id === plan)?.label ?? plan
+
+/** Nightly rate for a room / guest type / meal plan, or null if it is not offered. */
+export const rateFor = (room, residency, plan) => room?.rates?.[bucket(residency)]?.[plan] ?? null
+
+/** Meal plans offered for a room to this kind of guest, in display order. */
+export const availablePlans = (room, residency) => PLANS.filter((p) => rateFor(room, residency, p.id) != null)
+
+/** Lowest nightly rate offered ("from ..."), or null if this kind of guest cannot book the room online. */
+export const lowestRate = (room, residency) => {
+  const rates = availablePlans(room, residency).map((p) => rateFor(room, residency, p.id))
+  return rates.length ? Math.min(...rates) : null
+}
+
+/** "KES 3,500" / "USD 62": the currency is always spelled out so nobody mistakes the two. */
+export const formatMoney = (amount, currency = 'KES') =>
+  `${currency} ${Number(amount).toLocaleString('en-KE', { maximumFractionDigits: 2 })}`
 
 // ---- small helpers used all over the UI ----
 

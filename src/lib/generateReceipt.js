@@ -2,9 +2,12 @@
 // demand (not in the main bundle) since most visitors never reach this step.
 import { DEFAULT_SETTINGS } from './hotelData'
 
-function kes(n) {
-  return `KES ${Number(n).toLocaleString('en-KE')}`
+// Currency is always spelled out: Kenyan residents pay in KES, international visitors in USD.
+function money(n, currency = 'KES') {
+  return `${currency} ${Number(n).toLocaleString('en-KE', { maximumFractionDigits: 2 })}`
 }
+
+const PLAN_NAMES = { bb: 'Bed & Breakfast', hb: 'Half Board', fb: 'Full Board' }
 
 function fmtDate(str) {
   if (!str) return '—'
@@ -16,6 +19,7 @@ function fmtDate(str) {
 export async function downloadReceipt({
   ref, roomLabel, checkIn, checkOut, nights, guests,
   name, phone, email, total, paid,
+  currency = 'KES', plan = 'bb', residency = 'local',
   hotel = DEFAULT_SETTINGS,        // contact details printed in the header (from the Studio's Site Settings)
 }) {
   const { jsPDF } = await import('jspdf')
@@ -59,6 +63,8 @@ export async function downloadReceipt({
     ['Phone', phone],
     ['Email', email],
     ['Room', roomLabel],
+    ['Meal plan', PLAN_NAMES[plan] || plan],
+    ['Rate', residency === 'international' ? 'International visitor (USD)' : 'Kenyan resident (KES)'],
     ['Check-in', fmtDate(checkIn)],
     ['Check-out', fmtDate(checkOut)],
     ['Duration', `${nights} night${nights !== 1 ? 's' : ''}`],
@@ -83,11 +89,14 @@ export async function downloadReceipt({
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...grey)
   doc.text(paid ? 'AMOUNT PAID' : 'AMOUNT DUE AT CHECK-IN', margin, y)
   doc.setFont('times', 'bold'); doc.setFontSize(26); doc.setTextColor(...ink)
-  doc.text(kes(total), margin, y + 28)
+  doc.text(money(total, currency), margin, y + 28)
 
   doc.setFont('helvetica', 'bold'); doc.setFontSize(9)
   doc.setTextColor(...(paid ? [30, 132, 73] : [37, 99, 143]))
-  doc.text(paid ? 'PAID VIA M-PESA' : 'PAY AT HOTEL (CASH OR M-PESA)', pageWidth - margin, y + 20, { align: 'right' })
+  doc.text(
+    paid ? 'PAID VIA M-PESA' : residency === 'international' ? 'PAY AT HOTEL ON ARRIVAL' : 'PAY AT HOTEL (CASH OR M-PESA)',
+    pageWidth - margin, y + 20, { align: 'right' },
+  )
 
   y += 70
   doc.setDrawColor(...gold); doc.setLineWidth(1.2)

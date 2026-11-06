@@ -24,6 +24,12 @@ export const room = {
   name:  'room',
   title: 'Room',
   type:  'document',
+
+  fieldsets: [
+    { name: 'local', title: 'Rates for Kenyan residents (KES per night)',   options: { collapsible: true, collapsed: false } },
+    { name: 'intl',  title: 'Rates for international visitors (USD per night)', options: { collapsible: true, collapsed: false } },
+  ],
+
   fields: [
     {
       name:        'roomType',
@@ -81,10 +87,51 @@ export const room = {
     },
     {
       name:        'pricePerNight',
-      title:       'Price Per Night (KES)',
+      title:       'Bed & Breakfast: Kenyan residents (KES)',
       type:        'number',
-      description: 'Nightly rate in Kenyan Shillings, e.g. 3500. This is the price guests are charged when they book, and it updates the room cards, booking form and chatbot within about a minute of publishing.',
+      fieldset:    'local',
+      description: 'Nightly rate in Kenyan Shillings, e.g. 3500. This is the price Kenyan residents are shown AND charged when they book, and it updates the room cards, booking form and chatbot within about a minute of publishing.',
       validation:  (Rule) => Rule.required().min(500).max(200000).error('Enter a nightly price between 500 and 200,000.'),
+    },
+    {
+      name:        'halfBoardPrice',
+      title:       'Half Board: Kenyan residents (KES)',
+      type:        'number',
+      fieldset:    'local',
+      description: 'Leave blank if Half Board is not offered to Kenyan residents. Enter 0 to stop offering it.',
+      validation:  (Rule) => Rule.min(0).max(200000),
+    },
+    {
+      name:        'fullBoardPrice',
+      title:       'Full Board: Kenyan residents (KES)',
+      type:        'number',
+      fieldset:    'local',
+      description: 'Leave blank if Full Board is not offered to Kenyan residents. Enter 0 to stop offering it.',
+      validation:  (Rule) => Rule.min(0).max(200000),
+    },
+    {
+      name:        'intlBedAndBreakfast',
+      title:       'Bed & Breakfast: international (USD)',
+      type:        'number',
+      fieldset:    'intl',
+      description: 'Nightly rate in US dollars, e.g. 62. International visitors reserve online and pay at the hotel. Leave blank to keep the rate the website already has. Enter 0 to stop offering this plan.',
+      validation:  (Rule) => Rule.min(0).max(5000),
+    },
+    {
+      name:        'intlHalfBoard',
+      title:       'Half Board: international (USD)',
+      type:        'number',
+      fieldset:    'intl',
+      description: 'Leave blank to keep the rate the website already has. Enter 0 to stop offering this plan.',
+      validation:  (Rule) => Rule.min(0).max(5000),
+    },
+    {
+      name:        'intlFullBoard',
+      title:       'Full Board: international (USD)',
+      type:        'number',
+      fieldset:    'intl',
+      description: 'Leave blank to keep the rate the website already has. Enter 0 to stop offering this plan.',
+      validation:  (Rule) => Rule.min(0).max(5000),
     },
     {
       name:        'priceNote',

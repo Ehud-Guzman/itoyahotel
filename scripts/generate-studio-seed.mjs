@@ -22,6 +22,13 @@ export function buildSeed() {
       title: r.label,
       tag: r.tag,
       pricePerNight: r.price,
+      // Rates other than Kenyan Bed & Breakfast: written only where the site has one,
+      // so a blank box in the Studio always means "not offered / keep the default".
+      ...(r.rates.local.hb != null && { halfBoardPrice: r.rates.local.hb }),
+      ...(r.rates.local.fb != null && { fullBoardPrice: r.rates.local.fb }),
+      ...(r.rates.intl.bb != null && { intlBedAndBreakfast: r.rates.intl.bb }),
+      ...(r.rates.intl.hb != null && { intlHalfBoard: r.rates.intl.hb }),
+      ...(r.rates.intl.fb != null && { intlFullBoard: r.rates.intl.fb }),
       priceNote: r.note,
       maxGuests: r.maxGuests,
       available: r.available,

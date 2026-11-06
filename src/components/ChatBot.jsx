@@ -9,7 +9,7 @@ import {
 } from "react-icons/fa";
 import useBookingBarShown from "../lib/useBookingBarShown";
 import { useHotel } from "../lib/hotel";
-import { DEFAULT_ROOMS, DEFAULT_SETTINGS, telHref, waLink } from "../lib/hotelData";
+import { DEFAULT_ROOMS, DEFAULT_SETTINGS, PLANS, rateFor as planRate, formatMoney, telHref, waLink } from "../lib/hotelData";
 
 // Live hotel facts (phones, hours, rates) from the Studio. `H` is refreshed on every
 // render of the chat (see syncHotel) and the answers below read it through getters at
@@ -21,11 +21,27 @@ const H = {
   get email() { return this.settings.email; },
   get waUrl() { return waLink(this.settings); },
   phoneLines() { return this.phones.map((p) => `📞 ${p}`).join("\n"); },
+  // "Bed & Breakfast KES 3,500 · Half Board KES 4,800": every plan offered to this kind of guest
+  planSummary(room, residency) {
+    const currency = residency === "international" ? "USD" : "KES";
+    return PLANS.map((p) => [p.label, planRate(room, residency, p.id)])
+      .filter(([, rate]) => rate != null)
+      .map(([label, rate]) => `${label} ${formatMoney(rate, currency)}`)
+      .join(" · ");
+  },
   rateLines() {
-    return this.rooms
-      .filter((r) => r.available !== false)
-      .map((r) => `• **${r.label}** — KES ${r.price.toLocaleString("en-KE")}/night`)
-      .join("\n");
+    const open = this.rooms.filter((r) => r.available !== false);
+    const local = open
+      .filter((r) => this.planSummary(r, "local"))
+      .map((r) => `• **${r.label}** — ${this.planSummary(r, "local")}`);
+    const intl = open
+      .filter((r) => this.planSummary(r, "international"))
+      .map((r) => `• **${r.label}** — ${this.planSummary(r, "international")}`);
+    return [
+      "**Kenyan residents** (per night):",
+      ...local,
+      ...(intl.length ? ["", "**International visitors** (per night, US dollars):", ...intl] : []),
+    ].join("\n");
   },
 };
 const syncHotel = ({ settings, rooms }) => { H.settings = settings; H.rooms = rooms; };
@@ -33,9 +49,9 @@ const syncHotel = ({ settings, rooms }) => { H.settings = settings; H.rooms = ro
 const rateFor = (tag) => {
   const r = H.rooms.find((x) => x.tag === tag);
   if (!r) return "";
-  return r.available === false
-    ? `${r.label} is not available to book online right now`
-    : `KES ${r.price.toLocaleString("en-KE")}/night (${r.note})`;
+  if (r.available === false) return `${r.label} is not available to book online right now`;
+  const intl = H.planSummary(r, "international");
+  return `Kenyan residents: ${H.planSummary(r, "local")} per night.` + (intl ? ` International visitors: ${intl} per night.` : "");
 };
 
 const getGreeting = () => {

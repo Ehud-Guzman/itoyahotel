@@ -17,19 +17,40 @@
 //   3. the built-in defaults, if Sanity has never answered or has no documents
 // so a Sanity outage can never stop a guest from booking.
 
-const PRICE_MIN = 500
+const PRICE_MIN = 500          // KES per night
 const PRICE_MAX = 200000
+const USD_MIN = 10             // USD per night
+const USD_MAX = 5000
 const GUESTS_MIN = 1
 const GUESTS_MAX = 10
 
 const TTL_MS = 60 * 1000
 const STALE_MS = 24 * 60 * 60 * 1000
 
+// Two kinds of guest, three meal plans. Kenyan residents pay in shillings, international
+// visitors in US dollars (and reserve online, paying at the hotel: M-Pesa takes shillings
+// only). Mirrors src/lib/hotelData.js.
+const PLANS = [
+  { id: 'bb', label: 'Bed & Breakfast' },
+  { id: 'hb', label: 'Half Board' },
+  { id: 'fb', label: 'Full Board' },
+]
+const RESIDENCIES = ['local', 'international']
+
+const NONE = { bb: null, hb: null, fb: null }
+const room = (tag, label, maxGuests, local, intl) => ({
+  tag, label, maxGuests,
+  price: local.bb,                       // Kenyan-resident Bed & Breakfast rate
+  note: 'Bed & Breakfast included',
+  available: true,
+  rates: { local: { ...local }, intl: { ...intl } },
+})
+
 const DEFAULT_ROOMS = {
-  'standard':     { tag: 'Standard',     label: 'Standard Room',     price: 3500,  maxGuests: 2, note: 'Bed & Breakfast included', available: true },
-  'deluxe':       { tag: 'Deluxe',       label: 'Deluxe Room',       price: 6000,  maxGuests: 3, note: 'Bed & Breakfast included', available: true },
-  'super-deluxe': { tag: 'Super Deluxe', label: 'Super Deluxe Room', price: 7000,  maxGuests: 3, note: 'Bed & Breakfast included', available: true },
-  'executive':    { tag: 'Executive',    label: 'Executive Room',    price: 10000, maxGuests: 4, note: 'Bed & Breakfast included', available: true },
+  'standard':     room('Standard',     'Standard Room',     2, { bb: 3500,  hb: 4500,  fb: 5500 },  { bb: 62,  hb: 80,  fb: 97 }),
+  'deluxe':       room('Deluxe',       'Deluxe Room',       3, { bb: 6000,  hb: 7000,  fb: 8000 },  { bb: 106, hb: 124, fb: 142 }),
+  'super-deluxe': room('Super Deluxe', 'Super Deluxe Room', 3, { bb: 7000,  hb: null, fb: null }, NONE),
+  'executive':    room('Executive',    'Executive Room',    4, { bb: 10000, hb: 11000, fb: 12000 }, { bb: 162, hb: 179, fb: 197 }),
 }
 
 const DEFAULT_SETTINGS = {
@@ -90,6 +111,15 @@ const guests = (value) => {
   const n = typeof value === 'number' ? value : Number.NaN
   return Number.isInteger(n) && n >= GUESTS_MIN && n <= GUESTS_MAX ? n : undefined
 }
+// An optional rate: in range = used (KES whole shillings, USD to the cent); 0 = stop
+// offering this plan; anything else (blank, junk, out of range) keeps the built-in value.
+const optionalRate = (value, min, max, builtIn, decimals) => {
+  if (value === 0) return null
+  const n = typeof value === 'number' ? value : Number.NaN
+  if (!Number.isFinite(n) || n < min || n > max) return builtIn
+  const f = 10 ** decimals
+  return Math.round(n * f) / f
+}
 const pick = (value, fallback) => (value === undefined ? fallback : value)
 
 function normalizeSettings(raw) {
@@ -122,19 +152,48 @@ function normalizeRooms(rawRooms) {
   const rooms = {}
   for (const [id, base] of Object.entries(DEFAULT_ROOMS)) {
     const doc = list.find((r) => r && r.roomType === id)
-    rooms[id] = doc
-      ? {
-          tag: pick(text(doc.tag, 24), base.tag),
-          label: pick(text(doc.title, 60), base.label),
-          price: pick(price(doc.pricePerNight), base.price),
-          maxGuests: pick(guests(doc.maxGuests), base.maxGuests),
-          note: pick(text(doc.priceNote, 60), base.note),
-          available: doc.available !== false,
-        }
-      : { ...base }
+    if (!doc) {
+      rooms[id] = { ...base, rates: { local: { ...base.rates.local }, intl: { ...base.rates.intl } } }
+      continue
+    }
+    const bb = pick(price(doc.pricePerNight), base.price)
+    const l = base.rates.local
+    const i = base.rates.intl
+    rooms[id] = {
+      tag: pick(text(doc.tag, 24), base.tag),
+      label: pick(text(doc.title, 60), base.label),
+      price: bb,
+      maxGuests: pick(guests(doc.maxGuests), base.maxGuests),
+      note: pick(text(doc.priceNote, 60), base.note),
+      available: doc.available !== false,
+      rates: {
+        local: {
+          bb,
+          hb: optionalRate(doc.halfBoardPrice, PRICE_MIN, PRICE_MAX, l.hb, 0),
+          fb: optionalRate(doc.fullBoardPrice, PRICE_MIN, PRICE_MAX, l.fb, 0),
+        },
+        intl: {
+          bb: optionalRate(doc.intlBedAndBreakfast, USD_MIN, USD_MAX, i.bb, 2),
+          hb: optionalRate(doc.intlHalfBoard, USD_MIN, USD_MAX, i.hb, 2),
+          fb: optionalRate(doc.intlFullBoard, USD_MIN, USD_MAX, i.fb, 2),
+        },
+      },
+    }
   }
   return rooms
 }
+
+// ---- rates ----
+const bucket = (residency) => (residency === 'international' ? 'intl' : 'local')
+const currencyOf = (residency) => (residency === 'international' ? 'USD' : 'KES')
+const planLabel = (plan) => PLANS.find((p) => p.id === plan)?.label ?? plan
+
+/** Nightly rate for a room / guest type / meal plan, or null if it is not offered. */
+const rateFor = (room, residency, plan) => room?.rates?.[bucket(residency)]?.[plan] ?? null
+
+/** "KES 3,500" / "USD 62": the currency is always spelled out. */
+const formatMoney = (amount, currency = 'KES') =>
+  `${currency} ${Number(amount).toLocaleString('en-KE', { maximumFractionDigits: 2 })}`
 
 // ---- fetching ----
 
@@ -145,7 +204,8 @@ const QUERY = `{
     facebookUrl, instagramUrl, bookingOpen, bookingPausedMessage, festiveTheme
   },
   "rooms": *[_type == "room" && defined(roomType)] | order(order asc){
-    roomType, title, tag, pricePerNight, maxGuests, available, priceNote
+    roomType, title, tag, pricePerNight, maxGuests, available, priceNote,
+    halfBoardPrice, fullBoardPrice, intlBedAndBreakfast, intlHalfBoard, intlFullBoard
   }
 }`
 
@@ -207,5 +267,6 @@ function resetSiteDataCache() { cache = null; inflight = null }
 
 module.exports = {
   getSiteData, resetSiteDataCache, normalizeRooms, normalizeSettings,
-  DEFAULT_ROOMS, DEFAULT_SETTINGS, PRICE_MIN, PRICE_MAX, GUESTS_MIN, GUESTS_MAX, TTL_MS,
+  PLANS, RESIDENCIES, rateFor, currencyOf, planLabel, formatMoney,
+  DEFAULT_ROOMS, DEFAULT_SETTINGS, PRICE_MIN, PRICE_MAX, USD_MIN, USD_MAX, GUESTS_MIN, GUESTS_MAX, TTL_MS,
 }
