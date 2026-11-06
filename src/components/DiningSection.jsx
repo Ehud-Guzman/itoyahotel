@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useSanity, imgUrl } from '../lib/sanity'
 import { srcSet } from '../lib/responsive'
+import { useHotel } from '../lib/hotel'
 
 const MENU_QUERY = `*[_type == "menuItem" && available == true] | order(category asc, order asc) {
   _id, name, description, price, category,
@@ -18,6 +19,7 @@ const highlights = [
 const CATEGORY_ORDER = ['Breakfast', 'Lunch', 'Dinner', 'Drinks', 'Desserts']
 
 export default function DiningSection() {
+  const { settings } = useHotel()
   const { data: menuItems } = useSanity(MENU_QUERY, null)
   const [activeMenuCat, setActiveMenuCat] = useState(null)
 
@@ -109,9 +111,9 @@ export default function DiningSection() {
               <p className="font-sans text-[9px] uppercase tracking-[0.3em] text-white mb-3">Dining Hours</p>
               <div className="space-y-2">
                 {[
-                  ['Breakfast', '6:30 AM – 10:00 AM'],
-                  ['Lunch',     '12:00 PM – 3:00 PM'],
-                  ['Dinner',    '6:00 PM – 10:00 PM'],
+                  ['Breakfast', settings.breakfastHours],
+                  ['Lunch',     settings.lunchHours],
+                  ['Dinner',    settings.dinnerHours],
                 ].map(([meal, time]) => (
                   <div key={meal} className="flex justify-between items-center">
                     <span className="font-sans text-xs text-white/90">{meal}</span>

@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
-import { priceForTag } from '../lib/rooms'
 import { useFocusTrap } from '../lib/useFocusTrap'
 import { srcSet } from '../lib/responsive'
+import { useHotel } from '../lib/hotel'
+import { waLink } from '../lib/hotelData'
 
 export default function RoomModal({ room, onClose, onBookRoom }) {
-  const price = room.pricePerNight || priceForTag(room.tag) || null
+  const { settings } = useHotel()
+  const price = room.pricePerNight || null
+  const unavailable = room.available === false
   const [activeImg, setActiveImg] = useState(0)
   const panelRef = useFocusTrap(true)
 
@@ -136,12 +139,13 @@ export default function RoomModal({ room, onClose, onBookRoom }) {
             <div className="mt-8 pt-6 border-t border-stone flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => { onClose(); onBookRoom?.(room.id || room.tag?.toLowerCase().replace(/\s+/g, '-')) }}
-                className="flex-1 text-center py-4 bg-primary text-white font-sans font-medium tracking-widest uppercase text-[10px] hover:bg-primary-dark transition-colors duration-200"
+                disabled={unavailable}
+                className="flex-1 text-center py-4 bg-primary text-white font-sans font-medium tracking-widest uppercase text-[10px] hover:bg-primary-dark transition-colors duration-200 disabled:bg-ink/30 disabled:cursor-not-allowed disabled:hover:bg-ink/30"
               >
-                Book This Room
+                {unavailable ? 'Unavailable Online' : 'Book This Room'}
               </button>
               <a
-                href={`https://wa.me/254714302777?text=Hello%2C%20I%27d%20like%20to%20enquire%20about%20the%20${encodeURIComponent(room.title)}%20at%20Hotel%20Itoya.`}
+                href={waLink(settings, `Hello, I'd like to enquire about the ${room.title} at Hotel Itoya.`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 inline-flex items-center justify-center gap-2 py-4 border border-stone text-ink/70 font-sans font-medium tracking-widest uppercase text-[10px] hover:border-primary hover:text-primary transition-colors duration-200"

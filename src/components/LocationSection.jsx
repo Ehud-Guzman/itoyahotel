@@ -1,29 +1,13 @@
+import { useHotel } from '../lib/hotel'
+import { telHref } from '../lib/hotelData'
 /* Location & How to Find Us */
 
-const details = [
-  {
-    label: 'Address',
-    value: 'Hotel Itoya, B1 Kisumu-Busia Road, Busia, Kenya',
-  },
-  {
-    label: 'Phone',
-    value: '+254 714 302 777',
-    href: 'tel:+254714302777',
-  },
-  {
-    label: 'Phone',
-    value: '+254 714 777 333',
-    href: 'tel:+254714777333',
-  },
-  {
-    label: 'Email',
-    value: 'hotel.itoya@ayotigroup.com',
-    href: 'mailto:hotel.itoya@ayotigroup.com',
-  },
-  {
-    label: 'Border Crossing',
-    value: '5 min from Busia–Uganda border',
-  },
+// Contact details come from the Studio's Site Settings (see lib/hotel.jsx).
+const buildDetails = (settings) => [
+  { label: 'Address', value: `Hotel Itoya, ${settings.addressLine}, ${settings.town}` },
+  ...settings.phones.slice(0, 2).map((phone) => ({ label: 'Phone', value: phone, href: telHref(phone) })),
+  { label: 'Email', value: settings.email, href: `mailto:${settings.email}` },
+  { label: 'Border Crossing', value: '5 min from Busia–Uganda border' },
 ]
 
 const directions = [
@@ -33,6 +17,7 @@ const directions = [
 ]
 
 export default function LocationSection() {
+  const { settings } = useHotel()
   return (
     <section id="location" className="bg-white py-16 lg:py-24">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
@@ -76,7 +61,7 @@ export default function LocationSection() {
             <div>
               <p className="font-sans text-[9px] uppercase tracking-[0.35em] text-primary mb-5">Contact & Address</p>
               <div className="space-y-4">
-                {details.map((d) => (
+                {buildDetails(settings).map((d) => (
                   <div key={d.label} className="flex gap-4">
                     <div className="w-px bg-gold/30 flex-shrink-0 mt-1" />
                     <div>

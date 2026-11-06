@@ -79,12 +79,23 @@ test('a valid booking with two ID photos is stored and both emails go out', asyn
   assert.deepEqual(sent[0].attachments.sort(), ['ID-back-Jane-Doe.jpg', 'ID-front-Jane-Doe.jpg'])
 })
 
-test('the price comes from the server, whatever the client claims', async () => {
-  const res = await initiate(form({ amount: '1', nights: '99', roomLabel: 'Free Room' }))
-  const saved = await store.getByRef((await res.json()).ref)
+test('the price comes from the server: nights/labels from the client are ignored, a wrong total is refused', async () => {
+  // Claims about nights and room label are simply ignored...
+  const ok = await initiate(form({ nights: '99', roomLabel: 'Free Room', expectedAmount: '7000' }))
+  assert.equal(ok.status, 200)
+  const saved = await store.getByRef((await ok.json()).ref)
   assert.equal(saved.b.amount, 7000)
   assert.equal(saved.b.nights, 2)
   assert.equal(saved.b.roomLabel, 'Standard Room')
+
+  // ...and a total that is not what the server would charge is never accepted silently.
+  const before = sent.length
+  const bad = await initiate(form({ expectedAmount: '1' }))
+  const body = await bad.json()
+  assert.equal(bad.status, 409)
+  assert.equal(body.code, 'price_changed')
+  assert.equal(body.amount, 7000)
+  assert.equal(sent.length, before)
 })
 
 test('a hostile guest name cannot reach the attachment filenames', async () => {

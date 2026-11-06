@@ -1,0 +1,102 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import { createRequire } from 'node:module'
+import {
+  DEFAULT_ROOMS, DEFAULT_SETTINGS, mergeRooms, mergeSettings, telHref, waLink, kesFormat, PRICE_MIN, PRICE_MAX,
+} from '../src/lib/hotelData.js'
+import { buildSeed } from '../scripts/generate-studio-seed.mjs'
+
+const require = createRequire(import.meta.url)
+const server = require('../server/lib/siteData.js')
+
+// ---------- the website's rules ----------
+
+test('rooms: a Studio edit changes that room only, and untouched fields keep their built-in values', () => {
+  const rooms = mergeRooms([{ roomType: 'deluxe', pricePerNight: 6500, maxGuests: 4, title: 'Garden Deluxe' }])
+  const deluxe = rooms.find((r) => r.id === 'deluxe')
+  assert.equal(deluxe.price, 6500)
+  assert.equal(deluxe.maxGuests, 4)
+  assert.equal(deluxe.label, 'Garden Deluxe')
+  assert.equal(deluxe.tag, 'Deluxe')                              // not edited
+  assert.deepEqual(rooms.find((r) => r.id === 'standard'), DEFAULT_ROOMS[0])
+  assert.equal(rooms.length, 4)
+})
+
+test('rooms: a bad price or guest count never reaches the page', () => {
+  for (const bad of [0, 5, PRICE_MIN - 1, PRICE_MAX + 1, NaN, '3500', null]) {
+    assert.equal(mergeRooms([{ roomType: 'standard', pricePerNight: bad }])[0].price, 3500, String(bad))
+  }
+  assert.equal(mergeRooms([{ roomType: 'standard', maxGuests: 99 }])[0].maxGuests, 2)
+  assert.equal(mergeRooms([{ roomType: 'standard', available: false }])[0].available, false)
+})
+
+test('settings: bad entries fall back one field at a time', () => {
+  const s = mergeSettings({ phones: ['+254 700 111 222', 'nope'], email: 'not-an-email', facebookUrl: 'javascript:alert(1)', checkInTime: '1:00 PM' })
+  assert.deepEqual(s.phones, ['+254 700 111 222'])
+  assert.equal(s.email, DEFAULT_SETTINGS.email)
+  assert.equal(s.facebookUrl, DEFAULT_SETTINGS.facebookUrl)
+  assert.equal(s.checkInTime, '1:00 PM')
+  assert.equal(mergeSettings(null).bookingOpen, true)
+  assert.equal(mergeSettings({ bookingOpen: false }).bookingOpen, false)
+})
+
+test('helpers', () => {
+  assert.equal(telHref('+254 714 302 777'), 'tel:+254714302777')
+  assert.equal(telHref('0714-302-777'), 'tel:0714302777')
+  assert.equal(waLink(DEFAULT_SETTINGS), 'https://wa.me/254714302777')
+  assert.equal(waLink(DEFAULT_SETTINGS, "Hi, I'd like to ask"), 'https://wa.me/254714302777?text=Hi%2C%20I\'d%20like%20to%20ask')
+  assert.equal(kesFormat(10000), 'KES 10,000')
+})
+
+// ---------- website and server must agree ----------
+// They are separate copies of the same rules (the server deploys on its own and
+// cannot import from src/). If these fail, one was changed without the other.
+
+test('parity: built-in rooms and settings are identical on the website and the server', () => {
+  for (const r of DEFAULT_ROOMS) {
+    const { id, ...rest } = r
+    assert.deepEqual(server.DEFAULT_ROOMS[id], rest, `room ${id}`)
+  }
+  assert.equal(Object.keys(server.DEFAULT_ROOMS).length, DEFAULT_ROOMS.length)
+  assert.deepEqual(server.DEFAULT_SETTINGS, DEFAULT_SETTINGS)
+  assert.equal(server.PRICE_MIN, PRICE_MIN)
+  assert.equal(server.PRICE_MAX, PRICE_MAX)
+})
+
+test('parity: the same CMS data gives the same rooms and settings on the website and the server', () => {
+  const awkward = [undefined, null, 0, 1, 499, 500, 3500, 3500.6, 200000, 200001, -1, NaN, Infinity, '3500', '', ' ', {}, [], [1], true, 'x'.repeat(100)]
+  const roomSets = [
+    [],
+    [{ roomType: 'standard', pricePerNight: 4200, maxGuests: 3, available: false, title: 'Garden', tag: 'G', priceNote: 'B&B' }],
+    [{ roomType: 'penthouse', pricePerNight: 9999 }, { roomType: 'executive', pricePerNight: 12345 }],
+    [{ roomType: 'deluxe', pricePerNight: 6000 }, { roomType: 'deluxe', pricePerNight: 9000 }],
+    ...awkward.map((v) => [{ roomType: 'super-deluxe', pricePerNight: v, maxGuests: v, available: v, title: v, tag: v, priceNote: v }]),
+  ]
+  for (const raw of roomSets) {
+    const web = Object.fromEntries(mergeRooms(raw).map(({ id, ...r }) => [id, r]))
+    assert.deepEqual(web, server.normalizeRooms(raw), JSON.stringify(raw))
+  }
+
+  const settingSets = [
+    null, {}, 'x', 7,
+    { phones: ['+254 700 111 222', '0711 222 333', 'bad', 5, null], whatsapp: '+254 700 111 222', email: 'a@b.co', addressLine: ' 1  Road ', town: 'Busia',
+      facebookUrl: 'https://fb.com/x', instagramUrl: 'ftp://x', bookingOpen: false, bookingPausedMessage: 'Full', festiveTheme: 'off' },
+    ...awkward.map((v) => ({ phones: v, whatsapp: v, email: v, addressLine: v, town: v, reservationsHours: v, frontDeskHours: v, checkInTime: v,
+      checkOutTime: v, breakfastHours: v, lunchHours: v, dinnerHours: v, facebookUrl: v, instagramUrl: v, bookingOpen: v, bookingPausedMessage: v, festiveTheme: v })),
+  ]
+  for (const raw of settingSets) {
+    assert.deepEqual(mergeSettings(raw), server.normalizeSettings(raw), JSON.stringify(raw))
+  }
+})
+
+// ---------- the Studio starter file ----------
+
+test('studio/seed.ndjson matches the site\'s built-in values (regenerate with scripts/generate-studio-seed.mjs)', () => {
+  const onDisk = fs.readFileSync(new URL('../studio/seed.ndjson', import.meta.url), 'utf8').replace(/\r\n/g, '\n')
+  assert.equal(onDisk, buildSeed())
+  const docs = onDisk.trim().split('\n').map((l) => JSON.parse(l))
+  assert.equal(docs.filter((d) => d._type === 'room').length, 4)
+  assert.equal(docs.filter((d) => d._type === 'siteSettings').length, 1)
+  assert.ok(docs.every((d) => d._id), 'every document has a fixed _id, so re-importing never duplicates')
+})

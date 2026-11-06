@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FiCalendar, FiUsers, FiChevronDown, FiBriefcase } from 'react-icons/fi'
-import { ROOM_CATALOG as ROOMS } from '../lib/rooms'
+import { useHotel } from '../lib/hotel'
 import useBookingBarShown from '../lib/useBookingBarShown'
 
 const GUEST_OPTIONS = [
@@ -41,13 +41,14 @@ function guestCountFrom(option) {
 
 export default function BookingBar({ onBookNow }) {
   const { visible, hiddenByScroll } = useBookingBarShown()
+  const { rooms: ROOMS } = useHotel()      // live prices from the Studio
   const [hovering,     setHovering]     = useState(false)
   const [checkIn,  setCheckIn]  = useState(todayStr())
   const [checkOut, setCheckOut] = useState(tomorrowStr())
-  const [roomId,   setRoomId]   = useState(ROOMS[0].id)
+  const [roomId,   setRoomId]   = useState('standard')
   const [guests,   setGuests]   = useState(GUEST_OPTIONS[0])
 
-  const selectedRoom  = ROOMS.find(r => r.id === roomId)
+  const selectedRoom  = ROOMS.find(r => r.id === roomId) ?? ROOMS[0]
 
   const shown = visible && (!hiddenByScroll || hovering)
 
@@ -81,7 +82,9 @@ export default function BookingBar({ onBookNow }) {
                   className="w-full py-[9px] text-[12.5px] font-sans text-ink bg-transparent outline-none cursor-pointer appearance-none"
                 >
                   {ROOMS.map(r => (
-                    <option key={r.id} value={r.id}>{r.label}</option>
+                    <option key={r.id} value={r.id} disabled={r.available === false}>
+                      {r.label}{r.available === false ? ' (unavailable)' : ''}
+                    </option>
                   ))}
                 </select>
                 <FiChevronDown size={12} className="text-ink/60 shrink-0 pointer-events-none" />

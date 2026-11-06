@@ -5,6 +5,7 @@ import './season.css'
 import App from './App.jsx'
 import PrivacyPolicy from './legal/PrivacyPolicy.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
+import { HotelProvider } from './lib/hotel.jsx'
 
 // Staff-only dashboard: kept out of the public bundle so guests don't download it.
 const AdminApp = lazy(() => import('./admin/AdminApp.jsx'))
@@ -27,11 +28,16 @@ if (isAdmin) {
 
 const tree = (
   <StrictMode>
-    <ErrorBoundary>
-      {isAdmin
-        ? <Suspense fallback={null}><AdminApp /></Suspense>
-        : isPrivacy ? <PrivacyPolicy /> : <App />}
-    </ErrorBoundary>
+    {/* Staff /admin has no use for the public site's settings, so it skips the provider. */}
+    {isAdmin ? (
+      <ErrorBoundary>
+        <Suspense fallback={null}><AdminApp /></Suspense>
+      </ErrorBoundary>
+    ) : (
+      <HotelProvider>
+        <ErrorBoundary>{isPrivacy ? <PrivacyPolicy /> : <App />}</ErrorBoundary>
+      </HotelProvider>
+    )}
   </StrictMode>
 )
 

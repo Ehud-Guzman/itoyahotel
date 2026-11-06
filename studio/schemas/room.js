@@ -26,6 +26,31 @@ export const room = {
   type:  'document',
   fields: [
     {
+      name:        'roomType',
+      title:       'Room type',
+      type:        'string',
+      description: 'Which of the four bookable rooms this is. The price, guests and availability below are what guests see AND are charged on the booking form. Each room type can be used by one room only.',
+      options: {
+        layout: 'radio',
+        list: [
+          { title: 'Standard Room',     value: 'standard' },
+          { title: 'Deluxe Room',       value: 'deluxe' },
+          { title: 'Super Deluxe Room', value: 'super-deluxe' },
+          { title: 'Executive Room',    value: 'executive' },
+        ],
+      },
+      validation: (Rule) => Rule.required().custom(async (value, context) => {
+        if (!value) return true
+        const client = context.getClient({ apiVersion: '2024-06-01' })
+        const id = (context.document?._id || '').replace(/^drafts\./, '')
+        const others = await client.fetch(
+          'count(*[_type == "room" && roomType == $type && !(_id in [$id, "drafts." + $id])])',
+          { type: value, id },
+        )
+        return others > 0 ? 'Another room already uses this room type. Edit that one instead of adding a new one.' : true
+      }),
+    },
+    {
       name:        'title',
       title:       'Room Name',
       type:        'string',
@@ -44,22 +69,44 @@ export const room = {
       title:       'Short Description',
       type:        'text',
       rows:        2,
-      description: 'One or two lines shown on the room card. Keep it concise.',
-      validation:  (Rule) => Rule.required().max(220),
+      description: 'One or two lines shown on the room card. Leave blank to keep the current wording.',
+      validation:  (Rule) => Rule.max(220),
     },
     {
       name:        'longDescription',
       title:       'Full Description',
       type:        'text',
       rows:        4,
-      description: 'Longer text shown in the room detail popup.',
-      validation:  (Rule) => Rule.required(),
+      description: 'Longer text shown in the room detail popup. Leave blank to keep the current wording.',
     },
     {
       name:        'pricePerNight',
       title:       'Price Per Night (KES)',
       type:        'number',
-      description: 'Nightly rate in Kenyan Shillings. Leave blank to hide price.',
+      description: 'Nightly rate in Kenyan Shillings, e.g. 3500. This is the price guests are charged when they book, and it updates the room cards, booking form and chatbot within about a minute of publishing.',
+      validation:  (Rule) => Rule.required().min(500).max(200000).error('Enter a nightly price between 500 and 200,000.'),
+    },
+    {
+      name:        'priceNote',
+      title:       'Price note',
+      type:        'string',
+      description: 'Small print next to the price. Example: Bed & Breakfast included',
+      initialValue: 'Bed & Breakfast included',
+      validation:  (Rule) => Rule.max(60),
+    },
+    {
+      name:        'maxGuests',
+      title:       'Maximum guests',
+      type:        'number',
+      description: 'The most guests allowed in this room. The booking form will not accept more.',
+      validation:  (Rule) => Rule.required().integer().min(1).max(10),
+    },
+    {
+      name:         'available',
+      title:        'Available for online booking',
+      type:         'boolean',
+      initialValue: true,
+      description:  'Switch OFF when this room type is full or out of service. It then shows as unavailable on the booking form. Switch back ON to reopen it.',
     },
     {
       name:         'featured',
@@ -73,8 +120,7 @@ export const room = {
       title:   'Room Images',
       type:    'array',
       of:      [{ type: 'image', options: { hotspot: true } }],
-      description: 'First image is the main card image. Add more for the room gallery popup.',
-      validation: (Rule) => Rule.required().min(1).error('At least one room image is required.'),
+      description: 'First image is the main card image. Add more for the room gallery popup. Leave empty to keep the current photos.',
     },
     {
       name:        'features',

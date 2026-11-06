@@ -71,6 +71,25 @@ export function useSeason() {
   }, [snapshot])
 }
 
+// Called with the hotel's "Festive Christmas theme" choice from the Studio.
+// 'off' removes the theme now and is remembered, so /season-boot.js skips it
+// before first paint on later visits (otherwise it would flash on every load).
+// A ?season= preview in the address bar still overrides it, for testing.
+export function applyFestiveSetting(mode) {
+  try {
+    if (mode === 'off') localStorage.setItem('season-force-off', '1')
+    else localStorage.removeItem('season-force-off')
+  } catch {
+    // Private mode: it just applies for this page view.
+  }
+  if (mode !== 'off') return
+  // Someone previewing with ?season=... asked to see it: leave it on for this tab.
+  try { if (sessionStorage.getItem('season-preview')) return } catch { /* no sessionStorage: nothing to preserve */ }
+  ;['data-season', 'data-season-name', 'data-season-phase', 'data-season-year']
+    .forEach((attr) => document.documentElement.removeAttribute(attr))
+  listeners.forEach((callback) => callback())
+}
+
 // Master switch for the whole festive theme.
 export function setFestive(on) {
   const { seasonName } = document.documentElement.dataset

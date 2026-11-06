@@ -1,5 +1,7 @@
 /* Contact Section — reservations & enquiries */
 import { useState } from 'react'
+import { useHotel } from '../lib/hotel'
+import { telHref, waLink } from '../lib/hotelData'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
@@ -30,6 +32,7 @@ const inputClass =
   'w-full border border-stone bg-cream font-sans text-sm text-ink px-4 py-3.5 outline-none focus:border-gold transition-colors duration-200 placeholder:text-ink/30'
 
 export default function ContactSection() {
+  const { settings } = useHotel()
   const [formData, setFormData] = useState(initialForm)
   const [submitted, setSubmitted] = useState(false)
   const [sending, setSending] = useState(false)
@@ -89,29 +92,29 @@ export default function ContactSection() {
 
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.3em] text-white/90 mb-2">Phone</p>
-                <a href="tel:+254714302777" className="block py-1.5 font-sans text-white hover:text-gold transition-colors duration-200">
-                  +254 714 302 777
-                </a>
-                <a href="tel:+254714666222" className="block py-1.5 font-sans text-white/90 hover:text-gold transition-colors duration-200">
-                  +254 714 666 222
-                </a>
-                <a href="tel:+254714777333" className="block py-1.5 font-sans text-white/80 hover:text-gold transition-colors duration-200">
-                  +254 714 777 333
-                </a>
+                {settings.phones.map((phone, i) => (
+                  <a
+                    key={phone}
+                    href={telHref(phone)}
+                    className={`block py-1.5 font-sans hover:text-gold transition-colors duration-200 ${i === 0 ? 'text-white' : i === 1 ? 'text-white/90' : 'text-white/80'}`}
+                  >
+                    {phone}
+                  </a>
+                ))}
               </div>
 
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.3em] text-white/90 mb-2">Email</p>
-                <a href="mailto:hotel.itoya@ayotigroup.com" className="inline-block py-1.5 font-sans text-white hover:text-gold transition-colors duration-200 break-all">
-                  hotel.itoya@ayotigroup.com
+                <a href={`mailto:${settings.email}`} className="inline-block py-1.5 font-sans text-white hover:text-gold transition-colors duration-200 break-all">
+                  {settings.email}
                 </a>
               </div>
 
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.3em] text-white/90 mb-2">Location</p>
                 <p className="font-sans text-white leading-relaxed text-sm">
-                  B1 Kisumu-Busia Road<br />
-                  Busia, Kenya
+                  {settings.addressLine}<br />
+                  {settings.town}
                 </p>
                 <p className="font-sans text-white/90 text-xs mt-1.5">
                   Minutes from Busia Border Crossing
@@ -120,14 +123,14 @@ export default function ContactSection() {
 
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.3em] text-white/90 mb-2">Hours</p>
-                <p className="font-sans text-white text-sm">Reservations Team · Daily 7 AM – 10 PM</p>
-                <p className="font-sans text-white text-sm mt-1">Front Desk · 24 Hours</p>
+                <p className="font-sans text-white text-sm">Reservations Team · {settings.reservationsHours}</p>
+                <p className="font-sans text-white text-sm mt-1">Front Desk · {settings.frontDeskHours}</p>
               </div>
             </div>
 
             {/* WhatsApp */}
             <a
-              href="https://wa.me/254714302777"
+              href={waLink(settings)}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-auto flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#1fb559] text-white font-sans font-medium tracking-widest uppercase text-xs py-4 transition-colors duration-200"

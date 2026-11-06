@@ -1,6 +1,10 @@
 import { Component } from 'react'
+import { HotelContext } from '../lib/hotel'
+import { waLink } from '../lib/hotelData'
 
 export default class ErrorBoundary extends Component {
+  static contextType = HotelContext
+
   constructor(props) {
     super(props)
     this.state = { hasError: false }
@@ -33,7 +37,7 @@ export default class ErrorBoundary extends Component {
             Reload Page
           </button>
           <a
-            href="https://wa.me/254714302777"
+            href={waLink(this.context.settings)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center border border-primary text-primary hover:bg-primary hover:text-white font-sans font-medium tracking-widest uppercase text-xs px-8 py-4 transition-colors duration-200"

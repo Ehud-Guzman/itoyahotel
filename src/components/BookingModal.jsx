@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import {
   FiX, FiChevronLeft, FiChevronRight,
   FiUpload, FiCheck, FiAlertCircle, FiLoader, FiDownload,
 } from 'react-icons/fi'
-import { ROOM_CATALOG as ROOMS } from '../lib/rooms'
+import { useHotel } from '../lib/hotel'
+import { telHref, waLink } from '../lib/hotelData'
 import { useFocusTrap } from '../lib/useFocusTrap'
 import { downloadReceipt } from '../lib/generateReceipt'
 
@@ -84,6 +85,21 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
   // and flips to `true` only once /api/booking/config confirms it.
   const [paymentsLive, setPaymentsLive] = useState(false)
   const [paidOnline,   setPaidOnline]   = useState(false)
+
+  // Prices, guest limits and availability. They come from the hotel's Studio via
+  // useHotel(); when the booking server answers, ITS numbers win, because the
+  // server is what actually charges. That way the guest is shown exactly what
+  // will be charged (the server re-checks it on submit anyway).
+  const { rooms: hotelRooms, settings, refresh } = useHotel()
+  const [serverRooms,  setServerRooms]  = useState(null)
+  const [serverPause,  setServerPause]  = useState(null)   // message when the server says booking is paused
+  const ROOMS = useMemo(
+    () => hotelRooms.map((r) => (serverRooms?.[r.id] ? { ...r, ...serverRooms[r.id] } : r)),
+    [hotelRooms, serverRooms],
+  )
+  const bookingPaused = !settings.bookingOpen || serverPause !== null
+  const pausedMessage = (typeof serverPause === 'string' && serverPause) || settings.bookingPausedMessage
+    || `Online booking is paused right now. Please call us on ${settings.phones[0]} or message us on WhatsApp and we will gladly help.`
   const pollRef = useRef(null)
   const slowConnectTimer = useRef(null)
   // A ref, not state — `disabled={submitting}` alone leaves a window where
@@ -133,11 +149,17 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
     // step 4 can render the right flow before the guest ever submits. Uses
     // a short retry so a cold-start blip doesn't wrongly fall back to
     // reservation-only mode for a site that's actually taking live payments.
+    setServerRooms(null); setServerPause(null)
+    refresh({ fresh: true })     // pick up anything the hotel changed in the Studio a moment ago
     fetchWithRetry(`${API}/api/booking/config`, undefined, { retries: 2, delayMs: 2000 })
       .then(r => r.json())
-      .then(cfg => setPaymentsLive(Boolean(cfg.live)))
+      .then(cfg => {
+        setPaymentsLive(Boolean(cfg.live))
+        if (cfg.rooms) setServerRooms(cfg.rooms)
+        setServerPause(cfg.bookingOpen === false ? (cfg.pausedMessage || true) : null)
+      })
       .catch(() => setPaymentsLive(false))
-  }, [isOpen, preselected])
+  }, [isOpen, preselected, refresh])
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : ''
@@ -161,6 +183,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
     const e = {}
     if (step === 0) {
       if (!data.room)    e.room     = 'Please select a room'
+      else if (room && room.available === false) e.room = `${room.label} is not available for online booking right now. Please choose another room or call us.`
       if (!data.checkIn) e.checkIn  = 'Select check-in date'
       if (!data.checkOut)e.checkOut = 'Select check-out date'
       if (data.checkIn && data.checkOut && nights < 1) e.checkOut = 'Check-out must be after check-in'
@@ -249,7 +272,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
         const json = await res.json()
         if (!res.ok) {
           const e = new Error(json.message || 'Server error')
-          e.step = json.step; e.field = json.field
+          e.step = json.step; e.field = json.field; e.code = json.code; e.rooms = json.rooms
           throw e
         }
         live = Boolean(json.live)
@@ -259,7 +282,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
           room: data.room, roomLabel: room?.label, checkIn: data.checkIn,
           checkOut: data.checkOut, nights, guests: data.guests, name: data.name,
           phone: data.phone, email: data.email, requests: data.requests,
-          mpesaPhone: normalisePhone(phone), amount: total, clientRequestId,
+          mpesaPhone: normalisePhone(phone), expectedAmount: total, clientRequestId,
         }).forEach(([k, v]) => fd.append(k, v))
         fd.append('idFront', data.idFront)
         fd.append('idBack',  data.idBack)
@@ -268,7 +291,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
         const json = await res.json()
         if (!res.ok) {
           const e = new Error(json.message || 'Server error')
-          e.step = json.step; e.field = json.field
+          e.step = json.step; e.field = json.field; e.code = json.code; e.rooms = json.rooms
           throw e
         }
         ref  = json.ref
@@ -321,7 +344,15 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
       // Errors that trace back to an earlier step (bad room, invalid dates,
       // a rejected ID upload) belong on that step, not bolted onto the
       // M-Pesa phone field where they'd be unreadable and unfixable.
-      if (typeof err.step === 'number' && err.step !== 4) {
+      if (err.code === 'booking_paused') {
+        // The hotel paused online booking while this guest was filling the form in.
+        setServerPause(err.message || true)
+        setPayState('idle')
+      } else if (typeof err.step === 'number' && err.step !== 4) {
+        // price_changed: the hotel updated a rate a moment ago. Show the new price
+        // (the server sent it) and the explanation; the guest confirms by continuing.
+        if (err.code === 'price_changed' && err.rooms) setServerRooms(err.rooms)
+        if (err.code === 'room_unavailable') refresh({ fresh: true })
         setPayState('idle')
         setStep(err.step)
         setErrors({ [err.field || '_general']: friendlyMessage })
@@ -335,6 +366,47 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
   const panelRef = useFocusTrap(isOpen)
 
   if (!isOpen) return null
+
+  if (bookingPaused) {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="booking-modal-title"
+          tabIndex={-1}
+          className="relative w-full sm:max-w-[520px] bg-white px-8 py-10 shadow-2xl outline-none"
+        >
+          <span className="text-[9px] tracking-[0.4em] uppercase text-primary font-medium">Hotel Itoya · Busia</span>
+          <h2 id="booking-modal-title" className="font-serif text-[1.35rem] text-ink mt-1 leading-snug">
+            Online booking is paused
+          </h2>
+          <p className="mt-4 text-sm text-ink/80 leading-relaxed">{pausedMessage}</p>
+          <div className="mt-7 flex flex-col sm:flex-row gap-3">
+            <a
+              href={telHref(settings.phones[0])}
+              className="flex-1 text-center py-4 bg-primary text-white font-sans font-medium tracking-widest uppercase text-[10px] hover:bg-primary-dark transition-colors duration-200"
+            >
+              Call {settings.phones[0]}
+            </a>
+            <a
+              href={waLink(settings)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 text-center py-4 border border-primary text-primary font-sans font-medium tracking-widest uppercase text-[10px] hover:bg-primary hover:text-white transition-colors duration-200"
+            >
+              WhatsApp us
+            </a>
+          </div>
+          <button type="button" onClick={onClose} className="mt-6 text-xs tracking-[0.2em] uppercase text-ink/60 hover:text-ink">
+            Close
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
@@ -404,12 +476,12 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
 
         {/* ── Body ────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto px-8 py-7">
-          {step === 0 && <StepRoom     data={data} set={set} errors={errors} clearErr={clearErr} today={today} minCheckout={minCheckout} room={room} nights={nights} total={total} />}
+          {step === 0 && <StepRoom     rooms={ROOMS} data={data} set={set} errors={errors} clearErr={clearErr} today={today} minCheckout={minCheckout} room={room} nights={nights} total={total} />}
           {step === 1 && <StepDetails  data={data} set={set} errors={errors} clearErr={clearErr} />}
           {step === 2 && <StepId       data={data} handleFile={handleFile} errors={errors} />}
           {step === 3 && <StepReview   data={data} room={room} nights={nights} total={total} />}
           {step === 4 && <StepPayment  data={data} set={set} errors={errors} clearErr={clearErr} total={total} payState={payState} slowConnect={slowConnect} paymentsLive={paymentsLive} />}
-          {step === 5 && <StepDone     bookingRef={bookingRef} data={data} room={room} nights={nights} total={total} paid={paidOnline} onClose={onClose} />}
+          {step === 5 && <StepDone     bookingRef={bookingRef} data={data} room={room} nights={nights} total={total} paid={paidOnline} onClose={onClose} hotel={settings} />}
         </div>
 
         {/* ── Footer ──────────────────────────────────────────────── */}
@@ -472,23 +544,30 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
 }
 
 // ─── Step 0 — Room & Dates ────────────────────────────────────────────────────
-function StepRoom({ data, set, errors, clearErr, today, minCheckout, room, nights, total }) {
+function StepRoom({ rooms, data, set, errors, clearErr, today, minCheckout, room, nights, total }) {
   return (
     <div className="space-y-7">
       {/* Room picker */}
       <div>
         <Label>Select Room</Label>
         <div className="mt-3 space-y-2">
-          {ROOMS.map(r => {
+          {rooms.map(r => {
             const selected = data.room === r.id
+            const unavailable = r.available === false
             return (
               <button
                 key={r.id} type="button"
-                onClick={() => { set('room', r.id); clearErr('room') }}
+                disabled={unavailable}
+                onClick={() => {
+                  set('room', r.id); clearErr('room')
+                  if (data.guests > r.maxGuests) set('guests', r.maxGuests)
+                }}
                 className={`w-full flex justify-between items-center px-5 py-4 border text-left transition-all duration-200 ${
-                  selected
-                    ? 'border-ink bg-ink text-white'
-                    : 'border-stone/35 hover:border-ink/40 bg-white'
+                  unavailable
+                    ? 'border-stone/25 bg-mist/60 cursor-not-allowed opacity-70'
+                    : selected
+                      ? 'border-ink bg-ink text-white'
+                      : 'border-stone/35 hover:border-ink/40 bg-white'
                 }`}
               >
                 <div>
@@ -501,9 +580,13 @@ function StepRoom({ data, set, errors, clearErr, today, minCheckout, room, night
                     </p>
                   )}
                 </div>
-                <p className={`text-sm font-medium shrink-0 ml-4 ${selected ? 'text-white' : 'text-primary'}`}>
-                  {kes(r.price)}<span className={`text-[10px] ml-0.5 ${selected ? 'text-white/90' : 'text-ink/80'}`}>/night</span>
-                </p>
+                {unavailable ? (
+                  <p className="text-[10.5px] tracking-[0.12em] uppercase text-ink/70 shrink-0 ml-4">Unavailable</p>
+                ) : (
+                  <p className={`text-sm font-medium shrink-0 ml-4 ${selected ? 'text-white' : 'text-primary'}`}>
+                    {kes(r.price)}<span className={`text-[10px] ml-0.5 ${selected ? 'text-white/90' : 'text-ink/80'}`}>/night</span>
+                  </p>
+                )}
               </button>
             )
           })}
@@ -535,7 +618,7 @@ function StepRoom({ data, set, errors, clearErr, today, minCheckout, room, night
           value={data.guests} onChange={e => set('guests', Number(e.target.value))}
           className={inp(errors.guests)}
         >
-          {[1, 2, 3, 4].map(n => (
+          {Array.from({ length: room?.maxGuests ?? 4 }, (_, i) => i + 1).map(n => (
             <option key={n} value={n}>{n} {n === 1 ? 'Guest' : 'Guests'}</option>
           ))}
         </select>
@@ -853,7 +936,7 @@ function StepPayment({ data, set, errors, clearErr, total, payState, slowConnect
 }
 
 // ─── Step 5 — Confirmation ────────────────────────────────────────────────────
-function StepDone({ bookingRef, data, room, nights, total, paid, onClose }) {
+function StepDone({ bookingRef, data, room, nights, total, paid, onClose, hotel }) {
   const [downloading, setDownloading] = useState(false)
 
   const handleDownload = async () => {
@@ -863,7 +946,7 @@ function StepDone({ bookingRef, data, room, nights, total, paid, onClose }) {
         ref: bookingRef, roomLabel: room?.label || '—',
         checkIn: data.checkIn, checkOut: data.checkOut, nights, guests: data.guests,
         name: data.name, phone: data.phone, email: data.email,
-        total, paid,
+        total, paid, hotel,
       })
     } catch (e) {
       console.error('Receipt generation failed:', e)

@@ -22,6 +22,8 @@ const seasonBootSource = () => `(function () {
     if (asked) {
       try { sessionStorage.setItem("season-preview", asked + (q.get("phase") ? ":" + q.get("phase") : "")); } catch (e) {}
     }
+    // The hotel chose "never show the festive theme" in the Studio (remembered by src/lib/season.js).
+    if (!asked && read("localStorage", "season-force-off") === "1") return;
     var season = (${resolveSeason.toString()})(${JSON.stringify(SEASONS)}, new Date(), read("sessionStorage", "season-preview"));
     if (!season) return;
     d.setAttribute("data-season-name", season.name);

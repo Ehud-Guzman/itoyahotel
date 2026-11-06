@@ -1,6 +1,8 @@
 /* Events & Homeland Itoya — with upcoming special events from Sanity CMS */
 import { useSanity, imgUrl } from '../lib/sanity'
 import { srcSet } from '../lib/responsive'
+import { useHotel } from '../lib/hotel'
+import { waLink } from '../lib/hotelData'
 
 const EVENTS_QUERY = `*[_type == "specialEvent" && active == true] | order(date asc) {
   _id, title, date, description, category,
@@ -30,6 +32,7 @@ function formatDate(dateStr) {
 }
 
 export default function EventsSection() {
+  const { settings } = useHotel()
   const { data: specialEvents } = useSanity(EVENTS_QUERY, null)
 
   return (
@@ -80,7 +83,7 @@ export default function EventsSection() {
                 Plan an Event
               </a>
               <a
-                href="https://wa.me/254714302777"
+                href={waLink(settings)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 border border-white/20 text-white font-sans font-medium tracking-widest uppercase text-xs px-6 py-3.5 hover:border-gold hover:text-gold transition-colors duration-200"

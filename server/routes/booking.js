@@ -4,7 +4,7 @@ const axios      = require('axios')
 const rateLimit  = require('express-rate-limit')
 const store      = require('../store')
 const { createTransporter } = require('../lib/mailer')
-const { ROOM_CATALOG } = require('../roomCatalog')
+const { getSiteData } = require('../lib/siteData')
 const {
   LIMITS, isEmail, isPhone, isMpesaPhone, tooLong, validateStay, safeFilePart, safeExtension,
 } = require('../lib/validate')
@@ -106,14 +106,13 @@ function escapeHtml(str) {
   ))
 }
 
-// ROOM_CATALOG is a plain object keyed by guest-supplied `room`. A plain
-// `obj[key]` lookup resolves inherited properties too, so `room` values
-// like `__proto__`, `constructor`, or `toString` return a truthy
-// non-catalog value (Object.prototype, the constructor function, etc.)
-// instead of undefined — bypassing the `!catalogEntry` check below and
-// producing a NaN booking amount rather than a clean validation error.
-function lookupRoom(id) {
-  return Object.prototype.hasOwnProperty.call(ROOM_CATALOG, id) ? ROOM_CATALOG[id] : undefined
+// `rooms` is a plain object keyed by guest-supplied `room`. A plain `obj[key]`
+// lookup resolves inherited properties too, so `room` values like `__proto__`,
+// `constructor` or `toString` would return a truthy non-room value instead of
+// undefined, bypassing the "unknown room" check and producing a NaN booking
+// amount. hasOwnProperty keeps those out.
+function lookupRoom(rooms, id) {
+  return Object.prototype.hasOwnProperty.call(rooms, id) ? rooms[id] : undefined
 }
 
 // fetchWithRetry on the client can legitimately retry a request whose
@@ -230,6 +229,7 @@ async function sendEmails(booking, { paid = true } = {}) {
   const from        = `"Hotel Itoya Bookings" <${process.env.EMAIL_USER}>`
   const hotelEmail  = process.env.HOTEL_EMAIL
   const { b, idFrontBuffer, idBackBuffer, idFrontName, idBackName } = booking
+  const { settings } = await getSiteData()
 
   const summary = `
     <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px">
@@ -287,11 +287,11 @@ async function sendEmails(booking, { paid = true } = {}) {
       ${summary}
       <p style="font-family:sans-serif;font-size:14px;color:#555;margin-top:24px">
         If you have any questions, please call us on
-        <strong>+254 714 302 777 · +254 714 666 222 · +254 714 777 333</strong> or email
-        <a href="mailto:hotel.itoya@ayotigroup.com">hotel.itoya@ayotigroup.com</a>.
+        <strong>${settings.phones.map(escapeHtml).join(' · ')}</strong> or email
+        <a href="mailto:${escapeHtml(settings.email)}">${escapeHtml(settings.email)}</a>.
       </p>
       <p style="font-family:sans-serif;font-size:12px;color:#aaa;margin-top:32px">
-        Hotel Itoya · B1 Kisumu-Busia Road, Busia, Kenya
+        Hotel Itoya · ${escapeHtml(settings.addressLine)}, ${escapeHtml(settings.town)}
       </p>
     `,
   })
@@ -334,16 +334,30 @@ async function settleIfPaid(record) {
 // Maps a validation failure to the modal step/field it belongs to, so the
 // client can route the guest back to the right screen instead of dumping
 // every error onto the payment step.
-function fail(res, status, message, step, field) {
-  return res.status(status).json({ message, step, field })
+function fail(res, status, message, step, field, extra = {}) {
+  return res.status(status).json({ message, step, field, ...extra })
+}
+
+// The slice of the room catalogue the browser needs, so it can show exactly the
+// price the server will charge.
+function publicRooms(rooms) {
+  return Object.fromEntries(Object.entries(rooms).map(([id, r]) => [
+    id, { label: r.label, price: r.price, maxGuests: r.maxGuests, available: r.available },
+  ]))
 }
 
 // ── GET /api/booking/config ───────────────────────────────────────────────────
 // Tells the client whether to run the live M-Pesa payment flow or the
 // reserve-now/pay-at-hotel fallback, so it can render step 4 correctly
 // before the guest ever submits anything.
-router.get('/config', (req, res) => {
-  res.json({ live: mpesaIsLive() })
+router.get('/config', async (req, res) => {
+  const { rooms, settings } = await getSiteData()
+  res.json({
+    live: mpesaIsLive(),
+    bookingOpen: settings.bookingOpen,
+    pausedMessage: settings.bookingPausedMessage,
+    rooms: publicRooms(rooms),
+  })
 })
 
 // ── POST /api/booking/initiate ────────────────────────────────────────────────
@@ -377,9 +391,24 @@ router.post(
         return fail(res, 400, 'The back of your ID could not be uploaded — please use a JPG, PNG, or PDF file.', 2, 'idBack')
 
       // ── Server-side price authority — never trust client-sent amount/nights ──
-      const catalogEntry = lookupRoom(room)
+      let site = await getSiteData()
+
+      // The hotel can pause online booking from the Studio (full house, renovation, ...).
+      if (!site.settings.bookingOpen) {
+        return fail(
+          res, 503,
+          site.settings.bookingPausedMessage
+            || `Online booking is paused right now. Please call us on ${site.settings.phones[0]}.`,
+          0, '_general', { code: 'booking_paused' },
+        )
+      }
+
+      let catalogEntry = lookupRoom(site.rooms, room)
       if (!catalogEntry) {
         return fail(res, 400, 'Unknown room type.', 0, 'room')
+      }
+      if (!catalogEntry.available) {
+        return fail(res, 400, `${catalogEntry.label} is not available for online booking right now. Please choose another room or call us.`, 0, 'room', { code: 'room_unavailable' })
       }
       // Strict dates, "today" in Nairobi time, and a sane length/lead time for a stay.
       const stay = validateStay({ checkIn, checkOut })
@@ -392,7 +421,26 @@ router.post(
       if (catalogEntry.maxGuests && guestsNum > catalogEntry.maxGuests) {
         return fail(res, 400, `${catalogEntry.label} fits up to ${catalogEntry.maxGuests} guests.`, 0, 'guests')
       }
-      const amount = catalogEntry.price * nights
+      let amount = catalogEntry.price * nights
+
+      // The browser sends the total it SHOWED the guest. The server's price is the
+      // one that counts, so if they differ, never charge silently: re-read the
+      // Studio right now (a change may have been published seconds ago), and if
+      // it still differs, stop and let the guest see and confirm the real price.
+      const expected = Number(req.body.expectedAmount ?? req.body.amount)
+      if (Number.isFinite(expected) && expected !== amount) {
+        site = await getSiteData({ force: true })
+        catalogEntry = lookupRoom(site.rooms, room) || catalogEntry
+        amount = catalogEntry.price * nights
+        if (expected !== amount) {
+          return fail(
+            res, 409,
+            `The rate for ${catalogEntry.label} has just been updated to KES ${catalogEntry.price.toLocaleString('en-KE')} per night. Your new total is KES ${amount.toLocaleString('en-KE')}. Please review it and confirm.`,
+            0, 'room',
+            { code: 'price_changed', amount, nightlyRate: catalogEntry.price, rooms: publicRooms(site.rooms) },
+          )
+        }
+      }
 
       // Only the live flow pushes a prompt to this number, so only then does its
       // format matter (the client sends it in 2547XXXXXXXX form).

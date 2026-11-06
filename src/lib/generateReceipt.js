@@ -1,5 +1,7 @@
 // Builds and downloads a one-page PDF booking receipt. jsPDF is loaded on
 // demand (not in the main bundle) since most visitors never reach this step.
+import { DEFAULT_SETTINGS } from './hotelData'
+
 function kes(n) {
   return `KES ${Number(n).toLocaleString('en-KE')}`
 }
@@ -14,6 +16,7 @@ function fmtDate(str) {
 export async function downloadReceipt({
   ref, roomLabel, checkIn, checkOut, nights, guests,
   name, phone, email, total, paid,
+  hotel = DEFAULT_SETTINGS,        // contact details printed in the header (from the Studio's Site Settings)
 }) {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
@@ -29,9 +32,9 @@ export async function downloadReceipt({
   doc.setFont('times', 'bold'); doc.setFontSize(22); doc.setTextColor(...ink)
   doc.text('Hotel Itoya', margin, y)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...grey)
-  doc.text('B1 Kisumu-Busia Road, Busia, Kenya', margin, y + 16)
-  doc.text('+254 714 302 777  ·  +254 714 666 222  ·  +254 714 777 333', margin, y + 23)
-  doc.text('hotel.itoya@ayotigroup.com', margin, y + 35)
+  doc.text(`${hotel.addressLine}, ${hotel.town}`, margin, y + 16)
+  doc.text(hotel.phones.join('  ·  '), margin, y + 23)
+  doc.text(hotel.email, margin, y + 35)
 
   doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...ink)
   doc.text(paid ? 'PAYMENT RECEIPT' : 'RESERVATION RECEIPT', pageWidth - margin, y - 4, { align: 'right' })

@@ -4,6 +4,10 @@
 //   TEST_DATABASE_URL=postgres://postgres:test@localhost:5432/postgres npm test
 //
 // The database MUST be a throwaway one on localhost: tests truncate `bookings`.
+// Tests must never reach the real CMS: point the site-data fetch at a closed port so it
+// falls back to the built-in prices (tests that need CMS data start their own stub server).
+process.env.SANITY_API_HOST ||= 'http://127.0.0.1:9'
+
 const url = process.env.TEST_DATABASE_URL
 if (url && !/localhost|127\.0\.0\.1/.test(url)) {
   throw new Error('TEST_DATABASE_URL must point at a local throwaway database (it gets truncated).')

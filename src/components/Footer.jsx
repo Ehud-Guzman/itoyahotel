@@ -1,5 +1,7 @@
 /* Footer — minimal premium footer */
 import FestiveSwitch from './season/FestiveSwitch'
+import { useHotel } from '../lib/hotel'
+import { telHref } from '../lib/hotelData'
 
 const footerLinks = {
   Hotel: [
@@ -18,6 +20,7 @@ const footerLinks = {
 }
 
 export default function Footer() {
+  const { settings } = useHotel()
   const year = new Date().getFullYear()
 
   return (
@@ -80,12 +83,12 @@ export default function Footer() {
 
             {/* Social links */}
             <div className="flex gap-3">
-              <a href="https://www.facebook.com/HotelItoyaBusia" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="w-9 h-9 border border-white/15 flex items-center justify-center hover:border-gold transition-colors duration-200 group">
+              <a href={settings.facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="w-9 h-9 border border-white/15 flex items-center justify-center hover:border-gold transition-colors duration-200 group">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/70 group-hover:text-gold transition-colors">
                   <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
                 </svg>
               </a>
-              <a href="https://www.instagram.com/hotel_itoya?igsh=cTExaWJxdThobngx" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-9 h-9 border border-white/15 flex items-center justify-center hover:border-gold transition-colors duration-200 group">
+              <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-9 h-9 border border-white/15 flex items-center justify-center hover:border-gold transition-colors duration-200 group">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/70 group-hover:text-gold transition-colors">
                   <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                   <circle cx="12" cy="12" r="4" />
@@ -118,22 +121,28 @@ export default function Footer() {
             <div className="space-y-5">
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Phone</p>
-                <a href="tel:+254714302777" className="block py-1.5 font-sans font-light text-sm text-white hover:text-gold transition-colors duration-150">+254 714 302 777</a>
-                <a href="tel:+254714666222" className="block py-1.5 font-sans font-light text-sm text-white/80 hover:text-gold transition-colors duration-150">+254 714 666 222</a>
-                <a href="tel:+254714777333" className="block py-1.5 font-sans font-light text-sm text-white/60 hover:text-gold transition-colors duration-150">+254 714 777 333</a>
+                {settings.phones.map((phone, i) => (
+                  <a
+                    key={phone}
+                    href={telHref(phone)}
+                    className={`block py-1.5 font-sans font-light text-sm hover:text-gold transition-colors duration-150 ${i === 0 ? 'text-white' : i === 1 ? 'text-white/80' : 'text-white/60'}`}
+                  >
+                    {phone}
+                  </a>
+                ))}
               </div>
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Email</p>
-                <a href="mailto:hotel.itoya@ayotigroup.com" className="inline-block py-1.5 font-sans font-light text-sm text-white hover:text-gold transition-colors duration-150 break-all">hotel.itoya@ayotigroup.com</a>
+                <a href={`mailto:${settings.email}`} className="inline-block py-1.5 font-sans font-light text-sm text-white hover:text-gold transition-colors duration-150 break-all">{settings.email}</a>
               </div>
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Location</p>
-                <p className="font-sans font-light text-sm text-white leading-relaxed">B1 Kisumu-Busia Road<br />Busia, Kenya</p>
+                <p className="font-sans font-light text-sm text-white leading-relaxed">{settings.addressLine}<br />{settings.town}</p>
               </div>
               <div>
                 <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Hours</p>
-                <p className="font-sans font-light text-sm text-white">Reservations · Daily 7 AM – 10 PM</p>
-                <p className="font-sans font-light text-sm text-white/80 mt-0.5">Front Desk · 24 Hours</p>
+                <p className="font-sans font-light text-sm text-white">Reservations · {settings.reservationsHours}</p>
+                <p className="font-sans font-light text-sm text-white/80 mt-0.5">Front Desk · {settings.frontDeskHours}</p>
               </div>
             </div>
           </div>

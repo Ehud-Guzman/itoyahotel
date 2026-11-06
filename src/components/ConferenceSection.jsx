@@ -1,5 +1,7 @@
 /* Conference & Events — HIGH PRIORITY section, visually dominant */
 import { srcSet } from '../lib/responsive'
+import { useHotel } from '../lib/hotel'
+import { waLink } from '../lib/hotelData'
 
 const venues = [
   {
@@ -55,6 +57,7 @@ const highlights = [
 ]
 
 export default function ConferenceSection() {
+  const { settings } = useHotel()
   return (
     <section id="conference" className="bg-gradient-to-b from-cream to-white py-16 lg:py-24">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
@@ -174,7 +177,7 @@ export default function ConferenceSection() {
               Plan Your Event
             </a>
             <a
-              href="https://wa.me/254714302777"
+              href={waLink(settings)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 border border-white/30 text-white font-sans font-medium tracking-widest uppercase text-xs px-6 py-4 hover:border-white transition-colors duration-200"

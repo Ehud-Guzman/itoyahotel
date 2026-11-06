@@ -3,10 +3,11 @@ import { useState } from 'react'
 import RoomModal from './RoomModal'
 import { useSanity, imgUrl } from '../lib/sanity'
 import { srcSet } from '../lib/responsive'
-import { priceForTag } from '../lib/rooms'
+import { useHotel } from '../lib/hotel'
+import { DEFAULT_ROOMS } from '../lib/hotelData'
 
 const ROOMS_QUERY = `*[_type == "room"] | order(order asc) {
-  _id, title, tag, description, longDescription,
+  _id, roomType, title, tag, description, longDescription,
   pricePerNight, featured, features,
   "img":    images[0].asset->url,
   "images": images[].asset->url,
@@ -104,17 +105,43 @@ const FALLBACK_ROOMS = [
 export default function RoomsPreview({ onBookRoom }) {
   // Empty fallback so we can merge smartly below
   const { data: sanityRaw } = useSanity(ROOMS_QUERY, [])
+  const { rooms: hotelRooms } = useHotel()
   const [selectedRoom, setSelectedRoom] = useState(null)
 
   const sanityRooms = sanityRaw || []
 
-  // Keep fallback rooms whose title isn't already covered by a Sanity room
-  const sanityTitles = new Set(sanityRooms.map((r) => r.title))
-  const remainingFallbacks = FALLBACK_ROOMS
-    .filter((r) => !sanityTitles.has(r.title))
-    .map((r) => ({ ...r, pricePerNight: r.pricePerNight ?? priceForTag(r.tag) }))
+  // Each built-in room (photos, wording, amenities) is the starting point. A room
+  // the hotel has added in the Studio overrides it FIELD BY FIELD, so editing just
+  // a description keeps the built-in photos instead of replacing the whole card.
+  // The price, name, badge and availability always come from the live catalogue
+  // (useHotel), the same one the booking form, the chatbot and the server use.
+  const pickDefined = (doc) =>
+    Object.fromEntries(
+      ['description', 'longDescription', 'features', 'amenities', 'featured', 'img', 'images']
+        .filter((key) => doc[key] != null && doc[key] !== '' && !(Array.isArray(doc[key]) && doc[key].length === 0))
+        .map((key) => [key, doc[key]]),
+    )
 
-  const rooms = [...sanityRooms, ...remainingFallbacks].map((r) => ({
+  const builtIn = FALLBACK_ROOMS.map((fallback) => {
+    const type = DEFAULT_ROOMS.find((r) => r.tag === fallback.tag)?.id
+    const doc = sanityRooms.find((r) => r.roomType === type)
+    const live = hotelRooms.find((r) => r.id === type)
+    return {
+      ...fallback,
+      ...(doc ? pickDefined(doc) : {}),
+      id: type,
+      title: live?.label ?? fallback.title,
+      tag: live?.tag ?? fallback.tag,
+      pricePerNight: live?.price,
+      available: live?.available !== false,
+    }
+  })
+
+  // Anything else in the CMS (a room without one of the four bookable types) is shown as it is.
+  const known = new Set(DEFAULT_ROOMS.map((r) => r.id))
+  const extras = sanityRooms.filter((r) => !known.has(r.roomType))
+
+  const rooms = [...builtIn, ...extras].map((r) => ({
     ...r,
     img:    imgUrl(r.img,  600, 450),
     images: (r.images || [r.img]).map((u) => imgUrl(u, 900)),
@@ -146,7 +173,7 @@ export default function RoomsPreview({ onBookRoom }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {rooms.map((room) => (
               <div
-                key={room._id || room.title}
+                key={room.id || room._id || room.title}
                 className={`
                   group relative flex flex-col overflow-hidden rounded-md bg-white
                   border border-stone/50 transition-all duration-300
@@ -183,11 +210,16 @@ export default function RoomsPreview({ onBookRoom }) {
                 <div className="flex flex-col flex-1 p-8">
                   <h3 className="font-serif text-2xl text-ink mb-3">{room.title}</h3>
 
-                  {/* Price — only shown when set in Sanity */}
+                  {/* Price: the live rate from the Studio (the same one booking charges) */}
                   {room.pricePerNight && (
                     <p className="font-sans text-sm font-semibold text-primary mb-3">
                       KES {room.pricePerNight.toLocaleString()}
                       <span className="font-normal text-ink/60 ml-1">/ night</span>
+                    </p>
+                  )}
+                  {room.available === false && (
+                    <p className="font-sans text-[11px] uppercase tracking-[0.18em] text-ink/60 mb-3">
+                      Currently unavailable online
                     </p>
                   )}
 

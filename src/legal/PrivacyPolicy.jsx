@@ -1,3 +1,7 @@
+import { Fragment } from 'react'
+import { useHotel } from '../lib/hotel'
+import { telHref } from '../lib/hotelData'
+
 const LAST_UPDATED = 'July 24, 2026'
 
 function Section({ title, children }) {
@@ -10,6 +14,7 @@ function Section({ title, children }) {
 }
 
 export default function PrivacyPolicy() {
+  const { settings } = useHotel()
   return (
     <div className="min-h-screen bg-cream">
       <header className="bg-primary px-6 py-10">
@@ -68,8 +73,8 @@ export default function PrivacyPolicy() {
         <Section title="Your rights">
           <p>Under Kenya's Data Protection Act, 2019, you can ask us to access, correct, or delete the
           personal information we hold about you, or object to how it's used. To make a request, email{' '}
-          <a href="mailto:hotel.itoya@ayotigroup.com" className="text-primary hover:text-primary-dark underline">
-            hotel.itoya@ayotigroup.com
+          <a href={`mailto:${settings.email}`} className="text-primary hover:text-primary-dark underline">
+            {settings.email}
           </a>.</p>
         </Section>
 
@@ -80,12 +85,15 @@ export default function PrivacyPolicy() {
 
         <Section title="Contact">
           <p>Questions about this policy or your data can be sent to{' '}
-          <a href="mailto:hotel.itoya@ayotigroup.com" className="text-primary hover:text-primary-dark underline">
-            hotel.itoya@ayotigroup.com
+          <a href={`mailto:${settings.email}`} className="text-primary hover:text-primary-dark underline">
+            {settings.email}
           </a>{' '}or call{' '}
-          <a href="tel:+254714302777" className="text-primary hover:text-primary-dark underline">+254 714 302 777</a>,{' '}
-          <a href="tel:+254714666222" className="text-primary hover:text-primary-dark underline">+254 714 666 222</a>, or{' '}
-          <a href="tel:+254714777333" className="text-primary hover:text-primary-dark underline">+254 714 777 333</a>.</p>
+          {settings.phones.map((phone, i) => (
+            <Fragment key={phone}>
+              {i > 0 && (i === settings.phones.length - 1 ? ', or ' : ', ')}
+              <a href={telHref(phone)} className="text-primary hover:text-primary-dark underline">{phone}</a>
+            </Fragment>
+          ))}.</p>
         </Section>
       </main>
     </div>

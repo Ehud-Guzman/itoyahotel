@@ -8,21 +8,34 @@ import {
   FaEnvelope,
 } from "react-icons/fa";
 import useBookingBarShown from "../lib/useBookingBarShown";
-import { ROOM_CATALOG } from "../lib/rooms";
+import { useHotel } from "../lib/hotel";
+import { DEFAULT_ROOMS, DEFAULT_SETTINGS, telHref, waLink } from "../lib/hotelData";
 
-const PHONE_1 = "+254 714 302 777";
-const PHONE_2 = "+254 714 666 222";
-const PHONE_3 = "+254 714 777 333";
-const EMAIL = "hotel.itoya@ayotigroup.com";
-const WA_URL = "https://wa.me/254714302777";
-
-const RATE_LINES = ROOM_CATALOG.map(
-  (r) => `• **${r.label}** — KES ${r.price.toLocaleString("en-KE")}/night`,
-).join("\n");
+// Live hotel facts (phones, hours, rates) from the Studio. `H` is refreshed on every
+// render of the chat (see syncHotel) and the answers below read it through getters at
+// the moment they are used, so an edit in the Studio changes what the chatbot says too.
+const H = {
+  settings: DEFAULT_SETTINGS,
+  rooms: DEFAULT_ROOMS,
+  get phones() { return this.settings.phones; },
+  get email() { return this.settings.email; },
+  get waUrl() { return waLink(this.settings); },
+  phoneLines() { return this.phones.map((p) => `📞 ${p}`).join("\n"); },
+  rateLines() {
+    return this.rooms
+      .filter((r) => r.available !== false)
+      .map((r) => `• **${r.label}** — KES ${r.price.toLocaleString("en-KE")}/night`)
+      .join("\n");
+  },
+};
+const syncHotel = ({ settings, rooms }) => { H.settings = settings; H.rooms = rooms; };
 
 const rateFor = (tag) => {
-  const r = ROOM_CATALOG.find((x) => x.tag === tag);
-  return r ? `KES ${r.price.toLocaleString("en-KE")}/night (${r.note})` : "";
+  const r = H.rooms.find((x) => x.tag === tag);
+  if (!r) return "";
+  return r.available === false
+    ? `${r.label} is not available to book online right now`
+    : `KES ${r.price.toLocaleString("en-KE")}/night (${r.note})`;
 };
 
 const getGreeting = () => {
@@ -154,8 +167,9 @@ const FAQ = [
       "early check in",
       "early arrival",
     ],
-    answer:
-      "Check-in is from **2:00 PM**. Early arrivals are welcome to relax in our lobby while your room is prepared, and since reception is open **24/7**, late arrivals are no problem at all — just let us know you're on the way.",
+    get answer() {
+      return `Check-in is from **${H.settings.checkInTime}**. Early arrivals are welcome to relax in our lobby while your room is prepared. Our front desk hours are **${H.settings.frontDeskHours}**, so just let us know you're on the way if you will arrive late.`;
+    },
   },
   {
     keywords: [
@@ -168,8 +182,9 @@ const FAQ = [
       "checkout time",
       "check out time",
     ],
-    answer:
-      "Check-out is at **10:00 AM**. Late check-out can be arranged upon request — please let reception know the evening before. A small fee may apply depending on how late.",
+    get answer() {
+      return `Check-out is at **${H.settings.checkOutTime}**. Late check-out can be arranged upon request — please let reception know the evening before. A small fee may apply depending on how late.`;
+    },
   },
 
   // ── Feedback & Complaints ───────────────────────────────────────────────
@@ -192,7 +207,7 @@ const FAQ = [
       "supervisor",
       "not happy",
     ],
-    answer: `We're sorry to hear you've had a concern. Please contact our management team directly and we will resolve it as a priority:\n\n📞 ${PHONE_1}\n✉️ ${EMAIL}\n\nYour satisfaction is everything to us.`,
+    get answer() { return `We're sorry to hear you've had a concern. Please contact our management team directly and we will resolve it as a priority:\n\n📞 ${H.phones[0]}\n✉️ ${H.email}\n\nYour satisfaction is everything to us.`; },
   },
 
   // ── Rooms ───────────────────────────────────────────────────────────────
@@ -210,19 +225,19 @@ const FAQ = [
   },
   {
     keywords: ["standard room", "standard"],
-    answer: `Our **Standard Rooms** offer a comfortable bed (single, twin, or king), en-suite bathroom, flat-screen TV, work desk, and complimentary Wi-Fi — everything you need for a great stay.\n\n💰 ${rateFor("Standard")}`,
+    get answer() { return `Our **Standard Rooms** offer a comfortable bed (single, twin, or king), en-suite bathroom, flat-screen TV, work desk, and complimentary Wi-Fi — everything you need for a great stay.\n\n💰 ${rateFor("Standard")}`; },
   },
   {
     keywords: ["deluxe room", "deluxe"],
-    answer: `**Deluxe Rooms** offer upgraded furnishings and more space — a step up in comfort and style from the Standard category.\n\n💰 ${rateFor("Deluxe")}`,
+    get answer() { return `**Deluxe Rooms** offer upgraded furnishings and more space — a step up in comfort and style from the Standard category.\n\n💰 ${rateFor("Deluxe")}`; },
   },
   {
     keywords: ["super deluxe", "super-deluxe", "superdeluxe"],
-    answer: `**Super Deluxe Rooms** combine premium décor with generous space and top-tier in-room facilities — ideal for longer stays or special occasions.\n\n💰 ${rateFor("Super Deluxe")}`,
+    get answer() { return `**Super Deluxe Rooms** combine premium décor with generous space and top-tier in-room facilities — ideal for longer stays or special occasions.\n\n💰 ${rateFor("Super Deluxe")}`; },
   },
   {
     keywords: ["executive room", "executive suite", "executive"],
-    answer: `Our **Executive Rooms** are the finest at Hotel Itoya — premium finishes, superior space, and exclusive amenities. Perfect for business executives and discerning guests.\n\n💰 ${rateFor("Executive")}`,
+    get answer() { return `Our **Executive Rooms** are the finest at Hotel Itoya — premium finishes, superior space, and exclusive amenities. Perfect for business executives and discerning guests.\n\n💰 ${rateFor("Executive")}`; },
   },
   {
     keywords: ["single room", "single bed"],
@@ -251,7 +266,7 @@ const FAQ = [
       "charge",
       "price list",
     ],
-    answer: `Our current room rates:\n\n${RATE_LINES}\n\nRates may vary with season or promotions. For a corporate/group quote or the best available rate, reach us on:\n\n📞 ${PHONE_1}\n💬 WhatsApp us for a quick quote`,
+    get answer() { return `Our current room rates:\n\n${H.rateLines()}\n\nRates may vary with season or promotions. For a corporate/group quote or the best available rate, reach us on:\n\n📞 ${H.phones[0]}\n💬 WhatsApp us for a quick quote`; },
   },
   {
     keywords: [
@@ -270,7 +285,7 @@ const FAQ = [
       "make a booking",
       "book a room",
     ],
-    answer: `To book or check availability, use the **Enquiry form** on this page, or contact us directly:\n\n📞 ${PHONE_1}\n✉️ ${EMAIL}\n\nOur team responds promptly.`,
+    get answer() { return `To book or check availability, use the **Enquiry form** on this page, or contact us directly:\n\n📞 ${H.phones[0]}\n✉️ ${H.email}\n\nOur team responds promptly.`; },
   },
   {
     keywords: [
@@ -314,7 +329,7 @@ const FAQ = [
       "corporate rate",
       "group rate",
     ],
-    answer: `We offer corporate rates, group discounts, and seasonal packages. Contact our reservations team for the best available deal:\n\n📞 ${PHONE_1}\n✉️ ${EMAIL}`,
+    get answer() { return `We offer corporate rates, group discounts, and seasonal packages. Contact our reservations team for the best available deal:\n\n📞 ${H.phones[0]}\n✉️ ${H.email}`; },
   },
 
   // ── Payment ─────────────────────────────────────────────────────────────
@@ -377,7 +392,7 @@ const FAQ = [
       "meal time",
       "meal times",
     ],
-    answer: `Our restaurant serves local and international cuisine daily:\n\n• 🌅 Breakfast: 6:30 – 10:00 AM\n• ☀️ Lunch: 12:00 – 3:00 PM\n• 🌙 Dinner: 6:00 – 10:00 PM\n\nRoom service is available during all restaurant hours.`,
+    get answer() { return `Our restaurant serves local and international cuisine daily:\n\n• 🌅 Breakfast: ${H.settings.breakfastHours}\n• ☀️ Lunch: ${H.settings.lunchHours}\n• 🌙 Dinner: ${H.settings.dinnerHours}\n\nRoom service is available during all restaurant hours.`; },
   },
   {
     keywords: [
@@ -389,13 +404,15 @@ const FAQ = [
       "breakfast time",
       "breakfast hours",
     ],
-    answer:
-      "Breakfast is served daily from **6:30 AM to 10:00 AM** — a hearty mix of continental and local dishes to start your day right.",
+    get answer() {
+      return `Breakfast is served daily from **${H.settings.breakfastHours}** — a hearty mix of continental and local dishes to start your day right.`;
+    },
   },
   {
     keywords: ["lunch", "afternoon meal", "lunch hours", "lunch time"],
-    answer:
-      "Lunch is served from **12:00 PM to 3:00 PM** daily — a varied menu of local and international options.",
+    get answer() {
+      return `Lunch is served from **${H.settings.lunchHours}** daily — a varied menu of local and international options.`;
+    },
   },
   {
     keywords: [
@@ -406,8 +423,9 @@ const FAQ = [
       "dinner hours",
       "dinner time",
     ],
-    answer:
-      "Dinner is served from **6:00 PM to 10:00 PM**. Join us for a relaxed evening meal with our full restaurant menu.",
+    get answer() {
+      return `Dinner is served from **${H.settings.dinnerHours}**. Join us for a relaxed evening meal with our full restaurant menu.`;
+    },
   },
   {
     keywords: [
@@ -420,8 +438,9 @@ const FAQ = [
       "delivered",
       "deliver",
     ],
-    answer:
-      "Room service is available during restaurant hours (**6:30 AM – 10:00 PM**). Call reception and we will deliver your order to your room.",
+    get answer() {
+      return `Room service is available during restaurant hours (breakfast **${H.settings.breakfastHours}**, lunch **${H.settings.lunchHours}**, dinner **${H.settings.dinnerHours}**). Call reception and we will deliver your order to your room.`;
+    },
   },
   {
     keywords: [
@@ -801,8 +820,9 @@ const FAQ = [
       "ill",
       "unwell",
     ],
-    answer:
-      "In a medical emergency, contact reception immediately — we have first aid on site and can arrange transport to the nearest hospital. **Reception is available 24/7.**",
+    get answer() {
+      return `In a medical emergency, contact reception immediately — we have first aid on site and can arrange transport to the nearest hospital. **Reception is open ${H.settings.frontDeskHours}.**`;
+    },
   },
   {
     keywords: ["fire", "fire safety", "fire exit", "evacuation", "fire alarm"],
@@ -1089,7 +1109,7 @@ const FAQ = [
       "reception",
       "front desk",
     ],
-    answer: `Our reception is open **24/7**:\n\n📞 ${PHONE_1}\n📞 ${PHONE_2}\n📞 ${PHONE_3}\n✉️ ${EMAIL}\n\nOr WhatsApp us for a quick response.`,
+    get answer() { return `Our front desk hours are **${H.settings.frontDeskHours}**:\n\n${H.phoneLines()}\n✉️ ${H.email}\n\nOr WhatsApp us for a quick response.`; },
   },
   {
     keywords: [
@@ -1099,7 +1119,7 @@ const FAQ = [
       "text us",
       "chat with us",
     ],
-    answer: `WhatsApp us at **${PHONE_1}** — we typically respond within minutes during business hours.`,
+    get answer() { return `WhatsApp us at **${H.phones[0]}** — we typically respond within minutes during business hours.`; },
   },
   {
     keywords: [
@@ -1317,6 +1337,8 @@ export default function ChatBot() {
   // Lift above the booking bar only while the bar is actually on screen
   // (it's a lg:-only element, so ignore its state on smaller viewports)
   const { shown: barShown } = useBookingBarShown();
+  const hotel = useHotel();
+  syncHotel(hotel);   // answers read the live settings and rates from here
   const atTop =
     barShown && typeof window !== "undefined" && window.innerWidth >= 1024;
 
@@ -1403,7 +1425,7 @@ export default function ChatBot() {
             </div>
             <div className="flex items-center gap-3">
               <a
-                href={WA_URL}
+                href={H.waUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-green-400 hover:text-green-300 transition-colors"
@@ -1446,7 +1468,7 @@ export default function ChatBot() {
                       <span className="mt-2.5 flex flex-col gap-1.5">
                         {/* WhatsApp */}
                         <a
-                          href={WA_URL}
+                          href={H.waUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-2 rounded-lg bg-green-500 px-3 py-2 text-white text-xs font-medium hover:bg-green-600 transition-colors"
@@ -1454,36 +1476,23 @@ export default function ChatBot() {
                           <FaWhatsapp size={13} /> Chat on WhatsApp
                         </a>
 
-                        {/* Phone 1 */}
-                        <a
-                          href={`tel:${PHONE_1.replace(/\s+/g, "")}`}
-                          className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-white text-xs font-medium hover:bg-ink/80 transition-colors"
-                        >
-                          <FaPhoneAlt size={11} /> Call {PHONE_1}
-                        </a>
-
-                        {/* Phone 2 */}
-                        <a
-                          href={`tel:${PHONE_2.replace(/\s+/g, "")}`}
-                          className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-white text-xs font-medium hover:bg-ink/80 transition-colors"
-                        >
-                          <FaPhoneAlt size={11} /> Call {PHONE_2}
-                        </a>
-
-                        {/* Phone 3 */}
-                        <a
-                          href={`tel:${PHONE_3.replace(/\s+/g, "")}`}
-                          className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-white text-xs font-medium hover:bg-ink/80 transition-colors"
-                        >
-                          <FaPhoneAlt size={11} /> Call {PHONE_3}
-                        </a>
+                        {/* Phones: as many as the hotel lists in the Studio */}
+                        {H.phones.map((phone) => (
+                          <a
+                            key={phone}
+                            href={telHref(phone)}
+                            className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-white text-xs font-medium hover:bg-ink/80 transition-colors"
+                          >
+                            <FaPhoneAlt size={11} /> Call {phone}
+                          </a>
+                        ))}
 
                         {/* Email */}
                         <a
-                          href={`mailto:${EMAIL}`}
+                          href={`mailto:${H.email}`}
                           className="inline-flex items-center gap-2 rounded-lg border border-gold/60 bg-gold/10 px-3 py-2 text-ink text-xs font-medium hover:bg-gold hover:text-white transition-colors"
                         >
-                          <FaEnvelope size={11} /> {EMAIL}
+                          <FaEnvelope size={11} /> {H.email}
                         </a>
                       </span>
                     </span>
