@@ -3,6 +3,8 @@ const crypto       = require('crypto')
 const jwt          = require('jsonwebtoken')
 const rateLimit    = require('express-rate-limit')
 const store        = require('../store')
+const { createTransporter } = require('../lib/mailer')
+const { notify } = require('./booking')
 
 const router = express.Router()
 
@@ -92,6 +94,49 @@ router.get('/bookings/:ref/id/:side', requireAdmin, async (req, res) => {
     console.error('Admin ID image error:', err)
     res.status(500).json({ message: 'Could not load image.' })
   }
+})
+
+// ── POST /api/admin/bookings/:ref/resend-emails ─────────────────────────────
+// Staff pressed "Resend" on a booking whose email did not arrive. Sends whatever
+// has not been delivered yet (an email that already arrived is never sent twice).
+router.post('/bookings/:ref/resend-emails', requireAdmin, async (req, res) => {
+  try {
+    const record = await store.getByRef(req.params.ref)
+    if (!record) return res.status(404).json({ message: 'Booking not found.' })
+    await store.resetEmailAttempts(record.b.ref)
+    const result = await notify(record)
+    const fresh = await store.getByRef(record.b.ref)
+    res.json({ hotel: fresh.email.hotel, guest: fresh.email.guest, error: fresh.email.error, attempted: result })
+  } catch (err) {
+    console.error('Admin resend error:', err)
+    res.status(500).json({ message: 'Could not resend the emails.' })
+  }
+})
+
+// ── GET /api/admin/email-status ────────────────────────────────────────────
+// Is the server able to send email at all right now? Asks the mail server to
+// check the login (no message is sent). Cached briefly: it opens a connection.
+// A good result is remembered for a minute; a failure for only a few seconds, so the
+// warning clears promptly once email is working again instead of lingering.
+const HEALTHY_TTL_MS = 60_000
+const FAILING_TTL_MS = 5_000
+let emailHealth = { at: 0, value: null }
+router.get('/email-status', requireAdmin, async (req, res) => {
+  const ttl = emailHealth.value?.ok ? HEALTHY_TTL_MS : FAILING_TTL_MS
+  if (emailHealth.value && Date.now() - emailHealth.at < ttl) return res.json(emailHealth.value)
+  let value
+  try {
+    const transporter = createTransporter()
+    await Promise.race([
+      transporter.verify(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('The mail server did not answer in time.')), 10_000)),
+    ])
+    value = { ok: true }
+  } catch (err) {
+    value = { ok: false, error: String(err.message || err).slice(0, 200) }
+  }
+  emailHealth = { at: Date.now(), value }
+  res.json(value)
 })
 
 module.exports = router

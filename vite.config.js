@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { fileURLToPath } from 'node:url'
 import fs from 'node:fs'
 import { SEASONS, resolveSeason } from './src/data/seasons.js'
+import { heroPreloadTag } from './src/data/heroSlides.js'
 
 // The festive theme can't be decided at build time (the page is static and the
 // date is the visitor's), so /season-boot.js runs in <head>, before first
@@ -63,12 +64,22 @@ const seasonBoot = () => ({
   },
 })
 
+// Writes the <link rel="preload"> for the first hero slide into index.html, from the
+// same slide list and image manifest the slideshow itself uses (src/data/heroSlides.js).
+const heroPreload = () => ({
+  name: 'hero-preload',
+  transformIndexHtml: (html) => {
+    const variants = JSON.parse(fs.readFileSync(fileURLToPath(new URL('./src/lib/imageVariants.json', import.meta.url)), 'utf8'))
+    return html.replace('<!--hero-preload-->', heroPreloadTag(variants))
+  },
+})
+
 // Two HTML entries. The homepage is the app shell; /privacy is its own document
 // so that its <link rel="canonical"> lives in the raw HTML instead of being
 // injected by JavaScript (Search Console was filing /privacy as an "alternate
 // page" because it inherited the homepage's canonical through shared HTML).
 export default defineConfig({
-  plugins: [react(), seasonBoot()],
+  plugins: [react(), seasonBoot(), heroPreload()],
   build: {
     rollupOptions: {
       input: {

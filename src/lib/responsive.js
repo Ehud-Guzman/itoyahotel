@@ -1,4 +1,5 @@
 import variants from './imageVariants.json'
+import { buildSrcSet } from './srcset'
 
 /**
  * Builds a srcset string for a local /images/... webp from the variants
@@ -8,10 +9,5 @@ import variants from './imageVariants.json'
  * then just uses the plain src attribute.
  */
 export function srcSet(src) {
-  const meta = variants[src]
-  if (!meta || meta.widths.length === 0) return undefined
-  return [
-    ...meta.widths.map((w) => `${src.replace(/\.webp$/i, `-${w}w.webp`)} ${w}w`),
-    `${src} ${meta.w}w`,
-  ].join(', ')
+  return buildSrcSet(src, variants)
 }

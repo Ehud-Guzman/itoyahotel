@@ -1,6 +1,6 @@
 const express = require('express')
 const store = require('../store')
-const { sendEmails } = require('./booking')
+const { notify } = require('./booking')
 
 const router = express.Router()
 
@@ -40,7 +40,7 @@ router.post('/callback', async (req, res) => {
         console.log(`Booking ${matched.b.ref} confirmed — M-Pesa ref ${mpesaRef}`)
         // Fire-and-forget — Safaricom expects a prompt ack; an SMTP hang here
         // must not delay it (a slow/missing ack can trigger callback retries).
-        sendEmails(matched).catch(e => console.error('Email error:', e.message))
+        notify(matched)
       }
     } else {
       const moved = await store.transitionStatus(matched.b.ref, ['pending'], 'failed')

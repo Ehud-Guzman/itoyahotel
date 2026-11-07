@@ -107,15 +107,9 @@
     }
     </script>
 
-    <!-- Preload first hero image for fast LCP — srcset/sizes must mirror the Hero <img> -->
-    <link
-      rel="preload"
-      as="image"
-      href="/images/exterior/hotel-exterior-1.webp"
-      imagesrcset="/images/exterior/hotel-exterior-1-640w.webp 640w, /images/exterior/hotel-exterior-1-960w.webp 960w, /images/exterior/hotel-exterior-1.webp 1254w"
-      imagesizes="(orientation: portrait) 178vh, 100vw"
-      fetchpriority="high"
-    />
+    <!-- Preload of the FIRST hero slide (the largest thing on screen), written at build time from
+         src/data/heroSlides.js so it always matches the photo Hero.jsx shows first. -->
+    <!--hero-preload-->
 
     <!-- Sanity CMS API — queries fire right after hydration -->
     <link rel="preconnect" href="https://okmatxt0.apicdn.sanity.io" crossorigin />

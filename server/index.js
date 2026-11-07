@@ -8,6 +8,8 @@ const bookingRouter = require('./routes/booking')
 const mpesaRouter   = require('./routes/mpesa')
 const contactRouter = require('./routes/contact')
 const adminRouter   = require('./routes/admin')
+const { runEmailRetries } = require('./routes/booking')
+const { createTransporter } = require('./lib/mailer')
 
 const app  = express()
 const PORT = process.env.PORT || 4000
@@ -87,10 +89,32 @@ function startIdRetention() {
   setInterval(run, 6 * 60 * 60 * 1000).unref()       // then every 6 hours
 }
 
+// ── Email delivery ────────────────────────────────────────────────────────────
+// A booking is only "handled" once both emails have actually arrived. Anything
+// that did not is retried here (see store.findEmailsToRetry) and shown in the
+// admin dashboard, so a failed email can never silently lose a booking.
+function startEmailRetries() {
+  const tick = async () => {
+    try {
+      const n = await runEmailRetries()
+      if (n > 0) console.log(`Email retries: tried ${n} booking(s).`)
+    } catch (err) {
+      console.error('Email retry run failed:', err.message)
+    }
+  }
+  setInterval(tick, 60_000).unref()
+
+  // Say plainly at boot whether the mail login works (nothing is sent).
+  createTransporter().verify()
+    .then(() => console.log('Email: mail login OK.'))
+    .catch((err) => console.error(`Email: MAIL LOGIN FAILED, bookings will not be emailed until fixed (${err.message}).`))
+}
+
 store.init()
   .then(() => {
     app.listen(PORT, () => console.log(`Hotel Itoya server running on :${PORT}`))
     startIdRetention()
+    startEmailRetries()
   })
   .catch((err) => {
     console.error('Failed to initialize booking store:', err.message)

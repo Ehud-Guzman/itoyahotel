@@ -224,8 +224,20 @@ async function initiateSTKPush({ phone, amount, ref }) {
 // `paid` distinguishes a real completed M-Pesa payment from a reservation
 // made while live payment collection isn't configured (see mpesaIsLive) —
 // the wording must never claim a payment happened when none was collected.
-async function sendEmails(booking, { paid = true } = {}) {
-  const transporter = createTransporter()
+//
+// Two emails go out per booking: an alert to the hotel (with the guest's ID
+// attached) and a confirmation to the guest. They are sent independently: one
+// failing never stops the other. This never throws; it returns
+// { hotel, guest, error } where each of hotel/guest is 'sent' or 'failed' for the
+// parts that were attempted (and absent for parts that were not), so the caller
+// can record the outcome and retry only what did not arrive.
+async function sendEmails(booking, { paid = true, parts = ['hotel', 'guest'] } = {}) {
+  let transporter
+  try {
+    transporter = createTransporter()
+  } catch (err) {
+    return { ...Object.fromEntries(parts.map((p) => [p, 'failed'])), error: err.message }
+  }
   const from        = `"Hotel Itoya Bookings" <${process.env.EMAIL_USER}>`
   const hotelEmail  = process.env.HOTEL_EMAIL
   const { b, idFrontBuffer, idBackBuffer, idFrontName, idBackName } = booking
@@ -250,8 +262,10 @@ async function sendEmails(booking, { paid = true } = {}) {
     </table>
   `
 
+  const messages = {}
+
   // ── Hotel notification (with ID attachments) ──
-  await transporter.sendMail({
+  messages.hotel = {
     from,
     to:      hotelEmail,
     subject: `${paid ? 'New Booking' : 'New Reservation Request'} ${b.ref} — ${b.name} (${b.checkIn} → ${b.checkOut})${b.residency === 'international' ? ' [International]' : ''}`,
@@ -264,18 +278,20 @@ async function sendEmails(booking, { paid = true } = {}) {
       </p>
       ${summary}
       <p style="font-family:sans-serif;font-size:13px;color:#888;margin-top:24px">
-        Guest ID documents are attached to this email.
+        ${idFrontBuffer
+          ? 'Guest ID documents are attached to this email.'
+          : 'The guest ID documents are no longer stored, so none are attached.'}
       </p>
     `,
     attachments: [
-      { filename: `ID-front-${safeFilePart(b.name)}.${safeExtension(idFrontName)}`, content: idFrontBuffer },
+      ...(idFrontBuffer ? [{ filename: `ID-front-${safeFilePart(b.name)}.${safeExtension(idFrontName)}`, content: idFrontBuffer }] : []),
       // A passport has no "back", so international guests may send just the one page.
       ...(idBackBuffer ? [{ filename: `ID-back-${safeFilePart(b.name)}.${safeExtension(idBackName)}`, content: idBackBuffer }] : []),
     ],
-  })
+  }
 
   // ── Guest confirmation ──
-  await transporter.sendMail({
+  messages.guest = {
     from,
     to:      b.email,
     subject: `Your ${paid ? 'Booking' : 'Reservation'} at Hotel Itoya — ${b.ref}`,
@@ -297,7 +313,54 @@ async function sendEmails(booking, { paid = true } = {}) {
         Hotel Itoya · ${escapeHtml(settings.addressLine)}, ${escapeHtml(settings.town)}
       </p>
     `,
-  })
+  }
+
+  const result = {}
+  for (const part of parts) {
+    try {
+      await transporter.sendMail(messages[part])
+      result[part] = 'sent'
+    } catch (err) {
+      result[part] = 'failed'
+      result.error ??= err.message
+    }
+  }
+  return result
+}
+
+// Sends whatever has not yet been delivered for this booking and records the
+// outcome. Never throws: callers fire it and forget, and a failure here is shown
+// in the admin dashboard and retried by runEmailRetries rather than lost.
+async function notify(record) {
+  const ref = record?.b?.ref
+  try {
+    const parts = []
+    if (record.email?.hotel !== 'sent') parts.push('hotel')
+    if (record.email?.guest !== 'sent') parts.push('guest')
+    if (parts.length === 0) return { hotel: 'sent', guest: 'sent' }
+
+    const result = await sendEmails(record, { paid: record.status === 'success', parts })
+    await store.recordEmailResult(ref, { hotel: result.hotel, guest: result.guest, error: result.error })
+    if (result.hotel === 'failed' || result.guest === 'failed') {
+      console.error(`[EMAIL FAILED] ${ref}: hotel=${result.hotel ?? '-'} guest=${result.guest ?? '-'} (${result.error})`)
+    }
+    return result
+  } catch (err) {
+    console.error(`[EMAIL ERROR] ${ref}:`, err.message)
+    return { error: err.message }
+  }
+}
+
+// Called every minute by the server. Picks up bookings whose emails never arrived
+// (see store.findEmailsToRetry for the backoff) and tries again.
+async function runEmailRetries() {
+  const refs = await store.findEmailsToRetry()
+  let retried = 0
+  for (const ref of refs) {
+    const record = await store.getByRef(ref)
+    if (record) { await notify(record); retried++ }
+  }
+  return retried
 }
 
 // How long a sent STK prompt is treated as still answerable. Safaricom keeps the
@@ -325,8 +388,8 @@ async function settleIfPaid(record) {
       record.status = 'success'
       record.b.mpesaRef = mpesaRef
       // Fire-and-forget: callers are polled every 3s by a waiting guest, so an
-      // SMTP hang here must not stall them.
-      sendEmails(record).catch(e => console.error('Reconciliation email error:', e.message))
+      // SMTP hang here must not stall them. notify() records the outcome.
+      notify(record)
     }
     return true
   } catch {
@@ -526,9 +589,7 @@ router.post(
         // Fire-and-forget: an SMTP hang or auth failure (e.g. EMAIL_USER/PASS
         // not yet configured) must never block the response the guest is
         // waiting on — it already has their reservation either way.
-        store.getByRef(ref)
-          .then(r => sendEmails(r, { paid: false }))
-          .catch(e => console.error('Email error:', e.message))
+        store.getByRef(ref).then(r => notify(r))
 
         return { status: 200, body: { ref, live } }
       })
@@ -604,9 +665,7 @@ router.post('/:ref/retry', stkLimiter, async (req, res) => {
 
       // Fire-and-forget — see /initiate for why this must not be awaited
       // before responding.
-      store.getByRef(record.b.ref)
-        .then(r => sendEmails(r, { paid: false }))
-        .catch(e => console.error('Email error:', e.message))
+      store.getByRef(record.b.ref).then(r => notify(r))
 
       return { status: 200, body: { ref: record.b.ref, live } }
     })
@@ -643,3 +702,5 @@ async function respondWithStatus(req, res) {
 
 module.exports = router
 module.exports.sendEmails = sendEmails
+module.exports.notify = notify
+module.exports.runEmailRetries = runEmailRetries

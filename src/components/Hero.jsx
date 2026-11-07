@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { srcSet } from '../lib/responsive'
 import { useSeason } from '../lib/season'
+import { HERO_SLIDES, HERO_SIZES } from '../data/heroSlides'
 
 export default function Hero() {
   const season = useSeason()
@@ -10,61 +11,60 @@ export default function Hero() {
   const welcomeTimer = useRef(null)
   const mottoTimer   = useRef(null)
 
-  // Full-screen slideshow. Every entry must be at least 2560px wide: the
-  // images are object-cover'd across the whole viewport, so a 1280px photo is
-  // scaled past its native size on any ordinary desktop and reads as soft.
-  // Text slides (index % 3 === 2) hold longer and carry the Welcome → Motto
-  // sequence, so they use the darker, more even photos where white type keeps
-  // its contrast.
-  const slides = [
-    
-    '/images/hero/lobby-chairs.webp',
-    '/images/hero/restaurant-hall.webp',
-
-    '/images/hero/lounge.webp',
-    '/images/hero/corridor.webp',
-    '/images/hero/banquet-hall.webp',
-
-    '/images/hero/itoya-dining.webp',
-    '/images/hero/homeland-dining.webp',
-    
-
-    '/images/hero/karen-wedding.webp',
-    '/images/hero/homeland-event-karen.webp',
-  ]
+  const slides = HERO_SLIDES          // shared with the build, which preloads the first one
 
   const prefersReducedMotion = typeof window !== 'undefined'
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  // Reduced-motion visitors get a single static slide instead of an
-  // indefinite auto-advancing carousel (WCAG 2.2.2) — start on a text slide
-  // specifically, so the headline ("Where Hospitality Meets Value") is the
-  // thing they land on rather than a photo with no rotation left to reveal it.
-  const [currentSlide, setCurrentSlide] = useState(() => (prefersReducedMotion ? 2 : 0))
-  // Slides get mounted just-in-time (current + upcoming) so the browser
-  // doesn't download all hero images at startup — they sit in the viewport,
-  // so loading="lazy" alone never defers them.
-  const [mountedSlides, setMountedSlides] = useState(() => new Set(prefersReducedMotion ? [2] : [0, 1]))
+  // People on Data Saver, or on a 2G/3G connection, get ONE photo instead of a
+  // slideshow: each slide is a full-size ~1 MB photo, and fetching a new one every
+  // few seconds would swamp a slow connection. The photo they do get is the same
+  // full-resolution file as everyone else's.
+  const connection = typeof navigator !== 'undefined' ? navigator.connection : undefined
+  const slowConnection = Boolean(connection?.saveData) || ['slow-2g', '2g', '3g'].includes(connection?.effectiveType)
+
+  // Static mode: a single photo with the headline showing. Used for reduced motion
+  // (an indefinitely auto-advancing carousel fails WCAG 2.2.2) and slow connections.
+  const staticMode = prefersReducedMotion || slowConnection
+  const [currentSlide, setCurrentSlide] = useState(0)
+  // Slides get mounted just-in-time so the browser doesn't download all hero images
+  // at startup: only the first now, and the next one once the page has finished loading.
+  const [mountedSlides, setMountedSlides] = useState(() => new Set([0]))
+
+  // The slideshow must not compete with the first photo for bandwidth. Nothing else
+  // is fetched, and nothing rotates, until the page has finished loading its first
+  // screen (the window "load" event) plus a short settle. Before this, the slideshow
+  // started fetching slides 2, 3, 4... while the first photo was still arriving.
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    if (staticMode) return undefined
+    let timer
+    const start = () => { timer = setTimeout(() => setReady(true), 1000) }
+    if (document.readyState === 'complete') start()
+    else window.addEventListener('load', start, { once: true })
+    return () => { clearTimeout(timer); window.removeEventListener('load', start) }
+  }, [staticMode])
 
   const isTextSlide = currentSlide % 3 === 2
   const showWelcome = welcomePhase
-  const showMotto   = isTextSlide && !isTransitioning && !welcomePhase
+  const showMotto   = staticMode || (isTextSlide && !isTransitioning && !welcomePhase)
 
   // Photo slides keep a quick beat so visitors catch several images before
   // scrolling; text slides hold longer so the Welcome → Motto sequence
   // (1.5s settle + 2.8s Welcome + ~3.2s Motto) plays out comfortably
   useEffect(() => {
-    if (prefersReducedMotion) return
+    if (staticMode || !ready) return
     const duration = currentSlide % 3 === 2 ? 7500 : 3500
     const id = setTimeout(() => {
       setCurrentSlide((s) => (s + 1) % slides.length)
     }, duration)
     return () => clearTimeout(id)
-  }, [currentSlide])
+  }, [currentSlide, ready])
 
   // Mount the next slide ahead of time — it renders hidden (opacity-0), which
   // both preloads the image and lets the crossfade transition run on arrival
   useEffect(() => {
+    if (!ready) return
     const next = (currentSlide + 1) % slides.length
     setMountedSlides((prev) => {
       if (prev.has(currentSlide) && prev.has(next)) return prev
@@ -73,7 +73,7 @@ export default function Hero() {
       grown.add(next)
       return grown
     })
-  }, [currentSlide])
+  }, [currentSlide, ready])
 
   // Image transition flag
   useEffect(() => {
@@ -113,9 +113,7 @@ export default function Hero() {
             key={src}
             src={src}
             srcSet={srcSet(src)}
-            /* full-screen cover: portrait phones need width = height × 16/9,
-               so 178vh keeps them on the sharpest available file */
-            sizes="(orientation: portrait) 178vh, 100vw"
+            sizes={HERO_SIZES}
             alt={`Hero slide ${i + 1}`}
             className={`absolute inset-0 w-full h-full object-cover object-center transform-gpu transition duration-[1400ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
               currentSlide === i ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-105 -translate-y-3'
