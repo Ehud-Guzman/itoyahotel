@@ -21,7 +21,7 @@ function Field({ label, children }) {
   return (
     <div>
       <label className="block">
-        <span className="block font-sans text-[9px] uppercase tracking-[0.3em] text-ink/60 mb-2">{label}</span>
+        <span className="block font-sans text-[9px] uppercase tracking-[0.3em] text-ink/75 mb-2">{label}</span>
         {children}
       </label>
     </div>
@@ -297,7 +297,7 @@ export default function ContactSection() {
                     {sending ? 'Sending…' : 'Send Enquiry'}
                   </button>
 
-                  <p className="font-sans text-[10px] text-ink/60 text-center">
+                  <p className="font-sans text-[10px] text-ink/75 text-center">
                     We respond within a few hours · No payment required at this stage
                   </p>
 

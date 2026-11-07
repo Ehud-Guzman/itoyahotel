@@ -48,7 +48,7 @@ export default function RoomModal({ room, onClose, onBookRoom }) {
         <button
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center border border-stone hover:border-primary text-ink/60 hover:text-primary transition-colors duration-200"
+          className="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center border border-stone hover:border-primary text-ink/75 hover:text-primary transition-colors duration-200"
         >
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M1 1l11 11M12 1L1 12" />
@@ -106,7 +106,7 @@ export default function RoomModal({ room, onClose, onBookRoom }) {
                 <div className="mb-5">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="font-sans text-[10px] uppercase tracking-[0.2em] text-ink/60">
+                      <tr className="font-sans text-[10px] uppercase tracking-[0.2em] text-ink/75">
                         <th className="py-2 pr-3 font-medium">Per night</th>
                         <th className="py-2 pr-3 font-medium">Kenyan residents</th>
                         <th className="py-2 font-medium">International</th>
@@ -134,11 +134,11 @@ export default function RoomModal({ room, onClose, onBookRoom }) {
               ) : price && (
                 <div className="flex items-baseline gap-2 mb-4">
                   <p className="font-serif text-2xl text-primary">KES {price.toLocaleString()}</p>
-                  <p className="font-sans text-xs text-ink/60">per night</p>
+                  <p className="font-sans text-xs text-ink/75">per night</p>
                 </div>
               )}
 
-              <p className="font-sans font-light text-ink/60 text-sm leading-relaxed">
+              <p className="font-sans font-light text-ink/75 text-sm leading-relaxed">
                 {room.longDescription}
               </p>
             </div>
@@ -147,7 +147,7 @@ export default function RoomModal({ room, onClose, onBookRoom }) {
             <div className="space-y-5 flex-1">
               {(room.amenities || []).map((group) => (
                 <div key={group.label}>
-                  <p className="font-sans text-[9px] uppercase tracking-[0.35em] text-ink/60 mb-2.5">{group.label}</p>
+                  <p className="font-sans text-[9px] uppercase tracking-[0.35em] text-ink/75 mb-2.5">{group.label}</p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                     {(group.items || []).map((item) => (
                       <div key={item} className="flex items-center gap-2.5">

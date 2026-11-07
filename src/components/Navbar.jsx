@@ -80,7 +80,7 @@ export default function Navbar({ onBookNow }) {
                 </span>
                 <div className="flex-1 h-px bg-gradient-to-l from-transparent to-gold/60" />
               </div>
-              <p className="text-[7.5px] uppercase tracking-[0.38em] text-ink/60 font-sans text-center">
+              <p className="text-[7.5px] uppercase tracking-[0.38em] text-ink/75 font-sans text-center">
                 Luxury Accommodation &nbsp;·&nbsp; Events &amp; Occasions
               </p>
             </div>
@@ -150,7 +150,7 @@ export default function Navbar({ onBookNow }) {
                         transition-colors duration-300
                         ${isActive
                           ? 'text-ink after:w-4/5'
-                          : 'text-ink/60 after:w-0 hover:text-ink hover:after:w-4/5'
+                          : 'text-ink/75 after:w-0 hover:text-ink hover:after:w-4/5'
                         }
                       `}
                     >

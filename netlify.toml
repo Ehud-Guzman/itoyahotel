@@ -1,6 +1,9 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  # Skip the build (saves Netlify credits) when a push only touches things the website
+  # build never reads: the Render server, the Sanity Studio and the tests. Exit 0 = skip.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':(exclude)server' ':(exclude)studio' ':(exclude)tests'"
 
 # Hashed build output (Vite fingerprints these filenames) — safe to cache forever
 [[headers]]

@@ -1420,9 +1420,8 @@ export default function ChatBot() {
             <button
               onClick={() => setIsOpen(true)}
               className="lg:hidden fixed bottom-0 inset-x-0 z-50 flex items-center justify-center gap-2.5 bg-gold text-white py-3.5 shadow-[0_-4px_20px_rgba(0,0,0,0.12)] transition-all duration-500"
-              aria-label="Open chat"
             >
-              <FaComments size={16} />
+              <FaComments size={16} aria-hidden="true" />
               <span className="text-[11px] uppercase tracking-[0.28em] font-medium">
                 Chat with us
               </span>

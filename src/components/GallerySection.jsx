@@ -156,7 +156,7 @@ export default function GallerySection() {
                 className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
-              <div className="absolute inset-x-4 bottom-4 translate-y-2 group-hover:translate-y-0 transition-transform duration-400">
+              <div aria-hidden="true" className="absolute inset-x-4 bottom-4 translate-y-2 group-hover:translate-y-0 transition-transform duration-400">
                 <p className="font-serif text-sm text-white drop-shadow opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   {img.alt}
                 </p>
@@ -178,14 +178,14 @@ export default function GallerySection() {
               className="border border-primary text-primary hover:bg-primary hover:text-white font-sans font-medium tracking-widest uppercase text-xs px-10 py-3.5 transition-colors duration-200"
             >
               Show More
-              <span className="ml-2 text-inherit opacity-60">
+              <span className="ml-2 text-inherit opacity-80">
                 ({filtered.length - visibleCount} remaining)
               </span>
             </button>
           </div>
         )}
 
-        <p className="text-center font-sans text-xs text-ink/60 mt-6 tracking-wide">
+        <p className="text-center font-sans text-xs text-ink/75 mt-6 tracking-wide">
           Showing {visible.length} of {filtered.length} · Click any image to view full size
         </p>
 

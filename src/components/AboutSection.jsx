@@ -43,7 +43,7 @@ export default function AboutSection() {
               {stats.map((s) => (
                 <div key={s.label}>
                   <p className="font-serif text-2xl text-primary font-medium">{s.value}</p>
-                  <p className="font-sans text-[10px] uppercase tracking-[0.2em] text-ink/60 mt-1">{s.label}</p>
+                  <p className="font-sans text-[10px] uppercase tracking-[0.2em] text-ink/75 mt-1">{s.label}</p>
                 </div>
               ))}
             </div>

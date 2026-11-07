@@ -65,7 +65,7 @@ export default function LocationSection() {
                   <div key={d.label} className="flex gap-4">
                     <div className="w-px bg-gold/30 flex-shrink-0 mt-1" />
                     <div>
-                      <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-ink/60 mb-1">{d.label}</p>
+                      <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-ink/75 mb-1">{d.label}</p>
                       {d.href ? (
                         <a
                           href={d.href}

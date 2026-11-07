@@ -420,7 +420,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
               WhatsApp us
             </a>
           </div>
-          <button type="button" onClick={onClose} className="mt-6 text-xs tracking-[0.2em] uppercase text-ink/60 hover:text-ink">
+          <button type="button" onClick={onClose} className="mt-6 text-xs tracking-[0.2em] uppercase text-ink/75 hover:text-ink">
             Close
           </button>
         </div>

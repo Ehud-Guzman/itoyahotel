@@ -25,7 +25,7 @@ export default class ErrorBoundary extends Component {
       <div className="min-h-screen flex flex-col items-center justify-center bg-cream px-6 text-center">
         <img src="/logos/hotel-itoya-logo.webp" alt="Hotel Itoya" className="h-16 w-auto object-contain mb-8" />
         <h1 className="font-serif text-2xl text-ink mb-3">Something went wrong</h1>
-        <p className="font-sans text-ink/60 text-sm max-w-sm mb-8 leading-relaxed">
+        <p className="font-sans text-ink/75 text-sm max-w-sm mb-8 leading-relaxed">
           We're sorry — this page hit an unexpected error. Please try reloading,
           or reach us directly and we'll help right away.
         </p>

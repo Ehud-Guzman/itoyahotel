@@ -120,7 +120,7 @@ export default function Footer() {
             <p className="font-sans text-xs tracking-widest uppercase text-white mb-5">Contact</p>
             <div className="space-y-5">
               <div>
-                <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Phone</p>
+                <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/85 mb-1.5">Phone</p>
                 {settings.phones.map((phone, i) => (
                   <a
                     key={phone}
@@ -132,17 +132,17 @@ export default function Footer() {
                 ))}
               </div>
               <div>
-                <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Email</p>
+                <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/85 mb-1.5">Email</p>
                 <a href={`mailto:${settings.email}`} className="inline-block py-1.5 font-sans font-light text-sm text-white hover:text-gold transition-colors duration-150 break-all">{settings.email}</a>
               </div>
               <div>
-                <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Location</p>
+                <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/85 mb-1.5">Location</p>
                 <p className="font-sans font-light text-sm text-white leading-relaxed">{settings.addressLine}<br />{settings.town}</p>
               </div>
               <div>
-                <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/60 mb-1.5">Hours</p>
+                <p className="font-sans text-[9px] uppercase tracking-[0.25em] text-white/85 mb-1.5">Hours</p>
                 <p className="font-sans font-light text-sm text-white">Reservations · {settings.reservationsHours}</p>
-                <p className="font-sans font-light text-sm text-white/80 mt-0.5">Front Desk · {settings.frontDeskHours}</p>
+                <p className="font-sans font-light text-sm text-white/95 mt-0.5">Front Desk · {settings.frontDeskHours}</p>
               </div>
             </div>
           </div>

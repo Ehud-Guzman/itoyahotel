@@ -215,17 +215,17 @@ export default function RoomsPreview({ onBookRoom }) {
                   {room.pricePerNight && (
                     <p className={`font-sans text-sm font-semibold text-primary ${room.rates && lowestRate(room, 'international') != null ? 'mb-1' : 'mb-3'}`}>
                       {room.rates && availablePlans(room, 'local').length > 1 ? 'From ' : ''}KES {(room.rates ? lowestRate(room, 'local') : room.pricePerNight).toLocaleString()}
-                      <span className="font-normal text-ink/60 ml-1">/ night</span>
+                      <span className="font-normal text-ink/75 ml-1">/ night</span>
                     </p>
                   )}
                   {room.rates && lowestRate(room, 'international') != null && (
                     <p className="font-sans text-xs text-ink/70 mb-3">
                       International visitors: from {formatMoney(lowestRate(room, 'international'), 'USD')}
-                      <span className="text-ink/60 ml-1">/ night</span>
+                      <span className="text-ink/75 ml-1">/ night</span>
                     </p>
                   )}
                   {room.available === false && (
-                    <p className="font-sans text-[11px] uppercase tracking-[0.18em] text-ink/60 mb-3">
+                    <p className="font-sans text-[11px] uppercase tracking-[0.18em] text-ink/75 mb-3">
                       Currently unavailable online
                     </p>
                   )}

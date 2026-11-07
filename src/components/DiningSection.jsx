@@ -212,7 +212,7 @@ export default function DiningSection() {
             </div>
 
             {/* Footnote */}
-            <p className="text-center font-sans text-xs text-ink/60 mt-8 tracking-wide">
+            <p className="text-center font-sans text-xs text-ink/75 mt-8 tracking-wide">
               Prices inclusive of taxes · Menu subject to seasonal availability
             </p>
           </div>

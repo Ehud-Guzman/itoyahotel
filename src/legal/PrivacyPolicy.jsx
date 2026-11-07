@@ -37,7 +37,8 @@ export default function PrivacyPolicy() {
         <Section title="What we collect">
           <p><strong className="text-ink">When you make a reservation:</strong> full name, phone number,
           email address, check-in/check-out dates, number of guests, any special requests you enter,
-          and a photo or scan of both sides of a government-issued ID.</p>
+          and a photo or scan of your identification: both sides of your national ID (Kenyan residents),
+          or the photo page of your passport (international guests, who may also add a visa page).</p>
           <p><strong className="text-ink">When you pay online:</strong> the M-Pesa phone number you provide,
           used to send a payment prompt via Safaricom. We do not see or store your M-Pesa PIN.</p>
           <p><strong className="text-ink">When you send us an enquiry:</strong> your name, email, phone
@@ -64,10 +65,13 @@ export default function PrivacyPolicy() {
         </Section>
 
         <Section title="How long we keep it">
-          <p>We retain booking records, including ID documents, for as long as reasonably necessary to
-          fulfil your stay and meet our legal and regulatory record-keeping obligations, after which
-          it's deleted. If you'd like your data removed sooner, contact us using the details below and
-          we'll do so unless we're required to retain it by law.</p>
+          <p><strong className="text-ink">ID and passport images</strong> are deleted automatically
+          90 days after your check-out date. If a booking is started but never completed, the images
+          are deleted after 7 days.</p>
+          <p>Other booking details (name, contact details, dates, amount) are kept for as long as
+          reasonably necessary to run the hotel and meet legal and accounting record-keeping
+          obligations. If you'd like your data removed sooner, contact us using the details below
+          and we'll do so unless we're required to retain it by law.</p>
         </Section>
 
         <Section title="Your rights">

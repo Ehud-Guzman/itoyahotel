@@ -87,7 +87,7 @@ export default function BookingBar({ onBookNow }) {
                     </option>
                   ))}
                 </select>
-                <FiChevronDown size={12} className="text-ink/60 shrink-0 pointer-events-none" />
+                <FiChevronDown size={12} className="text-ink/75 shrink-0 pointer-events-none" />
               </div>
             </div>
 
@@ -99,7 +99,7 @@ export default function BookingBar({ onBookNow }) {
                 <FiCalendar size={10} /> Check In
               </label>
               <div className="border border-stone/35 bg-white hover:border-gold/60 transition-colors duration-200 flex items-center px-3 gap-2">
-                <FiCalendar size={12} className="text-ink/60 shrink-0" />
+                <FiCalendar size={12} className="text-ink/75 shrink-0" />
                 <input
                   id="bb-checkin"
                   type="date"
@@ -122,7 +122,7 @@ export default function BookingBar({ onBookNow }) {
                 <FiCalendar size={10} /> Check Out
               </label>
               <div className="border border-stone/35 bg-white hover:border-gold/60 transition-colors duration-200 flex items-center px-3 gap-2">
-                <FiCalendar size={12} className="text-ink/60 shrink-0" />
+                <FiCalendar size={12} className="text-ink/75 shrink-0" />
                 <input
                   id="bb-checkout"
                   type="date"
@@ -140,7 +140,7 @@ export default function BookingBar({ onBookNow }) {
                 <FiUsers size={10} /> Rooms &amp; Guests
               </label>
               <div className="border border-stone/35 bg-white hover:border-gold/60 transition-colors duration-200 flex items-center px-3 gap-2">
-                <FiUsers size={12} className="text-ink/60 shrink-0" />
+                <FiUsers size={12} className="text-ink/75 shrink-0" />
                 <select
                   id="bb-guests"
                   value={guests}
@@ -151,7 +151,7 @@ export default function BookingBar({ onBookNow }) {
                     <option key={o} value={o}>{o}</option>
                   ))}
                 </select>
-                <FiChevronDown size={12} className="text-ink/60 shrink-0 pointer-events-none" />
+                <FiChevronDown size={12} className="text-ink/75 shrink-0 pointer-events-none" />
               </div>
             </div>
 
