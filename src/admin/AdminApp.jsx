@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { downloadBookings } from './exportCsv'
 import { FiLock, FiLogOut, FiSearch, FiLoader, FiAlertCircle, FiImage, FiX, FiMail, FiRefreshCw } from 'react-icons/fi'
 import { useFocusTrap } from '../lib/useFocusTrap'
 
@@ -378,6 +379,14 @@ function Dashboard({ token, onLogout }) {
             <option value="attention">Email problems</option>
           </select>
           <span className="text-sm text-ink/50 self-center">{filtered.length} booking{filtered.length === 1 ? '' : 's'}</span>
+          <button
+            onClick={() => downloadBookings(bookings)}
+            disabled={bookings.length === 0}
+            title="Download every booking as a spreadsheet (ID images are not included)"
+            className="border border-stone/40 px-3 py-2.5 text-sm text-ink bg-white hover:border-ink disabled:opacity-40 ml-auto"
+          >
+            Export all (CSV)
+          </button>
         </div>
 
         {loading && (
