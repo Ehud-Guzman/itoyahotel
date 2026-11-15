@@ -43,7 +43,7 @@ export default function App() {
         Skip to main content
       </a>
       <Navbar onBookNow={() => openBooking()} />
-      <main id="main-content" tabIndex={-1} className="outline-none">
+      <main id="main-content" tabIndex={-1} className="outline-none protect">
         <Hero onBookNow={() => openBooking()} />
         <FestiveSection onBookNow={() => openBooking()} />
         <ReceptionSection />

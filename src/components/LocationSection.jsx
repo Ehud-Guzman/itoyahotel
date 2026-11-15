@@ -19,7 +19,7 @@ const directions = [
 export default function LocationSection() {
   const { settings } = useHotel()
   return (
-    <section id="location" className="bg-white py-16 lg:py-24">
+    <section id="location" className="allow-copy bg-white py-16 lg:py-24">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
 
         {/* Header */}

@@ -26,6 +26,27 @@ if (isAdmin) {
   document.querySelector('link[rel="canonical"]')?.remove()
 }
 
+// Copy deterrents for the public site (styles in index.css). Staff /admin is
+// left alone so uploads and previews behave normally.
+if (!isAdmin) {
+  document.documentElement.classList.add('protect-images')
+  const isProtected = (el) => el instanceof Element && !!el.closest('img, .protect')
+  const isCopyable  = (el) => el instanceof Element &&
+    !!el.closest('.allow-copy, address, a[href^="tel:"], a[href^="mailto:"], input, textarea, select, [contenteditable="true"]')
+
+  document.addEventListener('contextmenu', (e) => {
+    if (isProtected(e.target) && !isCopyable(e.target)) e.preventDefault()
+  })
+  document.addEventListener('dragstart', (e) => {
+    if (e.target instanceof HTMLImageElement) e.preventDefault()
+  })
+  document.addEventListener('copy', (e) => {
+    const node = window.getSelection()?.anchorNode
+    const el = node?.nodeType === Node.TEXT_NODE ? node.parentElement : node
+    if (isProtected(el) && !isCopyable(el)) e.preventDefault()
+  })
+}
+
 const tree = (
   <StrictMode>
     {/* Staff /admin has no use for the public site's settings, so it skips the provider. */}

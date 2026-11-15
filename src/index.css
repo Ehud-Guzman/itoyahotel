@@ -98,3 +98,34 @@
   background: #C7A56B;
   border-radius: 0;
 }
+
+/* ── Copy deterrents (public site only; see main.jsx) ──────────────────────
+   Discourages casual copying. It cannot stop screenshots or DevTools. */
+.protect-images img {
+  pointer-events: none;         /* right-click / long-press hits the parent, not the image */
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;  /* iOS "Save Image" sheet */
+}
+
+.protect {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Guests still need to copy contact details and type into forms. */
+.protect .allow-copy,
+.protect .allow-copy *,
+.protect address,
+.protect a[href^="tel:"],
+.protect a[href^="mailto:"],
+.protect input,
+.protect textarea,
+.protect select,
+.protect [contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+}
