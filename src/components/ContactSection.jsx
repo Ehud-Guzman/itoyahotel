@@ -53,7 +53,7 @@ export default function ContactSection() {
         body: JSON.stringify(formData),
       })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.message || 'Could not send your enquiry.')
+      if (!res.ok) throw new Error([json.message, json.detail].filter(Boolean).join(' — ') || 'Could not send your enquiry.')
       setSubmitted(true)
     } catch (err) {
       setError(err.message || 'Could not send your enquiry. Please try WhatsApp or call us directly.')

@@ -30,11 +30,14 @@ function createTransporter() {
     },
 
     async sendMail(message) {
-      const from = typeof message.from === 'string'
-        ? (message.from.match(/<([^>]+)>/)?.[1] || process.env.EMAIL_USER)
-        : (message.from?.email || process.env.EMAIL_USER)
+      // Nodemailer-style `from` may be a plain address, `Name <address>`, or
+      // an object. Always send from EMAIL_USER, the sender verified in Brevo;
+      // display names come from the message when available.
+      const fromName = typeof message.from === 'object'
+        ? message.from?.name
+        : message.from?.match(/^\s*([^<]+?)\s*<[^>]+>\s*$/)?.[1]
       const payload = {
-        sender: { ...sender(), email: from },
+        sender: { ...sender(), ...(fromName ? { name: fromName.trim().replace(/^['"]|['"]$/g, '') } : {}) },
         to: recipients(message.to),
         subject: message.subject,
         htmlContent: message.html,

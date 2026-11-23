@@ -55,9 +55,12 @@ router.post('/', async (req, res) => {
     const transporter = createTransporter()
     const enquiryType  = ENQUIRY_LABELS[type] || 'General Enquiry'
 
+    const recipients = (process.env.HOTEL_EMAIL || '').split(',').map((address) => address.trim()).filter(Boolean)
+    if (recipients.length === 0) throw new Error('HOTEL_EMAIL is not configured.')
+
     await transporter.sendMail({
       from:    `"Hotel Itoya Website" <${process.env.EMAIL_USER}>`,
-      to:      (process.env.HOTEL_EMAIL || '').split(',').map((address) => address.trim()).filter(Boolean),
+      to:      recipients,
       replyTo: email,
       subject: `New Enquiry — ${enquiryType} — ${name.replace(/\s+/g, ' ').trim()}`,
       html: `
@@ -77,8 +80,9 @@ router.post('/', async (req, res) => {
 
     res.json({ ok: true })
   } catch (err) {
-    console.error('Contact enquiry error:', err.response?.data?.message || err.message || err)
-    res.status(500).json({ message: 'Could not send your enquiry. Please try WhatsApp or call us directly.' })
+    const providerError = err.response?.data?.message || err.message || 'Email delivery failed.'
+    console.error('Contact enquiry error:', providerError)
+    res.status(500).json({ message: 'Could not send your enquiry. Please try WhatsApp or call us directly.', detail: providerError })
   }
 })
 
