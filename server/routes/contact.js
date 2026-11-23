@@ -57,7 +57,7 @@ router.post('/', async (req, res) => {
 
     await transporter.sendMail({
       from:    `"Hotel Itoya Website" <${process.env.EMAIL_USER}>`,
-      to:      process.env.HOTEL_EMAIL,
+      to:      (process.env.HOTEL_EMAIL || '').split(',').map((address) => address.trim()).filter(Boolean),
       replyTo: email,
       subject: `New Enquiry — ${enquiryType} — ${name.replace(/\s+/g, ' ').trim()}`,
       html: `
@@ -77,7 +77,7 @@ router.post('/', async (req, res) => {
 
     res.json({ ok: true })
   } catch (err) {
-    console.error('Contact enquiry error:', err)
+    console.error('Contact enquiry error:', err.response?.data?.message || err.message || err)
     res.status(500).json({ message: 'Could not send your enquiry. Please try WhatsApp or call us directly.' })
   }
 })

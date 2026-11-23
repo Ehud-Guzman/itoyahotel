@@ -9,7 +9,11 @@ function sender() {
 }
 
 function recipients(value) {
-  return (Array.isArray(value) ? value : [value]).filter(Boolean).map((email) => ({ email }))
+  return (Array.isArray(value) ? value : [value])
+    .flatMap((item) => String(item || '').split(','))
+    .map((email) => email.trim())
+    .filter(Boolean)
+    .map((email) => ({ email }))
 }
 
 function createTransporter() {
