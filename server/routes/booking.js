@@ -238,7 +238,7 @@ async function sendEmails(booking, { paid = true, parts = ['hotel', 'guest'] } =
   } catch (err) {
     return { ...Object.fromEntries(parts.map((p) => [p, 'failed'])), error: err.message }
   }
-  const from        = `"Hotel Itoya Bookings" <${process.env.EMAIL_USER}>`
+  const from        = { name: 'Hotel Itoya Bookings', email: process.env.EMAIL_USER }
   const hotelEmail  = process.env.HOTEL_EMAIL
   const { b, idFrontBuffer, idBackBuffer, idFrontName, idBackName } = booking
   const { settings } = await getSiteData()
@@ -388,7 +388,7 @@ async function settleIfPaid(record) {
       record.status = 'success'
       record.b.mpesaRef = mpesaRef
       // Fire-and-forget: callers are polled every 3s by a waiting guest, so an
-      // SMTP hang here must not stall them. notify() records the outcome.
+      // Email provider timeout here must not stall them. notify() records the outcome.
       notify(record)
     }
     return true
@@ -586,7 +586,7 @@ router.post(
         await store.updateStatus(ref, 'reservation')
         console.log(`[RESERVATION] Booking ${ref} (${residency}, ${currency}) — guest pays at hotel`)
 
-        // Fire-and-forget: an SMTP hang or auth failure (e.g. EMAIL_USER/PASS
+        // Fire-and-forget: an email provider timeout or auth failure (e.g. BREVO_API_KEY
         // not yet configured) must never block the response the guest is
         // waiting on — it already has their reservation either way.
         store.getByRef(ref).then(r => notify(r))

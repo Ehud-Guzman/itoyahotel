@@ -42,8 +42,8 @@ app.use(express.json({ limit: '50kb' }))   // JSON bodies here are tiny (contact
 
 app.get('/health', (_, res) => res.json({ ok: true }))
 
-// Contact form sends through the hotel's own Gmail account — unthrottled,
-// it's an easy way to flood their inbox or trip Gmail's sending limits.
+// Contact form sends through the transactional email provider — unthrottled,
+// it's an easy way to flood their inbox or trip provider sending limits.
 // (Booking's own limiter lives in routes/booking.js, scoped to just the
 // STK-push-triggering routes — /status polling needs to stay unthrottled.)
 const contactLimiter = rateLimit({
@@ -104,10 +104,10 @@ function startEmailRetries() {
   }
   setInterval(tick, 60_000).unref()
 
-  // Say plainly at boot whether the mail login works (nothing is sent).
+  // Say plainly at boot whether the transactional email API credentials work (nothing is sent).
   createTransporter().verify()
-    .then(() => console.log('Email: mail login OK.'))
-    .catch((err) => console.error(`Email: MAIL LOGIN FAILED, bookings will not be emailed until fixed (${err.message}).`))
+    .then(() => console.log('Email: Brevo API credentials OK.'))
+    .catch((err) => console.error(`Email: BREVO CHECK FAILED, bookings will not be emailed until fixed (${err.response?.data?.message || err.message}).`))
 }
 
 store.init()

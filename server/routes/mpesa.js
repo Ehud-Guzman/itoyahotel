@@ -38,7 +38,7 @@ router.post('/callback', async (req, res) => {
         matched.b.mpesaRef = mpesaRef
         matched.status     = 'success'
         console.log(`Booking ${matched.b.ref} confirmed — M-Pesa ref ${mpesaRef}`)
-        // Fire-and-forget — Safaricom expects a prompt ack; an SMTP hang here
+        // Fire-and-forget — Safaricom expects a prompt ack; an email API delay here
         // must not delay it (a slow/missing ack can trigger callback retries).
         notify(matched)
       }

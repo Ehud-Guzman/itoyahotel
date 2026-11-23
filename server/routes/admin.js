@@ -114,8 +114,8 @@ router.post('/bookings/:ref/resend-emails', requireAdmin, async (req, res) => {
 })
 
 // ── GET /api/admin/email-status ────────────────────────────────────────────
-// Is the server able to send email at all right now? Asks the mail server to
-// check the login (no message is sent). Cached briefly: it opens a connection.
+// Is the server able to send email at all right now? Checks Brevo credentials
+// without sending a message. Cached briefly to avoid unnecessary API calls.
 // A good result is remembered for a minute; a failure for only a few seconds, so the
 // warning clears promptly once email is working again instead of lingering.
 const HEALTHY_TTL_MS = 60_000
@@ -129,11 +129,11 @@ router.get('/email-status', requireAdmin, async (req, res) => {
     const transporter = createTransporter()
     await Promise.race([
       transporter.verify(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('The mail server did not answer in time.')), 10_000)),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('The email provider did not answer in time.')), 10_000)),
     ])
     value = { ok: true }
   } catch (err) {
-    value = { ok: false, error: String(err.message || err).slice(0, 200) }
+    value = { ok: false, error: String(err.response?.data?.message || err.message || err).slice(0, 200) }
   }
   emailHealth = { at: Date.now(), value }
   res.json(value)
