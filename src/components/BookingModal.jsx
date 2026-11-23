@@ -780,7 +780,7 @@ function StepId({ data, handleFile, errors, international }) {
         <p className="text-[13px] text-ink/78 leading-relaxed">
           Kenyan law requires hotels to verify guest identity.
           {international
-            ? ' Please upload the photo page of your passport. A second page (such as your visa) is optional.'
+            ? ' Please upload the photo page of your passport and the second page (such as your visa).'
             : ' Please upload both sides of a valid government-issued ID.'}
         </p>
         <p className="text-[10.5px] text-ink/68">
@@ -793,7 +793,7 @@ function StepId({ data, handleFile, errors, international }) {
 
       <Zone label={international ? 'Passport photo page' : 'Front of ID'} file={data.idFront} preview={data.idFrontPreview}
         error={errors.idFront} onChange={f => handleFile('idFront', 'idFrontPreview', f)} />
-      <Zone label={international ? 'Visa or second page (optional)' : 'Back of ID'}  file={data.idBack}  preview={data.idBackPreview}
+      <Zone label={international ? 'Visa or second page' : 'Back of ID'}  file={data.idBack}  preview={data.idBackPreview}
         error={errors.idBack}  onChange={f => handleFile('idBack',  'idBackPreview',  f)} />
     </div>
   )
