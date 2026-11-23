@@ -94,7 +94,7 @@ export async function downloadReceipt({
   doc.setFont('helvetica', 'bold'); doc.setFontSize(9)
   doc.setTextColor(...(paid ? [30, 132, 73] : [37, 99, 143]))
   doc.text(
-    paid ? 'PAID VIA M-PESA' : residency === 'international' ? 'PAY AT HOTEL ON ARRIVAL' : 'PAY AT HOTEL (CASH OR M-PESA)',
+    paid ? 'PAID VIA M-PESA' : residency === 'international' ? 'PAY AT HOTEL ON ARRIVAL' : 'PAY AT HOTEL MPESA OR CREDIT CARDS)',
     pageWidth - margin, y + 20, { align: 'right' },
   )
 

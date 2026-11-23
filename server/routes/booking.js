@@ -274,7 +274,7 @@ async function sendEmails(booking, { paid = true, parts = ['hotel', 'guest'] } =
       <p style="font-family:sans-serif;font-size:14px;color:#555">
         ${paid
           ? 'A guest has completed payment and submitted a booking request. Please review the details below and confirm via email to the guest.'
-          : 'A guest has requested a reservation. <strong>No online payment was collected</strong> — the guest will pay at the hotel on arrival (cash or M-Pesa). Please review the details below and confirm via email or phone.'}
+          : 'A guest has requested a reservation. <strong>No online payment was collected</strong> — the guest will pay at the hotel on arrival MPESA OR CREDIT CARDS). Please review the details below and confirm via email or phone.'}
       </p>
       ${summary}
       <p style="font-family:sans-serif;font-size:13px;color:#888;margin-top:24px">
@@ -301,7 +301,7 @@ async function sendEmails(booking, { paid = true, parts = ['hotel', 'guest'] } =
         Dear ${escapeHtml(b.name)},<br><br>
         ${paid
           ? 'Thank you for choosing Hotel Itoya. Your payment has been received and your booking is under review. A member of our team will contact you within a few hours to confirm your reservation.'
-          : `Thank you for choosing Hotel Itoya. We've received your reservation request. Payment of <strong>${escapeHtml(formatMoney(b.amount, b.currency || 'KES'))}</strong> is due at the hotel during check-in${b.residency === 'international' ? '' : ' (cash or M-Pesa)'}. A member of our team will contact you within a few hours to confirm your reservation.`}
+          : `Thank you for choosing Hotel Itoya. We've received your reservation request. Payment of <strong>${escapeHtml(formatMoney(b.amount, b.currency || 'KES'))}</strong> is due at the hotel during check-in${b.residency === 'international' ? '' : ' MPESA OR CREDIT CARDS)'}. A member of our team will contact you within a few hours to confirm your reservation.`}
       </p>
       ${summary}
       <p style="font-family:sans-serif;font-size:14px;color:#555;margin-top:24px">

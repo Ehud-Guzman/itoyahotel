@@ -1064,7 +1064,7 @@ function StepDone({ bookingRef, data, room, nights, total, paid, onClose, hotel,
         <p className="text-[13px] text-ink/75 leading-relaxed max-w-[20rem] mx-auto">
           {paid
             ? 'Payment confirmed. Hotel Itoya will review your booking and contact you to finalise your stay.'
-            : `Hotel Itoya will review your reservation and contact you to confirm. Please have ${money(total, currency)} ready to pay at check-in${data.residency === 'international' ? '' : ' (cash or M-Pesa)'}.`}
+            : `Hotel Itoya will review your reservation and contact you to confirm. Please have ${money(total, currency)} ready to pay at check-in${data.residency === 'international' ? '' : ' MPESA OR CREDIT CARDS)'}.`}
         </p>
       </div>
 
