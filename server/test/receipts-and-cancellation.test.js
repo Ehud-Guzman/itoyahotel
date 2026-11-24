@@ -100,13 +100,28 @@ test('the receipt says paid, payable and cancelled in words', async () => {
   assert.match(paid, /Received with thanks/)
   assert.doesNotMatch(paid, /settle the amount above/)
 
-  const cancelled = await textOf({ status: 'cancelled', paid: true })
-  assert.match(cancelled, /CANCELLED/)
-  assert.match(cancelled, /nothing to settle at the hotel/)
-  assert.doesNotMatch(cancelled, /PAYABLE AT THE HOTEL/)
-  assert.doesNotMatch(cancelled, /settle the amount above/)
+  // Cancelled before paying: nothing was collected, so nothing is owed either way.
+  const cancelledUnpaid = await textOf({ status: 'cancelled' })
+  assert.match(cancelledUnpaid, /CANCELLED/)
+  assert.match(cancelledUnpaid, /No payment due/)
+  assert.match(cancelledUnpaid, /nothing to settle at the hotel/)
+  assert.doesNotMatch(cancelledUnpaid, /REFUND DUE/)
+  assert.doesNotMatch(cancelledUnpaid, /PAYABLE AT THE HOTEL/)
+  assert.doesNotMatch(cancelledUnpaid, /settle the amount above/)
+
+  // Cancelled after paying: the guest is owed money back, and the receipt has to
+  // say so in words — the status alone no longer carries that fact.
+  const cancelledPaid = await textOf({ status: 'cancelled', paid: true })
+  assert.match(cancelledPaid, /CANCELLED/)
+  assert.match(cancelledPaid, /REFUND DUE/)
+  assert.match(cancelledPaid, /AMOUNT PAID/)
+  assert.match(cancelledPaid, /contact you about the refund/)
+  assert.match(cancelledPaid, /12,000/, 'the amount to refund is named, not implied')
+  assert.doesNotMatch(cancelledPaid, /nothing to settle at the hotel/)
+  assert.doesNotMatch(cancelledPaid, /PAYABLE AT THE HOTEL/)
+  assert.doesNotMatch(cancelledPaid, /settle the amount above/)
   // The M-Pesa code survives cancellation — it is the refund reference.
-  assert.match(cancelled, /SJ41ABC9XZ/)
+  assert.match(cancelledPaid, /SJ41ABC9XZ/)
 })
 
 test('the receipt needs a booking record', () => {
@@ -239,6 +254,12 @@ test('cancelling releases the booking and emails the guest, saying a refund will
   assert.equal(record.status, 'cancelled')
   assert.equal(record.cancelReason, 'Double-booked that weekend')
   assert.ok(record.cancelledAt)
+  // What was paid is kept, because the receipt on the guest's link is generated
+  // from the record long after this request and still has to say a refund is due.
+  assert.equal(record.paidAmount, 12000)
+  const receipt = buildReceiptPdf(record).toString('latin1')
+  assert.match(receipt, /REFUND DUE/)
+  assert.match(receipt, /contact you about the refund/)
 
   const guest = mail.sent.find((m) => m.to === 'jane@example.com')
   assert.match(guest.subject, /cancelled/i)

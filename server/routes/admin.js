@@ -158,7 +158,11 @@ router.post('/bookings/:ref/cancel', requireAdmin, async (req, res) => {
     // the very object `record` points at, so reading record.status afterwards
     // would say "cancelled" and the guest would be told nothing was charged.
     const wasPaid = record.status === 'success'
-    const cancelled = await store.cancel(record.b.ref, { reason })
+    // The amount paid is snapshotted here too, and the store keeps it for good:
+    // the receipt a guest can still download months later has to say whether a
+    // refund is owed, and by then the record simply says 'cancelled'.
+    const paidAmount = wasPaid ? Number(record.b.amount) || 0 : 0
+    const cancelled = await store.cancel(record.b.ref, { reason, paidAmount })
     if (!cancelled) return res.status(409).json({ message: 'This booking changed while you were cancelling it. Refresh to see its current status.' })
 
     // A paid booking is still recognised as paid, so the refund sentence is included.

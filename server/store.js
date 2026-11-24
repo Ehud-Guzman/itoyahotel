@@ -51,6 +51,11 @@ const SCHEMA = `
   -- that was emailed to the guest.
   ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancelled_at     TIMESTAMPTZ;
   ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancel_reason    TEXT;
+  -- What the guest had already paid when the booking was cancelled. The status
+  -- afterwards is simply 'cancelled', so without this the receipt printed from
+  -- the guest's own link cannot tell a refund is owed from a booking that never
+  -- cost anything.
+  ALTER TABLE bookings ADD COLUMN IF NOT EXISTS paid_amount      NUMERIC(12,2);
   -- Contact form enquiries, tracked so a failed email can be retried instead of lost.
   CREATE TABLE IF NOT EXISTS contact_enquiries (
     id             SERIAL PRIMARY KEY,
@@ -122,6 +127,7 @@ function rowToRecord(row) {
     stkRequestedAt: row.stk_requested_at ? row.stk_requested_at.getTime() : null,
     cancelledAt: row.cancelled_at ? row.cancelled_at.toISOString() : null,
     cancelReason: row.cancel_reason || null,
+    paidAmount: row.paid_amount == null ? null : Number(row.paid_amount),
   }
 }
 
@@ -271,14 +277,21 @@ const CANCELLABLE_STATUSES = ['reservation', 'success']
 
 // Compare-and-set like transitionStatus: exactly one caller can cancel a given
 // booking, so the guest never receives two cancellation emails.
-async function cancel(ref, { reason = '' } = {}) {
+//
+// `paidAmount` is what the guest had already paid, threaded through from the
+// caller because it is the last moment anyone knows: the status is about to
+// become 'cancelled', and every document printed afterwards — the receipt on the
+// guest's own link, weeks later — needs it to say whether a refund is owed.
+async function cancel(ref, { reason = '', paidAmount = 0 } = {}) {
   const note = String(reason || '').trim().slice(0, 400) || null
+  const paid = Number(paidAmount) > 0 ? Number(paidAmount) : null
   if (pool) {
     const { rowCount } = await pool.query(
       `UPDATE bookings
-       SET status = 'cancelled', cancelled_at = now(), cancel_reason = $3
+       SET status = 'cancelled', cancelled_at = now(), cancel_reason = $3,
+           paid_amount = COALESCE($4, paid_amount)
        WHERE ref = $1 AND status = ANY($2::text[])`,
-      [ref, CANCELLABLE_STATUSES, note],
+      [ref, CANCELLABLE_STATUSES, note, paid],
     )
     return rowCount === 1
   }
@@ -289,6 +302,7 @@ async function cancel(ref, { reason = '' } = {}) {
   record.status = 'cancelled'
   record.cancelledAt = new Date().toISOString()
   record.cancelReason = note
+  if (paid) record.paidAmount = paid
   return true
 }
 
