@@ -33,6 +33,17 @@ export function imgUrl(url, w, h) {
 }
 
 /**
+ * A responsive srcset for a Sanity CDN image, so the browser can pick a size
+ * that fits the screen instead of downloading the full-resolution original.
+ * Returns undefined for local/relative paths, so callers can safely do
+ * `srcSet={imgSrcSet(src) || srcSet(src)}` and keep the local variants working.
+ */
+export function imgSrcSet(url, widths = [480, 640, 960, 1280, 1600, 2000, 2560]) {
+  if (!url || !url.startsWith('https://cdn.sanity.io')) return undefined
+  return widths.map((w) => `${url}?w=${w}&auto=format ${w}w`).join(', ')
+}
+
+/**
  * Fetches a GROQ query from Sanity once. Falls back to `fallback` when
  * Sanity is not yet configured or the result is empty.
  */
@@ -54,4 +65,27 @@ export function useSanity(query, fallback = null) {
   }, [query])
 
   return { data, loading }
+}
+
+/**
+ * Like useSanity, but for a single document (a "singleton") such as
+ * siteSettings, where the result is an object rather than an array.
+ * Starts at `fallback` and is replaced once a non-empty object arrives.
+ */
+export function useSanityObject(query, fallback = null) {
+  const [data, setData] = useState(fallback)
+
+  useEffect(() => {
+    if (!SANITY_CONFIGURED) return
+    let cancelled = false
+    client.fetch(query)
+      .then((result) => {
+        if (cancelled) return
+        if (result && typeof result === 'object') setData(result)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [query])
+
+  return data
 }

@@ -1,6 +1,6 @@
 /* Gallery — filterable grid with lightbox, powered by Sanity CMS */
 import { useState, useEffect, useCallback } from 'react'
-import { useSanity, imgUrl } from '../lib/sanity'
+import { useSanity, imgUrl, imgSrcSet } from '../lib/sanity'
 import { srcSet } from '../lib/responsive'
 import { useFocusTrap } from '../lib/useFocusTrap'
 
@@ -148,7 +148,7 @@ export default function GallerySection() {
             >
               <img
                 src={imgUrl(img.src, 900, 600)}
-                srcSet={srcSet(img.src)}
+                srcSet={imgSrcSet(img.src) || srcSet(img.src)}
                 /* 200px-tall cover tiles: needed width = 200 × 16/9 ≈ 356px at 1x */
                 sizes="356px"
                 alt={img.alt}

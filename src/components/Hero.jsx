@@ -1,7 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { srcSet } from '../lib/responsive'
 import { useSeason } from '../lib/season'
+import { useSanity, imgUrl, imgSrcSet } from '../lib/sanity'
 import { HERO_SLIDES, HERO_SIZES } from '../data/heroSlides'
+
+// Hero photos, managed in the Studio's "Hero Slide" list (add / delete / reorder).
+// Until the hotel uploads any, the built-in slides below are shown, so the
+// homepage never loses its slideshow.
+const HERO_QUERY = `*[_type == "heroSlide" && defined(image.asset)] | order(order asc, _createdAt asc) {
+  _id, alt, headline, order,
+  "src": image.asset->url
+}`
+
+const FALLBACK_SLIDES = HERO_SLIDES.map((src, i) => ({
+  src, alt: `Hotel Itoya view ${i + 1}`, headline: '',
+}))
 
 export default function Hero() {
   const season = useSeason()
@@ -11,7 +24,15 @@ export default function Hero() {
   const welcomeTimer = useRef(null)
   const mottoTimer   = useRef(null)
 
-  const slides = HERO_SLIDES          // shared with the build, which preloads the first one
+  // Studio slides replace the built-in ones once any exist; image URLs are
+  // sized at render time (below) so the browser never fetches the original.
+  const { data: sanitySlides } = useSanity(HERO_QUERY, null)
+  const studioSlides = Array.isArray(sanitySlides)
+    ? sanitySlides
+        .filter((s) => s?.src)
+        .map((s) => ({ src: s.src, alt: s.alt || 'Hotel Itoya', headline: s.headline || '' }))
+    : []
+  const slides = studioSlides.length > 0 ? studioSlides : FALLBACK_SLIDES
 
   const prefersReducedMotion = typeof window !== 'undefined'
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -108,13 +129,13 @@ export default function Hero() {
 
       {/* Background slideshow */}
       <div className="absolute inset-0 z-0">
-        {slides.map((src, i) => mountedSlides.has(i) && (
+        {slides.map((slide, i) => mountedSlides.has(i) && (
           <img
-            key={src}
-            src={src}
-            srcSet={srcSet(src)}
+            key={slide.src}
+            src={imgUrl(slide.src, 1920)}
+            srcSet={imgSrcSet(slide.src) || srcSet(slide.src)}
             sizes={HERO_SIZES}
-            alt={`Hero slide ${i + 1}`}
+            alt={slide.alt}
             className={`absolute inset-0 w-full h-full object-cover object-center transform-gpu transition duration-[1400ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
               currentSlide === i ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-105 -translate-y-3'
             }`}
@@ -175,6 +196,14 @@ export default function Hero() {
             <p className="text-white/90 text-[10px] sm:text-[11px] tracking-[0.35em] uppercase font-sans font-light mt-6 text-center">
               Hotel Itoya · Busia, Kenya
             </p>
+
+            {/* Optional per-slide caption set in the Studio ("Headline Overlay").
+                Hidden on the built-in slides, which have none. */}
+            {slides[currentSlide % slides.length]?.headline && (
+              <p className="mt-4 font-serif italic text-white/75 text-sm sm:text-base text-center drop-shadow">
+                {slides[currentSlide % slides.length].headline}
+              </p>
+            )}
           </div>
 
         </div>

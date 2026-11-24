@@ -1,5 +1,5 @@
 /* Events & Homeland Itoya — with upcoming special events from Sanity CMS */
-import { useSanity, imgUrl } from '../lib/sanity'
+import { useSanity, useSanityObject, imgUrl, imgSrcSet } from '../lib/sanity'
 import { srcSet } from '../lib/responsive'
 import { useHotel } from '../lib/hotel'
 import { waLink } from '../lib/hotelData'
@@ -8,6 +8,19 @@ const EVENTS_QUERY = `*[_type == "specialEvent" && active == true] | order(date 
   _id, title, date, description, category,
   "image": image.asset->url
 }`
+
+// The decorative bento photos live in Site Settings → Events Gallery Images,
+// where the hotel can add, delete and reorder them. Until they upload any,
+// these built-in photos are shown so the section never goes blank.
+const EVENT_GALLERY_QUERY = `*[_type == "siteSettings"][0]{ "images": eventGallery[].asset->url }`
+
+const FALLBACK_EVENT_IMAGES = [
+  { src: '/images/events/homeland-1.webp',      alt: 'Homeland Itoya Event' },
+  { src: '/images/events/events-1.webp',        alt: 'Event Setup' },
+  { src: '/images/events/homeland-setup.webp',  alt: 'Homeland Setup' },
+  { src: '/images/events/events-2.webp',        alt: 'Outdoor Event' },
+  { src: '/images/events/events-3.webp',        alt: 'Special Event' },
+]
 
 const eventTypes = [
   { title: 'Wedding Receptions',    desc: 'Elegant setups for your most important day, handled with care.' },
@@ -34,6 +47,14 @@ function formatDate(dateStr) {
 export default function EventsSection() {
   const { settings } = useHotel()
   const { data: specialEvents } = useSanity(EVENTS_QUERY, null)
+
+  // Bento photos from the Studio (Site Settings → Events Gallery Images), or
+  // the built-in set when the hotel has not uploaded any yet.
+  const galleryDoc = useSanityObject(EVENT_GALLERY_QUERY, null)
+  const studioImages = Array.isArray(galleryDoc?.images) ? galleryDoc.images.filter(Boolean) : []
+  const bentoImages = studioImages.length > 0
+    ? studioImages.map((src, i) => ({ src, alt: `Event ${i + 1}` }))
+    : FALLBACK_EVENT_IMAGES
 
   return (
     <section id="events" className="bg-ink py-16 lg:py-24">
@@ -152,35 +173,32 @@ export default function EventsSection() {
           </div>
         )}
 
-        {/* Image bento grid */}
+        {/* Image bento grid — managed in Site Settings → Events Gallery Images */}
         <div className="grid grid-cols-2 md:grid-cols-4 auto-rows-[220px] gap-3 mb-12">
 
-          {/* Hero image — full height left half */}
-          <div className="col-span-2 md:row-span-2 relative overflow-hidden rounded-sm img-placeholder group">
-            <img
-              src="/images/events/homeland-1.webp"
-              srcSet={srcSet('/images/events/homeland-1.webp')}
-              sizes="(min-width: 768px) 64vw, 94vw"
-              alt="Homeland Itoya Event"
-              loading="lazy"
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" />
-          </div>
+          {/* First photo — full height left half */}
+          {bentoImages[0] && (
+            <div className="col-span-2 md:row-span-2 relative overflow-hidden rounded-sm img-placeholder group">
+              <img
+                src={imgUrl(bentoImages[0].src, 1200, 880)}
+                srcSet={imgSrcSet(bentoImages[0].src) || srcSet(bentoImages[0].src)}
+                sizes="(min-width: 768px) 64vw, 94vw"
+                alt={bentoImages[0].alt}
+                loading="lazy"
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" />
+            </div>
+          )}
 
-          {[
-            { src: '/images/events/events-1.webp',       alt: 'Event Setup' },
-            { src: '/images/events/homeland-setup.webp', alt: 'Homeland Setup' },
-            { src: '/images/events/events-2.webp',       alt: 'Outdoor Event' },
-            { src: '/images/events/events-3.webp',       alt: 'Special Event' },
-          ].map((img) => (
+          {bentoImages.slice(1).map((img) => (
             <div
-              key={img.alt}
+              key={img.src}
               className="relative overflow-hidden rounded-sm img-placeholder group"
             >
               <img
-                src={img.src}
-                srcSet={srcSet(img.src)}
+                src={imgUrl(img.src, 700, 440)}
+                srcSet={imgSrcSet(img.src) || srcSet(img.src)}
                 sizes="(min-width: 768px) 33vw, 95vw"
                 alt={img.alt}
                 loading="lazy"

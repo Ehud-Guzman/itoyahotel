@@ -61,10 +61,13 @@ You cannot create a fifth room type or a second entry for the same room. The Stu
 
 | Menu item | What it is |
 |---|---|
+| **Hero Slides** | The full-screen photos in the big slideshow at the top of the homepage. Add, delete or reorder them; the first one shows first. The "Alt text" describes the photo for blind visitors. Until you upload any, the built-in photos keep showing. |
 | **Gallery Images** | Photos in the gallery. They appear first, ahead of the built-in ones. |
 | **Dining Menu** | Dishes and their prices. The menu on the website shows exactly what you add here. |
 | **Special Events** | Events and offers shown in the Events section. |
 | **Testimonials** | Guest reviews. The section stays hidden until you add at least one. |
+
+The decorative photos in the Events section are managed under **Site Settings → Website look → Events Gallery Images**. Add, delete or reorder them there; leave the list empty to keep the built-in photos.
 
 ---
 

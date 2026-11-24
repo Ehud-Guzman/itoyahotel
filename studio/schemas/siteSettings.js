@@ -75,6 +75,15 @@ export const siteSettings = {
       },
       description: 'The theme starts and ends by itself. Choose "Never show it" if you would rather not have it this year.',
     },
+
+    {
+      name:        'eventGallery',
+      title:       'Events Gallery Images',
+      type:        'array',
+      fieldset:    'look',
+      of:          [{ type: 'image', options: { hotspot: true } }],
+      description: 'The decorative event photos shown in the Events section bento grid. Upload any size — Sanity resizes automatically. Leave empty to keep the built-in photos.',
+    },
   ],
 
   preview: { prepare: () => ({ title: 'Site Settings', subtitle: 'Phones, email, hours, booking switch' }) },

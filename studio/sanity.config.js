@@ -40,6 +40,15 @@ export default defineConfig({
 
             S.divider(),
 
+            // Homepage hero slideshow photos: add, delete and reorder here.
+            S.listItem()
+              .title('Hero Slides')
+              .icon(() => '🌄')
+              .schemaType('heroSlide')
+              .child(S.documentTypeList('heroSlide').title('Hero Slides')),
+
+            S.divider(),
+
             S.listItem()
               .title('Rooms')
               .icon(() => '🛏')

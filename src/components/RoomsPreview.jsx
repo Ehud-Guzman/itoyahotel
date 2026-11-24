@@ -1,7 +1,7 @@
 /* Rooms grid — powered by Sanity CMS */
 import { useState } from 'react'
 import RoomModal from './RoomModal'
-import { useSanity, imgUrl } from '../lib/sanity'
+import { useSanity, imgUrl, imgSrcSet } from '../lib/sanity'
 import { srcSet } from '../lib/responsive'
 import { useHotel } from '../lib/hotel'
 import { DEFAULT_ROOMS, availablePlans, formatMoney, lowestRate } from '../lib/hotelData'
@@ -144,8 +144,9 @@ export default function RoomsPreview({ onBookRoom }) {
 
   const rooms = [...builtIn, ...extras].map((r) => ({
     ...r,
-    img:    imgUrl(r.img,  600, 450),
-    images: (r.images || [r.img]).map((u) => imgUrl(u, 900)),
+    // Keep the raw URLs (Sanity CDN or local /images path); sizing is applied
+    // at render time with imgUrl()/imgSrcSet() so the browser picks the right size.
+    images: r.images?.length ? r.images : (r.img ? [r.img] : []),
   }))
 
   return (
@@ -197,8 +198,8 @@ export default function RoomsPreview({ onBookRoom }) {
                 {/* Image */}
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img
-                    src={room.img}
-                    srcSet={srcSet(room.img)}
+                    src={imgUrl(room.img, 600, 450)}
+                    srcSet={imgSrcSet(room.img) || srcSet(room.img)}
                     sizes="(min-width: 1024px) 31vw, (min-width: 640px) 61vw, 122vw"
                     alt={room.title}
                     loading="lazy"

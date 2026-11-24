@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useFocusTrap } from '../lib/useFocusTrap'
 import { srcSet } from '../lib/responsive'
+import { imgUrl, imgSrcSet } from '../lib/sanity'
 import { useHotel } from '../lib/hotel'
 import { waLink, PLANS, formatMoney, rateFor } from '../lib/hotelData'
 
@@ -24,7 +25,7 @@ export default function RoomModal({ room, onClose, onBookRoom }) {
     return () => window.removeEventListener('keydown', handler)
   }, [onClose])
 
-  const images = room.images?.length ? room.images : [room.img]
+  const images = room.images?.length ? room.images : (room.img ? [room.img] : [])
 
   return (
     <div
@@ -62,8 +63,8 @@ export default function RoomModal({ room, onClose, onBookRoom }) {
             <div className="aspect-[4/3] overflow-hidden rounded-sm mb-4 bg-stone">
               <img
                 key={activeImg}
-                src={images[activeImg]}
-                srcSet={srcSet(images[activeImg])}
+                src={imgUrl(images[activeImg], 1200)}
+                srcSet={imgSrcSet(images[activeImg]) || srcSet(images[activeImg])}
                 sizes="(min-width: 1024px) 45vw, 92vw"
                 alt={room.title}
                 className="w-full h-full object-cover"
@@ -80,8 +81,8 @@ export default function RoomModal({ room, onClose, onBookRoom }) {
                     }`}
                   >
                     <img
-                      src={src}
-                      srcSet={srcSet(src)}
+                      src={imgUrl(src, 160)}
+                      srcSet={imgSrcSet(src, [128, 256]) || srcSet(src)}
                       sizes="64px"
                       alt=""
                       loading="lazy"
