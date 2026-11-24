@@ -1,0 +1,66 @@
+# ─────────────────────────────────────────────────────────────
+# Render Blueprint — the booking API that lives in server/
+#
+# Codifies what used to exist only in the Render dashboard, so a rebuilt or
+# re-created service can't come up half-configured (wrong root directory,
+# no PUBLIC_API_URL, no receipt signing key). The website itself is on
+# Netlify and described by netlify.toml; this file covers only the API.
+#
+# Before the first sync, check three values against the live service
+# (Dashboard → the service → Settings), because a Blueprint applies exactly
+# what it says and a mismatch silently reconfigures production:
+#
+#   name    Must match the existing service exactly. A matching name is how
+#           Render knows to adopt that service; a different name creates a
+#           second, unrelated service with a new onrender.com URL — which the
+#           CSP in netlify.toml and PUBLIC_API_URL below would not know about.
+#   plan    'free' spins the API down after 15 minutes idle (~50 s cold start
+#           on the next booking). Use 'starter' if that's what it runs on now.
+#   region  Moving the service is rarely what you want; match the dashboard.
+#
+# Secret values are deliberately absent: Render preserves any environment
+# variable a Blueprint doesn't mention, so the existing dashboard values
+# survive each sync. RECEIPT_SECRET is the one exception — it's listed with
+# `sync: false` so Render asks for it on the sync screen, because it must be
+# set *before* the first guest email goes out (see server/.env.example).
+# ─────────────────────────────────────────────────────────────
+services:
+  - type: web
+    name: hotel-itoya-api
+    runtime: node
+    plan: free
+    region: oregon
+    # The API is a subdirectory. Without this, Render would npm install at the
+    # repo root and try to start the Vite frontend.
+    rootDir: server
+    # Matches what the dashboard runs today. `npm ci` is more reproducible, but
+    # it hard-fails when the committed lockfile drifts from package.json, so
+    # switch only once those two are known to be in sync.
+    buildCommand: npm install
+    startCommand: npm start
+    # Cheap readiness probe: /health answers { ok: true } as soon as Express is
+    # listening, so a deploy that boots badly is caught at deploy time.
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      # Public origin of this API, used to build the signed receipt links in
+      # guest emails (server/lib/receiptToken.js). No trailing slash: links are
+      # built as `${PUBLIC_API_URL}/api/booking/receipt/:ref?t=…`.
+      - key: PUBLIC_API_URL
+        value: https://itoyahotel-1wiy.onrender.com
+      # Origin allowed by CORS (server/index.js).
+      - key: FRONTEND_URL
+        value: https://hotelitoya.co.ke
+      # HMAC key for expiring receipt links. `sync: false` keeps the value out
+      # of git and makes Render prompt for it. Create it once and record it
+      # somewhere durable — setting, changing, or removing it later invalidates
+      # every link already sitting in guests' inboxes:
+      #   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+      - key: RECEIPT_SECRET
+        sync: false
+      # Everything else stays dashboard-managed (Render keeps unlisted
+      # variables as-is): DATABASE_URL, ADMIN_PASSWORD, ADMIN_JWT_SECRET,
+      # MPESA_ENV, MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_SHORTCODE,
+      # MPESA_PASSKEY, MPESA_CALLBACK_URL, BREVO_API_KEY, EMAIL_USER,
+      # HOTEL_EMAIL, plus the optional ID_RETENTION_DAYS and
+      # ID_ABANDONED_RETENTION_DAYS.
