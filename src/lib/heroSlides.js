@@ -1,6 +1,6 @@
 // How the homepage slideshow is assembled.
 //
-// The Studio's "Hero Slides" are the hotel's own photos and always lead. The
+// The Studio's homepage photos (Site Settings → Homepage photos) always lead. The
 // built-in photos are a safety net that fills whatever slots are left, so the
 // homepage never loses its slideshow. The total is capped so the slideshow
 // cannot grow without limit (and so the page cannot download dozens of

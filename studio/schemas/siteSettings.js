@@ -17,6 +17,7 @@ export const siteSettings = {
 
   fieldsets: [
     { name: 'contact', title: 'Contact details',  options: { collapsible: true, collapsed: false } },
+    { name: 'media',   title: 'Homepage photos',  options: { collapsible: true, collapsed: false } },
     { name: 'hours',   title: 'Times and hours',  options: { collapsible: true, collapsed: false } },
     { name: 'social',  title: 'Social media',     options: { collapsible: true, collapsed: true } },
     { name: 'booking', title: 'Online booking',   options: { collapsible: true, collapsed: false } },
@@ -77,14 +78,61 @@ export const siteSettings = {
     },
 
     {
+      name:        'heroSlides',
+      title:       'Homepage Slideshow',
+      type:        'array',
+      fieldset:    'media',
+      of: [
+        {
+          type:  'object',
+          name:  'heroSlide',
+          title: 'Slide',
+          fields: [
+            {
+              name:    'image',
+              title:   'Photo',
+              type:    'image',
+              options: { hotspot: true },
+              validation: (Rule) => Rule.required().error('Please upload a photo.'),
+            },
+            {
+              name:        'alt',
+              title:       'Description for screen readers',
+              type:        'string',
+              description: 'What the photo shows, e.g. "Hotel lobby with armchairs". Read aloud to blind visitors, so please fill it in.',
+              validation:  (Rule) => Rule.required().error('Please describe the photo — blind visitors hear this.'),
+            },
+            {
+              name:        'headline',
+              title:       'Caption over the photo (optional)',
+              type:        'string',
+              description: 'A short line of text shown over this photo. Leave blank for no caption.',
+              validation:  (Rule) => Rule.max(80),
+            },
+          ],
+          preview: {
+            select: { title: 'alt', subtitle: 'headline', media: 'image' },
+            prepare({ title, subtitle, media }) {
+              return { title: title || 'Slide', subtitle: subtitle || 'No caption', media }
+            },
+          },
+        },
+      ],
+      // A hard limit, not a website-side one: at 10 photos the Studio stops you
+      // adding an 11th and says why. (With separate documents the 11th would
+      // save happily and then silently never appear on the website.)
+      description: 'The photos in the big slideshow at the top of the homepage — up to 10. Drag them into the order you want. Until you add one, the photos the site was built with are shown here, so the slideshow is never empty.',
+      validation: (Rule) => Rule.max(10).error('The slideshow shows at most 10 photos. Remove one before adding another.'),
+    },
+    {
       name:        'eventGallery',
       title:       'Events Gallery Images',
       type:        'array',
-      fieldset:    'look',
+      fieldset:    'media',
       of:          [{ type: 'image', options: { hotspot: true } }],
       description: 'The decorative event photos shown in the Events section bento grid. Upload any size — Sanity resizes automatically. Leave empty to keep the built-in photos.',
     },
   ],
 
-  preview: { prepare: () => ({ title: 'Site Settings', subtitle: 'Phones, email, hours, booking switch' }) },
+  preview: { prepare: () => ({ title: 'Site Settings', subtitle: 'Phones, email, hours, homepage photos, booking switch' }) },
 }

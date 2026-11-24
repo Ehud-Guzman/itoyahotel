@@ -61,13 +61,20 @@ You cannot create a fifth room type or a second entry for the same room. The Stu
 
 | Menu item | What it is |
 |---|---|
-| **Hero Slides** | The photos in the big slideshow at the top of the homepage. The slideshow shows **10 photos at most**: the ones you add here appear first, and the built-in photos fill any slots left over. So adding an 11th photo drops the last built-in one, and deleting a photo lets a built-in one come back. "Display Order" controls the sequence (lower = earlier; blank goes last). "Alt text" describes the photo for blind visitors. |
 | **Gallery Images** | Photos in the gallery. They appear first, ahead of the built-in ones. |
 | **Dining Menu** | Dishes and their prices. The menu on the website shows exactly what you add here. |
 | **Special Events** | Events and offers shown in the Events section. |
 | **Testimonials** | Guest reviews. The section stays hidden until you add at least one. |
 
-The decorative photos in the Events section are managed under **Site Settings → Website look → Events Gallery Images**. Add, delete or reorder them there; leave the list empty to keep the built-in photos.
+## Homepage photos
+
+**Site Settings → Homepage photos** holds the photos for the top of the homepage.
+
+- **Homepage Slideshow** — the big photos at the very top. Add up to **10**; drag them into the order you want. The Studio will not let you add an 11th until you remove one, so nothing you upload is ever silently ignored.
+- Until you add any of your own, the photos the website was built with are shown, so the slideshow is never empty. From your first upload onward, your photos come first and the built-in ones fill whatever slots are left — so with 9 built-in photos, your 1st upload still shows all of them, and your 2nd upload drops the last built-in one. Delete a photo and it comes back.
+- **Description for screen readers** is required: blind visitors hear it, so describe what is in the photo ("Hotel lobby with armchairs").
+- **Caption over the photo** is optional — a short line of type shown on that photo. Leave it blank for none.
+- **Events Gallery Images** — the decorative photos in the Events section. Add, delete or drag to reorder; leave the list empty to keep the built-in photos.
 
 ---
 

@@ -20,6 +20,9 @@ export default defineConfig({
           .title('Hotel Itoya')
           .items([
             // One page of facts (phones, hours, booking switch...), not a list.
+            // Homepage photos live here too, under "Homepage photos": the hero
+            // slideshow (an array, so the Studio itself enforces the 10-photo
+            // limit and drag-reorders them) and the Events gallery.
             S.listItem()
               .title('Site Settings')
               .icon(() => '⚙️')
@@ -37,16 +40,6 @@ export default defineConfig({
               .icon(() => '🖼')
               .schemaType('galleryImage')
               .child(S.documentTypeList('galleryImage').title('Gallery Images')),
-
-            S.divider(),
-
-            // Homepage hero slideshow photos: add, delete and reorder here.
-            // The website shows at most 10 (Studio slides lead, built-ins fill).
-            S.listItem()
-              .title('Hero Slides (max 10)')
-              .icon(() => '🌄')
-              .schemaType('heroSlide')
-              .child(S.documentTypeList('heroSlide').title('Hero Slides')),
 
             S.divider(),
 

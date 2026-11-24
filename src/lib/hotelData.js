@@ -58,7 +58,7 @@ export const DEFAULT_SETTINGS = {
   addressLine: 'B1 Kisumu-Busia Road',
   town: 'Busia, Kenya',
   reservationsHours: 'Daily 7 AM – 10 PM',
-  frontDeskHours: '24/7',
+  frontDeskHours: '24 Hours',
   checkInTime: '2:00 PM',
   checkOutTime: '10:00 AM',
   breakfastHours: '6:30 AM – 10:00 AM',

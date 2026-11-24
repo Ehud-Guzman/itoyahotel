@@ -1,11 +1,13 @@
-// The homepage slideshow, in one place.
+// The built-in homepage slideshow, in one place.
 //
-// Hero.jsx renders these, and the build (vite.config.js) uses the very same list
-// to write the <link rel="preload"> for the FIRST slide into index.html. That
-// preload must name the photo the page actually shows first, with the same
-// srcset and sizes the <img> uses, or the browser downloads a different image
-// (this had silently drifted: the page preloaded a photo that was no longer
-// first, wasting its download and leaving the real first image to be found late).
+// Hero.jsx renders these whenever the Studio has no photos of its own (Site
+// Settings → Homepage photos), and the build (vite.config.js) uses the very same
+// list to write the <link rel="preload"> for the FIRST slide into index.html.
+// That preload must name the photo the page shows first in that no-upload case,
+// with the same srcset and sizes the <img> uses, or the browser downloads a
+// different image (this had silently drifted: the page preloaded a photo that
+// was no longer first, wasting its download and leaving the real first image to
+// be found late). Once the hotel uploads photos, those lead instead.
 import { buildSrcSet } from '../lib/srcset.js'
 
 // Full-screen slideshow. Every entry must be at least 2560px wide: the images

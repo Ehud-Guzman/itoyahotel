@@ -66,3 +66,14 @@ test('hero: Studio slides lead, built-ins fill the gaps, and the show is capped 
   // The hero is never empty, even if Sanity returns nothing.
   assert.ok(mergeHeroSlides([], builtIn).length > 0)
 })
+
+test('hero: the slideshow lives in Site Settings, with no second copy to drift', () => {
+  const schemaIndex = fs.readFileSync(new URL('../studio/schemas/index.js', import.meta.url), 'utf8')
+  const hero = fs.readFileSync(new URL('../src/components/Hero.jsx', import.meta.url), 'utf8')
+
+  // heroSlide is an object inside siteSettings.heroSlides now — if it ever
+  // becomes a document type again, the Studio would no longer cap it at 10.
+  assert.ok(!/from '\.\/heroSlide'/.test(schemaIndex), 'heroSlide should not be a document type')
+  assert.ok(hero.includes('siteSettings'), 'Hero should read Site Settings')
+  assert.ok(hero.includes('heroSlides'), 'Hero should read the heroSlides array')
+})

@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { srcSet } from '../lib/responsive'
 import { useSeason } from '../lib/season'
-import { useSanity, imgUrl, imgSrcSet } from '../lib/sanity'
+import { useSanityObject, imgUrl, imgSrcSet } from '../lib/sanity'
 import { HERO_SLIDES, HERO_SIZES } from '../data/heroSlides'
 import { mergeHeroSlides } from '../lib/heroSlides'
 
-// Hero photos, managed in the Studio's "Hero Slide" list (add / delete / reorder).
-// The built-in photos are a safety net, not a replacement: Studio slides come
-// first and the built-ins fill whatever slots are left, up to MAX_HERO_SLIDES.
-// So adding a slide in the Studio pushes the last built-in out of the show, and
-// deleting one lets a built-in photo back in. The slideshow is never empty.
-const HERO_QUERY = `*[_type == "heroSlide" && defined(image.asset)] | order(order asc, _createdAt asc) {
-  _id, alt, headline, order,
-  "src": image.asset->url
+// Hero photos live in Site Settings → Homepage photos, as an array: the Studio
+// itself caps it at 10 and they are reordered by dragging. The built-in photos
+// are a safety net, not a replacement — Studio photos come first and the
+// built-ins fill whatever slots are left, up to MAX_HERO_SLIDES. So adding a
+// photo pushes the last built-in out of the show, and deleting one lets it back
+// in. The slideshow is never empty, and it can never exceed the cap.
+const HERO_QUERY = `*[_id == "siteSettings"][0]{
+  "slides": heroSlides[defined(image.asset)]{ alt, headline, "src": image.asset->url }
 }`
 
 const FALLBACK_SLIDES = HERO_SLIDES.map((src, i) => ({
@@ -30,9 +30,9 @@ export default function Hero() {
   // Studio slides lead, then the built-in photos fill the remaining slots (the
   // 10-photo cap lives in mergeHeroSlides). Image URLs are sized at render time
   // (below) so the browser never fetches the original.
-  const { data: sanitySlides } = useSanity(HERO_QUERY, null)
-  const studioSlides = Array.isArray(sanitySlides)
-    ? sanitySlides
+  const settingsDoc = useSanityObject(HERO_QUERY, null)
+  const studioSlides = Array.isArray(settingsDoc?.slides)
+    ? settingsDoc.slides
         .filter((s) => s?.src)
         .map((s) => ({ src: s.src, alt: s.alt || 'Hotel Itoya', headline: s.headline || '' }))
     : []
@@ -148,6 +148,15 @@ export default function Hero() {
           />
         ))}
       </div>
+
+      {/* Contrast floor. The built-in photos were chosen to be dark enough for
+          white type, but the hotel can now upload any photo, and the Welcome /
+          Motto text sits over the slideshow on every breakpoint. A soft
+          top-to-bottom shade keeps the type readable whatever the photo. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-black/40 via-black/20 to-black/55"
+      />
 
       {/* Main Content */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center w-full px-6 lg:px-10">
