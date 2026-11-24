@@ -3,10 +3,13 @@ import { srcSet } from '../lib/responsive'
 import { useSeason } from '../lib/season'
 import { useSanity, imgUrl, imgSrcSet } from '../lib/sanity'
 import { HERO_SLIDES, HERO_SIZES } from '../data/heroSlides'
+import { mergeHeroSlides } from '../lib/heroSlides'
 
 // Hero photos, managed in the Studio's "Hero Slide" list (add / delete / reorder).
-// Until the hotel uploads any, the built-in slides below are shown, so the
-// homepage never loses its slideshow.
+// The built-in photos are a safety net, not a replacement: Studio slides come
+// first and the built-ins fill whatever slots are left, up to MAX_HERO_SLIDES.
+// So adding a slide in the Studio pushes the last built-in out of the show, and
+// deleting one lets a built-in photo back in. The slideshow is never empty.
 const HERO_QUERY = `*[_type == "heroSlide" && defined(image.asset)] | order(order asc, _createdAt asc) {
   _id, alt, headline, order,
   "src": image.asset->url
@@ -24,15 +27,16 @@ export default function Hero() {
   const welcomeTimer = useRef(null)
   const mottoTimer   = useRef(null)
 
-  // Studio slides replace the built-in ones once any exist; image URLs are
-  // sized at render time (below) so the browser never fetches the original.
+  // Studio slides lead, then the built-in photos fill the remaining slots (the
+  // 10-photo cap lives in mergeHeroSlides). Image URLs are sized at render time
+  // (below) so the browser never fetches the original.
   const { data: sanitySlides } = useSanity(HERO_QUERY, null)
   const studioSlides = Array.isArray(sanitySlides)
     ? sanitySlides
         .filter((s) => s?.src)
         .map((s) => ({ src: s.src, alt: s.alt || 'Hotel Itoya', headline: s.headline || '' }))
     : []
-  const slides = studioSlides.length > 0 ? studioSlides : FALLBACK_SLIDES
+  const slides = mergeHeroSlides(studioSlides, FALLBACK_SLIDES)
 
   const prefersReducedMotion = typeof window !== 'undefined'
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -80,7 +84,7 @@ export default function Hero() {
       setCurrentSlide((s) => (s + 1) % slides.length)
     }, duration)
     return () => clearTimeout(id)
-  }, [currentSlide, ready])
+  }, [currentSlide, ready, slides.length])
 
   // Mount the next slide ahead of time — it renders hidden (opacity-0), which
   // both preloads the image and lets the crossfade transition run on arrival
@@ -94,7 +98,7 @@ export default function Hero() {
       grown.add(next)
       return grown
     })
-  }, [currentSlide, ready])
+  }, [currentSlide, ready, slides.length])
 
   // Image transition flag
   useEffect(() => {

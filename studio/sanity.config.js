@@ -41,8 +41,9 @@ export default defineConfig({
             S.divider(),
 
             // Homepage hero slideshow photos: add, delete and reorder here.
+            // The website shows at most 10 (Studio slides lead, built-ins fill).
             S.listItem()
-              .title('Hero Slides')
+              .title('Hero Slides (max 10)')
               .icon(() => '🌄')
               .schemaType('heroSlide')
               .child(S.documentTypeList('heroSlide').title('Hero Slides')),

@@ -2,7 +2,7 @@ export const heroSlide = {
   name:  'heroSlide',
   title: 'Hero Slide',
   type:  'document',
-  description: 'A full-screen image for the homepage hero slideshow. Upload any size — Sanity resizes it automatically for each screen.',
+  description: 'One photo in the homepage slideshow. Up to 10 photos are shown in total — the ones you add here come first, and the built-in photos fill any slots left over. Delete one and a built-in photo takes its place. Upload any size; Sanity resizes it automatically for each screen.',
   fields: [
     {
       name:    'image',
