@@ -43,6 +43,9 @@ function createTransporter() {
         htmlContent: message.html,
       }
       if (message.replyTo) payload.replyTo = { email: message.replyTo }
+      // A text alternative is not decoration: watch previews and screen readers
+      // use it, and a message without one is more likely to be filtered.
+      if (message.text) payload.textContent = message.text
       if (message.attachments?.length) {
         payload.attachment = message.attachments.map((attachment) => ({
           name: attachment.filename,

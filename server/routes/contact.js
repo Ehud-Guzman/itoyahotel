@@ -1,18 +1,15 @@
 const express = require('express')
 const { createTransporter } = require('../lib/mailer')
+const { renderEmail } = require('../lib/emailTemplate')
+const { getSiteData } = require('../lib/siteData')
 const { LIMITS, isEmail, isPhone, tooLong } = require('../lib/validate')
 const store = require('../store')
 
 const router = express.Router()
 
-// Guest-supplied fields are interpolated straight into the HTML email body
-// below — without escaping, a message like `<a href="evil">click</a>`
-// would render as a live link inside the hotel's inbox.
-function escapeHtml(str) {
-  return String(str ?? '').replace(/[&<>"']/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-  ))
-}
+// Guest-supplied fields go into the HTML email body below; renderEmail escapes
+// them, so a message like <a href="evil">click</a> arrives as text rather
+// than a live link inside the hotel's inbox.
 
 const ENQUIRY_LABELS = {
   accommodation: 'Accommodation',
@@ -42,13 +39,37 @@ async function sendContactEmail(enquiry) {
     return { sent: false, error: 'HOTEL_EMAIL is not configured.' }
   }
   const enquiryType = ENQUIRY_LABELS[enquiry.type] || 'General Enquiry'
+
+  // The footer contact details come from the Studio, like the booking emails.
+  // Never let a Site Settings hiccup stop an enquiry reaching the hotel.
+  let settings = {}
+  try { ({ settings } = await getSiteData()) } catch { /* the email still renders without it */ }
   try {
     await transporter.sendMail({
       from:    `"Hotel Itoya Website" <${process.env.EMAIL_USER}>`,
       to:      recipients,
       replyTo: enquiry.email,
       subject: `New Enquiry — ${enquiryType} — ${enquiry.name.replace(/\s+/g, ' ').trim()}`,
-      html: `\n        <h2 style="font-family:serif;color:#a4733c">New Website Enquiry</h2>\n        <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px">\n          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666;width:120px">Type</td><td style="padding:6px 12px">${escapeHtml(enquiryType)}</td></tr>\n          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Name</td><td style="padding:6px 12px">${escapeHtml(enquiry.name)}</td></tr>\n          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Email</td><td style="padding:6px 12px">${escapeHtml(enquiry.email)}</td></tr>\n          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Phone</td><td style="padding:6px 12px">${escapeHtml(enquiry.phone) || '—'}</td></tr>\n          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Check-in</td><td style="padding:6px 12px">${escapeHtml(enquiry.checkin) || '—'}</td></tr>\n          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Check-out</td><td style="padding:6px 12px">${escapeHtml(enquiry.checkout) || '—'}</td></tr>\n          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Guests</td><td style="padding:6px 12px">${escapeHtml(enquiry.guests) || '—'}</td></tr>\n          <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Message</td><td style="padding:6px 12px">${escapeHtml(enquiry.message)}</td></tr>\n        </table>\n      `,
+      ...renderEmail({
+        heading:        'New website enquiry',
+        preheader:      'New enquiry from ' + enquiry.name,
+        intro:          'An enquiry came in through the website. Reply to this email to answer ' + enquiry.name + ' directly.',
+        reference:      enquiry.ref,
+        referenceLabel: 'Enquiry reference',
+        rows: [
+          { label: 'Type',      value: enquiryType },
+          { label: 'Name',      value: enquiry.name },
+          { label: 'Email',     value: enquiry.email },
+          { label: 'Phone',     value: enquiry.phone || '—' },
+          { label: 'Check-in',  value: enquiry.checkin || '—' },
+          { label: 'Check-out', value: enquiry.checkout || '—' },
+          { label: 'Guests',    value: enquiry.guests || '—' },
+          { label: 'Message',   value: enquiry.message },
+        ],
+        note:       'Reply the same day where you can — guests often enquire with more than one hotel.',
+        footerNote: 'Sent from the Hotel Itoya website contact form.',
+        settings,
+      }),
     })
     return { sent: true }
   } catch (err) {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { downloadBookings } from './exportCsv'
-import { FiLock, FiLogOut, FiSearch, FiLoader, FiAlertCircle, FiImage, FiX, FiMail, FiRefreshCw } from 'react-icons/fi'
+import { FiLock, FiLogOut, FiSearch, FiLoader, FiAlertCircle, FiImage, FiX, FiMail, FiRefreshCw, FiDownload } from 'react-icons/fi'
 import { useFocusTrap } from '../lib/useFocusTrap'
 
 const API         = import.meta.env.VITE_API_URL || 'http://localhost:4000'
@@ -73,9 +73,20 @@ function EmailBadge({ b, token, onChanged }) {
   )
 }
 
+// Check-in/out dates are stored as `YYYY-MM-DD` — calendar dates, not timestamps.
+// `new Date('2026-12-24')` reads as UTC midnight, which displays as the 23rd in
+// any timezone west of Greenwich, so the date is split and built as local time.
+function parseDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''))
+  return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : new Date(value)
+}
+
+// Weekday included: staff read this out loud on the phone ("Friday the 27th").
 function fmtDate(str) {
   if (!str) return '—'
-  return new Date(str).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })
+  return parseDate(str).toLocaleDateString('en-KE', {
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+  })
 }
 
 function fmtDateTime(str) {
@@ -90,6 +101,7 @@ const STATUS_STYLE = {
   pending:     'bg-gold-light/40 text-primary-dark',
   failed:      'bg-red-100 text-red-800',
   reservation: 'bg-blue-100 text-blue-800',
+  cancelled:   'bg-stone/50 text-ink/70',
 }
 
 const STATUS_LABEL = {
@@ -260,6 +272,200 @@ function IdImageLightbox({ image, onClose }) {
   )
 }
 
+// ── Receipt download (staff) ─────────────────────────────────────────────────
+// The same PDF the guest received by email, so "please send my receipt again" is
+// one click. Fetched with the staff token, so it never exposes a public URL.
+function ReceiptButton({ bookingRef, token }) {
+  const [busy,   setBusy]   = useState(false)
+  const [failed, setFailed] = useState(false)
+
+  async function download() {
+    setBusy(true); setFailed(false)
+    try {
+      const res = await fetch(`${API}/api/admin/bookings/${bookingRef}/receipt`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) throw new Error('Could not prepare the receipt.')
+      const filename = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') || '')?.[1]
+        || `Hotel-Itoya-${bookingRef}.pdf`
+      const url = URL.createObjectURL(await res.blob())
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch {
+      setFailed(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div>
+      <button
+        onClick={download}
+        disabled={busy}
+        className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary-dark underline
+                   underline-offset-2 disabled:opacity-40 whitespace-nowrap"
+      >
+        {busy ? <FiLoader className="animate-spin" size={11} /> : <FiDownload size={11} />}
+        Receipt
+      </button>
+      {failed && (
+        <span className="flex items-center gap-1 text-[11px] text-red-700 mt-0.5">
+          <FiAlertCircle size={10} /> Failed
+        </span>
+      )}
+    </div>
+  )
+}
+// ── Guest email: cancel the booking, or send a note ──────────────────────────
+// Sent in the hotel's own email layout, so a cancellation reads like the
+// confirmation the guest already received.
+function GuestEmailDialog({ booking, mode, token, onClose, onDone }) {
+  const panelRef   = useFocusTrap(true)
+  const cancelling = mode === 'cancel'
+  const [reason,  setReason]  = useState('')
+  const [subject, setSubject] = useState('')
+  const [message, setMessage] = useState('')
+  const [busy,    setBusy]    = useState(false)
+  const [error,   setError]   = useState('')
+  const [outcome, setOutcome] = useState('')
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape' && !busy) onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [busy, onClose])
+
+  async function submit(e) {
+    e.preventDefault()
+    setBusy(true); setError(''); setOutcome('')
+    try {
+      const url  = `${API}/api/admin/bookings/${booking.ref}/${cancelling ? 'cancel' : 'message'}`
+      const res  = await fetch(url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(cancelling ? { reason } : { subject, message }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.message || 'Something went wrong. Please try again.')
+
+      // The change is saved either way — only the email can fail, and staff must
+      // know that before telling a guest "you have been emailed".
+      const failed = json.email?.sent === false
+      const why    = json.email?.error || 'mail server error'
+      setOutcome(cancelling
+        ? failed
+          ? `Booking cancelled, but the guest email failed: ${why}. Phone the guest, then send a note once email works.`
+          : 'Booking cancelled. The guest has been emailed.'
+        : failed ? `The message was not delivered: ${why}.` : 'Message sent to the guest.')
+      if (cancelling) onDone()
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-ink/70 flex items-center justify-center p-4" onClick={() => !busy && onClose()}>
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={cancelling ? 'Cancel booking' : 'Email guest'}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg bg-white p-6 md:p-8 outline-none max-h-full overflow-y-auto"
+      >
+        <div className="flex items-start justify-between gap-4 mb-1">
+          <h2 className="font-serif text-xl text-ink">{cancelling ? 'Cancel this booking?' : 'Email the guest'}</h2>
+          <button onClick={onClose} disabled={busy} aria-label="Close" className="text-ink/50 hover:text-ink p-1 disabled:opacity-40">
+            <FiX size={18} />
+          </button>
+        </div>
+        <p className="text-sm text-ink/60">
+          {booking.name} · {booking.roomLabel} · {fmtDate(booking.checkIn)} → {fmtDate(booking.checkOut)}
+        </p>
+
+        {outcome ? (
+          <>
+            <p className={`mt-6 text-sm ${/failed|not delivered/i.test(outcome) ? 'text-red-700' : 'text-green-800'}`}>{outcome}</p>
+            <button onClick={onClose} className="mt-6 w-full bg-primary text-white py-3 text-sm font-medium hover:bg-primary-dark transition-colors">
+              Done
+            </button>
+          </>
+        ) : (
+          <form onSubmit={submit} className="mt-5 space-y-4">
+            {cancelling ? (
+              <>
+                <p className="text-sm text-ink/80">
+                  This releases the room and emails {booking.name} that the booking is cancelled. It cannot be undone.
+                  {booking.status === 'success' && <> They paid {money(booking)}; the email says your team will be in touch about the refund.</>}
+                </p>
+                <label className="block">
+                  <span className="block text-xs uppercase tracking-wide text-ink/60 mb-1.5">Message to the guest (optional)</span>
+                  <textarea
+                    value={reason} onChange={(e) => setReason(e.target.value)} rows={3} maxLength={400}
+                    placeholder="e.g. We are fully booked that weekend — sorry for the inconvenience."
+                    className="w-full border border-stone/50 px-3 py-2.5 text-sm text-ink outline-none focus:border-ink resize-y"
+                  />
+                </label>
+              </>
+            ) : (
+              <>
+                <label className="block">
+                  <span className="block text-xs uppercase tracking-wide text-ink/60 mb-1.5">Subject (optional)</span>
+                  <input
+                    value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={140}
+                    placeholder={`A note about your booking at Hotel Itoya — ${booking.ref}`}
+                    className="w-full border border-stone/50 px-3 py-2.5 text-sm text-ink outline-none focus:border-ink"
+                  />
+                </label>
+                <label className="block">
+                  <span className="block text-xs uppercase tracking-wide text-ink/60 mb-1.5">Message</span>
+                  <textarea
+                    value={message} onChange={(e) => setMessage(e.target.value)} rows={6} maxLength={2000}
+                    placeholder="e.g. We have moved your booking to a quieter room as requested. Everything else is unchanged."
+                    className="w-full border border-stone/50 px-3 py-2.5 text-sm text-ink outline-none focus:border-ink resize-y"
+                  />
+                </label>
+                <p className="text-xs text-ink/45">Sent in the hotel's email layout, with the stay details and your contact number.</p>
+              </>
+            )}
+
+            {error && (
+              <p className="flex items-start gap-1.5 text-sm text-red-700">
+                <FiAlertCircle size={14} className="shrink-0 mt-0.5" /> {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={busy || (!cancelling && message.trim().length < 5)}
+              className={`w-full py-3 text-sm font-medium text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed
+                          ${cancelling ? 'bg-red-700 hover:bg-red-800' : 'bg-primary hover:bg-primary-dark'}`}
+            >
+              {busy
+                ? <span className="inline-flex items-center gap-2"><FiLoader className="animate-spin" size={14} /> Sending…</span>
+                : cancelling ? 'Cancel booking and email the guest' : 'Send to guest'}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Dashboard ────────────────────────────────────────────────────────────────
 function Dashboard({ token, onLogout }) {
   const [bookings, setBookings] = useState([])
@@ -268,6 +474,7 @@ function Dashboard({ token, onLogout }) {
   const [query,    setQuery]    = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [viewingImage, setViewingImage] = useState(null)
+  const [guestEmail, setGuestEmail] = useState(null)         // { booking, mode: 'cancel' | 'message' }
   const [emailHealth, setEmailHealth] = useState(null)      // { ok } or { ok: false, error }
 
   const closeImage = useCallback(() => {
@@ -374,6 +581,7 @@ function Dashboard({ token, onLogout }) {
             <option value="all">All statuses</option>
             <option value="success">Success</option>
             <option value="reservation">Pay at Hotel</option>
+            <option value="cancelled">Cancelled</option>
             <option value="pending">Pending</option>
             <option value="failed">Failed</option>
             <option value="attention">Email problems</option>
@@ -407,7 +615,7 @@ function Dashboard({ token, onLogout }) {
 
         {!loading && !error && filtered.length > 0 && (
           <div className="overflow-x-auto bg-white border border-stone/60">
-            <table className="w-full text-sm min-w-[900px]">
+            <table className="w-full text-sm min-w-[1040px]">
               <thead>
                 <tr className="border-b border-stone/60 text-left text-ink/60 text-xs uppercase tracking-wide">
                   <th className="px-4 py-3 font-medium">Ref</th>
@@ -419,6 +627,7 @@ function Dashboard({ token, onLogout }) {
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">ID</th>
                   <th className="px-4 py-3 font-medium">Booked</th>
+                  <th className="px-4 py-3 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -446,6 +655,9 @@ function Dashboard({ token, onLogout }) {
                       <StatusBadge status={b.status} />
                       <EmailBadge b={b} token={token} onChanged={loadBookings} />
                       {b.mpesaRef && <div className="text-ink/40 text-[11px] mt-1">{b.mpesaRef}</div>}
+                      {b.status === 'cancelled' && b.cancelledAt && (
+                        <div className="text-ink/40 text-[11px] mt-1">Cancelled {fmtDate(b.cancelledAt)}</div>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-1">
@@ -455,6 +667,29 @@ function Dashboard({ token, onLogout }) {
                       </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-ink/50 text-xs">{fmtDateTime(b.createdAt)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col items-start gap-1.5">
+                        {['reservation', 'success', 'cancelled'].includes(b.status) && (
+                          <button
+                            onClick={() => setGuestEmail({ booking: b, mode: 'message' })}
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary-dark underline underline-offset-2 whitespace-nowrap"
+                          >
+                            <FiMail size={11} /> Email guest
+                          </button>
+                        )}
+                        {['reservation', 'success'].includes(b.status) && (
+                          <button
+                            onClick={() => setGuestEmail({ booking: b, mode: 'cancel' })}
+                            className="inline-flex items-center gap-1 text-xs text-red-700 hover:text-red-800 underline underline-offset-2 whitespace-nowrap"
+                          >
+                            <FiX size={11} /> Cancel
+                          </button>
+                        )}
+                        {['reservation', 'success', 'cancelled'].includes(b.status) && (
+                          <ReceiptButton bookingRef={b.ref} token={token} />
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -464,6 +699,15 @@ function Dashboard({ token, onLogout }) {
       </main>
 
       {viewingImage && <IdImageLightbox image={viewingImage} onClose={closeImage} />}
+      {guestEmail && (
+        <GuestEmailDialog
+          booking={guestEmail.booking}
+          mode={guestEmail.mode}
+          token={token}
+          onClose={() => setGuestEmail(null)}
+          onDone={loadBookings}
+        />
+      )}
     </div>
   )
 }

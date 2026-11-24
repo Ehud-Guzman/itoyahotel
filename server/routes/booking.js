@@ -1,10 +1,15 @@
 const express    = require('express')
+const crypto     = require('crypto')
 const multer     = require('multer')
 const axios      = require('axios')
 const rateLimit  = require('express-rate-limit')
 const store      = require('../store')
 const { createTransporter } = require('../lib/mailer')
 const { getSiteData, rateFor, currencyOf, planLabel, formatMoney, PLANS, RESIDENCIES } = require('../lib/siteData')
+const { renderEmail } = require('../lib/emailTemplate')
+const { buildReceiptPdf, receiptFilename } = require('../lib/receiptPdf')
+const { buildInvite } = require('../lib/calendarInvite')
+const { verifyReceiptToken, receiptUrl } = require('../lib/receiptToken')
 const {
   LIMITS, isEmail, isPhone, isMpesaPhone, tooLong, validateStay, safeFilePart, safeExtension,
 } = require('../lib/validate')
@@ -96,14 +101,25 @@ function genRef() {
   return `ITOYA-${d}-${r}`
 }
 
-// Guest-supplied text (name, requests, etc.) is interpolated straight into
-// HTML email bodies below — without escaping, a booking named e.g.
-// `<a href="evil">click</a>` would render as a live link inside the
-// hotel's inbox and the guest's own confirmation email.
-function escapeHtml(str) {
-  return String(str ?? '').replace(/[&<>"']/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-  ))
+// Guest-supplied text (name, requests, etc.) goes into the HTML email bodies
+// below; they are escaped inside renderEmail (lib/emailTemplate), so a booking
+// named `<a href="evil">click</a>` arrives as text, not a live link.
+
+// Booking dates arrive as ISO `YYYY-MM-DD`. In an email, `2026-11-27` makes the
+// reader work out the weekday and count nights; "Fri, 27 Nov 2026" does not.
+// Parsed as UTC midnight so the printed day never shifts with the server's zone.
+function dateLabel(iso) {
+  if (!iso) return '—'
+  const date = new Date(`${iso}T00:00:00Z`)
+  if (Number.isNaN(date.getTime())) return String(iso)
+  return date.toLocaleDateString('en-GB', {
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
+  })
+}
+
+function nightsLabel(nights) {
+  const count = Number(nights) || 0
+  return `${count} night${count === 1 ? '' : 's'}`
 }
 
 // `rooms` is a plain object keyed by guest-supplied `room`. A plain `obj[key]`
@@ -220,6 +236,57 @@ async function initiateSTKPush({ phone, amount, ref }) {
   return res.data.CheckoutRequestID
 }
 
+// The stay, as both the guest and the hotel read it. Shared by every email so
+// the confirmation, a cancellation and a note from staff all describe the
+// booking identically.
+function stayRowsFor(b, settings) {
+  const international = b.residency === 'international'
+  return [
+    { label: 'Room',       value: b.roomLabel },
+    { label: 'Meal plan',  value: planLabel(b.plan || 'bb') },
+    { label: 'Guest rate', value: international ? 'International visitor (USD)' : 'Kenyan resident (KES)' },
+    { label: 'Check-in',   value: `${dateLabel(b.checkIn)}${settings.checkInTime ? ` — from ${settings.checkInTime}` : ''}` },
+    { label: 'Check-out',  value: `${dateLabel(b.checkOut)}${settings.checkOutTime ? ` — by ${settings.checkOutTime}` : ''}` },
+    { label: 'Duration',   value: nightsLabel(b.nights) },
+    { label: 'Guests',     value: b.guests },
+  ]
+}
+
+// The two files a guest should keep: the receipt (the exact PDF the Download
+// Receipt button serves) and a calendar invite. A failure here never costs the
+// guest their confirmation email — the email goes out without the attachment
+// and the error is logged.
+function keepableAttachments(record, settings) {
+  const attachments = []
+  try {
+    attachments.push({
+      filename: receiptFilename(record.b.ref),
+      content: buildReceiptPdf(record, { settings }),
+    })
+  } catch (err) {
+    console.error(`[RECEIPT] ${record.b.ref}: could not build the PDF receipt (${err.message})`)
+  }
+  try {
+    const invite = buildInvite(record, { settings })
+    attachments.push({ filename: invite.filename, content: Buffer.from(invite.content, 'utf8') })
+  } catch (err) {
+    console.error(`[CALENDAR] ${record.b.ref}: could not build the calendar invite (${err.message})`)
+  }
+  return attachments
+}
+
+// A button for the guest emails: the same PDF as the attachment, fetchable
+// later — from a phone, or months after the email. Never let a missing signing
+// secret cost the guest their email: the PDF is attached regardless.
+function receiptButton(ref, label = 'Download your receipt') {
+  try {
+    return { label, url: receiptUrl(ref) }
+  } catch (err) {
+    console.error(`[RECEIPT LINK] ${ref}: ${err.message}`)
+    return null
+  }
+}
+
 // ── Email helper ──────────────────────────────────────────────────────────────
 // `paid` distinguishes a real completed M-Pesa payment from a reservation
 // made while live payment collection isn't configured (see mpesaIsLive) —
@@ -243,50 +310,78 @@ async function sendEmails(booking, { paid = true, parts = ['hotel', 'guest'] } =
   const { b, idFrontBuffer, idBackBuffer, idFrontName, idBackName } = booking
   const { settings } = await getSiteData()
 
-  const summary = `
-    <table style="border-collapse:collapse;width:100%;font-family:sans-serif;font-size:14px">
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666;width:120px">Reference</td><td style="padding:6px 12px;font-weight:600">${escapeHtml(b.ref)}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Room</td><td style="padding:6px 12px">${escapeHtml(b.roomLabel)}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Meal plan</td><td style="padding:6px 12px">${escapeHtml(planLabel(b.plan || 'bb'))}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Guest rate</td><td style="padding:6px 12px">${b.residency === 'international' ? 'International visitor (USD)' : 'Kenyan resident (KES)'}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Check-in</td><td style="padding:6px 12px">${escapeHtml(b.checkIn)}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Check-out</td><td style="padding:6px 12px">${escapeHtml(b.checkOut)}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Nights</td><td style="padding:6px 12px">${escapeHtml(b.nights)}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Guests</td><td style="padding:6px 12px">${escapeHtml(b.guests)}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Name</td><td style="padding:6px 12px">${escapeHtml(b.name)}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Phone</td><td style="padding:6px 12px">${escapeHtml(b.phone)}</td></tr>
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Email</td><td style="padding:6px 12px">${escapeHtml(b.email)}</td></tr>
-      ${paid ? `<tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">M-Pesa Ref</td><td style="padding:6px 12px">${escapeHtml(b.mpesaRef) || '—'}</td></tr>` : ''}
-      <tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">${paid ? 'Amount Paid' : 'Amount Due'}</td><td style="padding:6px 12px;font-weight:600">${escapeHtml(formatMoney(b.amount, b.currency || 'KES'))}${paid ? '' : ' — pay at hotel'}</td></tr>
-      ${b.requests ? `<tr><td style="padding:6px 12px;background:#f9f5ef;color:#666">Requests</td><td style="padding:6px 12px">${escapeHtml(b.requests)}</td></tr>` : ''}
-    </table>
-  `
+  const money         = formatMoney(b.amount, b.currency || 'KES')
+  const international = b.residency === 'international'
+  const stayRows      = stayRowsFor(b, settings)
+
+  // Paid online: a receipt. Otherwise a reservation with nothing collected yet —
+  // the wording must never imply money changed hands.
+  const amountBlock = {
+    label: paid ? 'Amount paid' : 'Amount due at check-in',
+    value: money,
+    note: paid
+      ? `Paid by M-Pesa${b.mpesaRef ? ` — transaction code ${b.mpesaRef}` : ''}.`
+      : international
+        ? 'Nothing has been charged. Please settle this in US dollars at the hotel on arrival.'
+        : 'Nothing has been charged. Please settle this at the hotel — M-Pesa or card, on arrival.',
+  }
+
+  const hotelRows = [
+    { label: 'Name',     value: b.name },
+    { label: 'Phone',    value: b.phone },
+    { label: 'Email',    value: b.email },
+    ...(b.requests ? [{ label: 'Requests', value: b.requests }] : []),
+    ...stayRows,
+    ...(paid && b.mpesaRef ? [{ label: 'M-Pesa code', value: b.mpesaRef }] : []),
+  ]
+
+  const guestRows = [
+    ...stayRows,
+    ...(settings.breakfastHours ? [{ label: 'Breakfast', value: settings.breakfastHours }] : []),
+  ]
 
   const messages = {}
 
+  // Receipt PDF + calendar invite, attached for both the hotel and the guest:
+  // staff then hold the same document the guest does when the guest calls.
+  const sharedAttachments = keepableAttachments(booking, settings)
+  const hasReceipt  = sharedAttachments.some((a) => a.filename.endsWith('.pdf'))
+  const hasInvite   = sharedAttachments.some((a) => a.filename.endsWith('.ics'))
+  const attachedNote = hasReceipt && hasInvite
+    ? ' Your receipt (PDF) and a calendar invite are attached.'
+    : hasReceipt ? ' Your receipt is attached as a PDF.'
+    : hasInvite ? ' A calendar invite is attached.'
+    : ''
+
   // ── Hotel notification (with ID attachments) ──
+  // `replyTo` is the guest, so staff can answer from the inbox without copying
+  // the address out of the table.
   messages.hotel = {
     from,
     to:      hotelEmail,
-    subject: `${paid ? 'New Booking' : 'New Reservation Request'} ${b.ref} — ${b.name} (${b.checkIn} → ${b.checkOut})${b.residency === 'international' ? ' [International]' : ''}`,
-    html: `
-      <h2 style="font-family:serif;color:#a4733c">${paid ? 'New Confirmed Booking' : 'New Reservation Request — Payment Not Yet Collected'}</h2>
-      <p style="font-family:sans-serif;font-size:14px;color:#555">
-        ${paid
-          ? 'A guest has completed payment and submitted a booking request. Please review the details below and confirm via email to the guest.'
-          : 'A guest has requested a reservation. <strong>No online payment was collected</strong> — the guest will pay at the hotel on arrival MPESA OR CREDIT CARDS). Please review the details below and confirm via email or phone.'}
-      </p>
-      ${summary}
-      <p style="font-family:sans-serif;font-size:13px;color:#888;margin-top:24px">
-        ${idFrontBuffer
-          ? 'Guest ID documents are attached to this email.'
-          : 'The guest ID documents are no longer stored, so none are attached.'}
-      </p>
-    `,
+    replyTo: b.email,
+    subject: `${paid ? 'New Booking' : 'New Reservation Request'} ${b.ref} — ${b.name} (${dateLabel(b.checkIn)} → ${dateLabel(b.checkOut)})${international ? ' [International]' : ''}`,
+    ...renderEmail({
+      heading:   paid ? 'New confirmed booking' : 'New reservation request',
+      preheader: `${b.name} · ${stayRows[0].value} · ${b.checkIn} → ${b.checkOut} · ${money}`,
+      intro:     paid
+        ? 'The guest has paid online and submitted their booking. Please review the details and confirm with them by email.'
+        : 'The guest has requested this reservation and no online payment was collected. Please confirm with them by email or phone.',
+      reference:   b.ref,
+      referenceLabel: paid ? 'Booking reference' : 'Reservation reference',
+      rows:      hotelRows,
+      total:     amountBlock,
+      note:      idFrontBuffer
+        ? 'The guest’s ID documents are attached to this email. Please confirm their residency at check-in.'
+        : 'The guest’s ID documents are no longer stored, so none are attached. Please ask for their ID at check-in.',
+      footerNote: 'Reply to this email to write to the guest directly.',
+      settings,
+    }),
     attachments: [
       ...(idFrontBuffer ? [{ filename: `ID-front-${safeFilePart(b.name)}.${safeExtension(idFrontName)}`, content: idFrontBuffer }] : []),
       // A passport has no "back", so international guests may send just the one page.
       ...(idBackBuffer ? [{ filename: `ID-back-${safeFilePart(b.name)}.${safeExtension(idBackName)}`, content: idBackBuffer }] : []),
+      ...sharedAttachments,
     ],
   }
 
@@ -295,24 +390,22 @@ async function sendEmails(booking, { paid = true, parts = ['hotel', 'guest'] } =
     from,
     to:      b.email,
     subject: `Your ${paid ? 'Booking' : 'Reservation'} at Hotel Itoya — ${b.ref}`,
-    html: `
-      <h2 style="font-family:serif;color:#a4733c">${paid ? 'Booking Received' : 'Reservation Received'} — Hotel Itoya</h2>
-      <p style="font-family:sans-serif;font-size:14px;color:#555">
-        Dear ${escapeHtml(b.name)},<br><br>
-        ${paid
-          ? 'Thank you for choosing Hotel Itoya. Your payment has been received and your booking is under review. A member of our team will contact you within a few hours to confirm your reservation.'
-          : `Thank you for choosing Hotel Itoya. We've received your reservation request. Payment of <strong>${escapeHtml(formatMoney(b.amount, b.currency || 'KES'))}</strong> is due at the hotel during check-in${b.residency === 'international' ? '' : ' MPESA OR CREDIT CARDS)'}. A member of our team will contact you within a few hours to confirm your reservation.`}
-      </p>
-      ${summary}
-      <p style="font-family:sans-serif;font-size:14px;color:#555;margin-top:24px">
-        If you have any questions, please call us on
-        <strong>${settings.phones.map(escapeHtml).join(' · ')}</strong> or email
-        <a href="mailto:${escapeHtml(settings.email)}">${escapeHtml(settings.email)}</a>.
-      </p>
-      <p style="font-family:sans-serif;font-size:12px;color:#aaa;margin-top:32px">
-        Hotel Itoya · ${escapeHtml(settings.addressLine)}, ${escapeHtml(settings.town)}
-      </p>
-    `,
+    ...renderEmail({
+      heading:   paid ? 'Your booking is in' : 'Your reservation is in',
+      preheader: `${stayRows[0].value} · ${b.checkIn} → ${b.checkOut} · ${money}`,
+      intro:     paid
+        ? `Dear ${b.name}, thank you for choosing Hotel Itoya. Your payment has been received and our team will contact you within a few hours to confirm your stay.`
+        : `Dear ${b.name}, thank you for choosing Hotel Itoya. We have received your reservation request and our team will contact you within a few hours to confirm it.`,
+      reference:      b.ref,
+      referenceLabel: paid ? 'Booking reference' : 'Reservation reference',
+      rows:      guestRows,
+      total:     amountBlock,
+      cta:       receiptButton(b.ref, paid ? 'Download your receipt' : 'Download your booking summary'),
+      note:      `To change or cancel this ${paid ? 'booking' : 'reservation'}, reply to this email or call us on ${settings.phones[0] || 'our number'}. Please bring your ID or passport to check-in.${attachedNote}`,
+      footerNote: 'We look forward to welcoming you.',
+      settings,
+    }),
+    attachments: sharedAttachments,
   }
 
   const result = {}
@@ -326,6 +419,80 @@ async function sendEmails(booking, { paid = true, parts = ['hotel', 'guest'] } =
     }
   }
   return result
+}
+
+// ── Emails the hotel sends after the booking exists ──────────────────────────
+// A cancellation, or a note about a change agreed on the phone. Same layout as
+// the confirmation, addressed to the guest only, and — like sendEmails — they
+// never throw: staff see the outcome in the dashboard and can send again.
+async function sendGuestUpdate(record, { subject, heading, intro, rows, total = null, cta = null, note = '', footerNote = '' }) {
+  const { b } = record
+  let transporter
+  try {
+    transporter = createTransporter()
+  } catch (err) {
+    return { sent: false, error: err.message }
+  }
+  try {
+    const { settings } = await getSiteData()
+    await transporter.sendMail({
+      from: { name: 'Hotel Itoya Bookings', email: process.env.EMAIL_USER },
+      to: b.email,
+      subject: String(subject).replace(/[\r\n]+/g, ' ').slice(0, 160),
+      ...renderEmail({
+        heading, intro, rows, total, cta, note, footerNote, settings,
+        reference: b.ref, referenceLabel: 'Booking reference',
+      }),
+    })
+    return { sent: true, error: null }
+  } catch (err) {
+    console.error(`[GUEST UPDATE FAILED] ${b.ref}: ${err.message}`)
+    return { sent: false, error: err.message }
+  }
+}
+
+/**
+ * "We have cancelled your booking." Pass the record as it was BEFORE the
+ * cancellation, so a paid booking is still recognisable as paid and the refund
+ * sentence is included. Never promises a refund amount or date — that is a
+ * decision for the hotel, so the guest is told the team will be in touch.
+ */
+async function sendCancellationEmail(record, { reason = '' } = {}) {
+  const { b } = record
+  const { settings } = await getSiteData()
+  const paid      = record.status === 'success'
+  const amount    = formatMoney(b.amount, b.currency || 'KES')
+  const phoneLine = settings.phones?.[0] ? ` or call us on ${settings.phones[0]}` : ''
+  const note      = String(reason || '').trim().slice(0, 400)
+
+  return sendGuestUpdate(record, {
+    subject: `Your booking at Hotel Itoya has been cancelled — ${b.ref}`,
+    heading: 'Your booking has been cancelled',
+    intro: `Dear ${b.name}, your booking at Hotel Itoya has been cancelled.${note ? ` Message from our team: ${note}` : ''}`,
+    rows: stayRowsFor(b, settings),
+    total: paid ? { label: 'Amount paid', value: amount, note: 'Our team will contact you about the refund due.' } : null,
+    cta: receiptButton(b.ref, 'Download your receipt'),
+    note: paid
+      ? `You paid ${amount} for this stay and nothing further is due. If you did not expect this cancellation, reply to this email${phoneLine}.`
+      : `Nothing was charged for this booking. If you did not expect this cancellation, reply to this email${phoneLine}.`,
+    footerNote: 'We are sorry for the inconvenience, and hope to welcome you another time.',
+  })
+}
+
+/** A short note from the reservations team, e.g. a change agreed on the phone. */
+async function sendGuestMessage(record, { message, subject = '' }) {
+  const { b } = record
+  const { settings } = await getSiteData()
+  const chosen = String(subject || '').trim() || `A note about your booking at Hotel Itoya — ${b.ref}`
+  return sendGuestUpdate(record, {
+    subject: chosen,
+    heading: 'A note about your booking',
+    intro: message,
+    rows: stayRowsFor(b, settings),
+    cta: receiptButton(b.ref, 'Download your receipt'),
+    note: `To reply, simply answer this email${settings.phones?.[0] ? `, or call us on ${settings.phones[0]}` : ''}.`,
+    footerNote: 'Hotel Itoya reservations',
+  })
 }
 
 // Sends whatever has not yet been delivered for this booking and records the
@@ -697,10 +864,152 @@ async function respondWithStatus(req, res) {
   // guest who actually paid staring at a timeout. See settleIfPaid.
   await settleIfPaid(record)
 
-  res.json({ status: record.status })
+  res.json({ status: record.status, mpesaRef: record.status === 'success' ? (record.b.mpesaRef || null) : null })
 }
+
+// ── POST /api/booking/receipt ─────────────────────────────────────────────────
+// The PDF receipt — the very file attached to the guest's confirmation email.
+// Generated here rather than in the browser so it always reflects what was
+// actually stored and charged.
+//
+// Two ways in, and each proves something different:
+//
+//   POST /receipt          reference + the phone number on the booking. For a
+//                          guest who still knows their reference (it is in every
+//                          email, and on the confirmation screen).
+//   GET  /receipt/:ref?t=  a signed, expiring token that only exists inside the
+//                          guest's own confirmation email (lib/receiptToken).
+//                          Whoever holds that inbox is the guest — the same
+//                          trust model as any "view your invoice" link — and
+//                          nobody can construct one without the server secret.
+//
+// Either way the response is only a PDF built from one stored booking: no
+// listing, no search, no partial matches.
+const receiptLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many receipt downloads from this device. Please wait a few minutes and try again.' },
+})
+
+const digitsOf = (value) => String(value ?? '').replace(/\D/g, '')
+
+function sameNumber(a, b) {
+  const left  = Buffer.from(digitsOf(a))
+  const right = Buffer.from(digitsOf(b))
+  if (!left.length || left.length !== right.length) return false
+  return crypto.timingSafeEqual(left, right)
+}
+
+const RECEIPT_STATUSES = ['success', 'reservation', 'cancelled']
+
+// Guests copy references off screens and invoices, so accept lower case too —
+// as a fallback, never as a second way to guess.
+async function findForReceipt(ref) {
+  if (!ref) return null
+  const record = await store.getByRef(ref)
+    || (ref !== ref.toUpperCase() ? await store.getByRef(ref.toUpperCase()) : null)
+  if (!record || !RECEIPT_STATUSES.includes(record.status)) return null
+  return record
+}
+
+async function sendReceipt(res, record) {
+  const { settings } = await getSiteData()
+  const pdf = buildReceiptPdf(record, { settings })
+  res.set({
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': `attachment; filename="${receiptFilename(record.b.ref)}"`,
+    // The guest's name, phone and email are on this page: never let it be cached.
+    'Cache-Control': 'private, no-store',
+    'X-Content-Type-Options': 'nosniff',
+  })
+  res.send(pdf)
+}
+
+// One wording for "no such booking" and for "wrong number", so the form cannot
+// be used to learn which references exist. It is also the honest instruction:
+// either one being off produces this answer.
+const NO_MATCH = 'We could not match that reference and phone number. Check both and try again, or reply to your confirmation email.'
+
+
+router.post('/receipt', receiptLimiter, async (req, res) => {
+  try {
+    const ref   = typeof req.body?.ref === 'string' ? req.body.ref.trim().slice(0, 40) : ''
+    const phone = typeof req.body?.phone === 'string' ? req.body.phone.trim().slice(0, 32) : ''
+    if (!ref) return res.status(400).json({ message: 'A booking reference is required.' })
+
+    // Only a settled booking has a receipt: a pending or abandoned attempt gets
+    // the same answer as an unknown reference.
+    const record = await findForReceipt(ref)
+    if (!record) return res.status(404).json({ message: NO_MATCH })
+
+    // The number typed must be one the guest gave us: theirs, or the M-Pesa line.
+    if (!phone || !(sameNumber(phone, record.b.phone) || sameNumber(phone, record.b.mpesaPhone))) {
+      return res.status(404).json({ message: NO_MATCH })
+    }
+
+    await sendReceipt(res, record)
+  } catch (err) {
+    console.error('Receipt download error:', err)
+    res.status(500).json({ message: 'Could not prepare the receipt. Please try again.' })
+  }
+})
+
+// The path behind the button in the guest's email. A dead or tampered link is a
+// person on a browser, not an API client, so it gets a page they can act on
+// rather than raw JSON.
+function deadLinkPage(message) {
+  const safe = String(message).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ))
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Receipt unavailable — Hotel Itoya</title>
+</head>
+<body style="margin:0;padding:40px 20px;background:#f4f1ec;font-family:Helvetica,Arial,sans-serif;color:#1a1612;">
+  <div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid #e8e2d8;padding:32px;">
+    <div style="font:22px Georgia,serif;">Hotel Itoya</div>
+    <div style="height:3px;background:#a4733c;margin:14px 0 24px;"></div>
+    <h1 style="font:normal 20px Georgia,serif;margin:0 0 12px;">This receipt link is no longer valid</h1>
+    <p style="font:14px/1.65 Helvetica,Arial,sans-serif;color:#57514a;margin:0 0 18px;">${safe}</p>
+    <p style="font:14px/1.65 Helvetica,Arial,sans-serif;color:#57514a;margin:0;">You can get a fresh copy any time from the Booking receipt link at the bottom of our website, using your booking reference and the phone number on the booking — or simply reply to your confirmation email and our team will send it over.</p>
+  </div>
+</body>
+</html>`
+}
+
+router.get('/receipt/:ref', receiptLimiter, async (req, res) => {
+  try {
+    const ref   = String(req.params.ref || '').slice(0, 40)
+    // A missing secret, a stale link, a link copied onto another reference: all
+    // the same dead end, all logged the same way. Nothing about the booking is
+    // revealed, not even whether the reference exists.
+    if (!verifyReceiptToken(req.query?.t, ref)) {
+      res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' })
+      return res.status(404).type('html').send(deadLinkPage('The link has expired, or it was created for a different booking.'))
+    }
+
+    const record = await findForReceipt(ref)
+    if (!record) {
+      res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' })
+      return res.status(404).type('html').send(deadLinkPage('We could not find that booking.'))
+    }
+
+    await sendReceipt(res, record)
+  } catch (err) {
+    console.error('Receipt link error:', err)
+    res.status(500).json({ message: 'Could not prepare the receipt. Please try again.' })
+  }
+})
 
 module.exports = router
 module.exports.sendEmails = sendEmails
 module.exports.notify = notify
 module.exports.runEmailRetries = runEmailRetries
+module.exports.sendCancellationEmail = sendCancellationEmail
+module.exports.sendGuestMessage = sendGuestMessage

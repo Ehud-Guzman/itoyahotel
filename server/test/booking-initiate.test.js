@@ -76,7 +76,11 @@ test('a valid booking with two ID photos is stored and both emails go out', asyn
   assert.equal(saved.b.amount, 7000)                // 2 nights x KES 3,500, computed on the server
   assert.ok(saved.idFrontBuffer?.length > 0 && saved.idBackBuffer?.length > 0)
   assert.equal(sent.length, 2)                       // hotel + guest
-  assert.deepEqual(sent[0].attachments.sort(), ['ID-back-Jane-Doe.jpg', 'ID-front-Jane-Doe.jpg'])
+  const hotelFiles = sent[0].attachments.sort()
+  // The guest's ID pages, plus the two documents the guest also receives.
+  assert.deepEqual(hotelFiles.filter((f) => f.startsWith('ID-')), ['ID-back-Jane-Doe.jpg', 'ID-front-Jane-Doe.jpg'])
+  assert.match(hotelFiles[0], /^Hotel-Itoya-.*\.ics$/)
+  assert.match(hotelFiles[1], /^Hotel-Itoya-.*\.pdf$/)
 })
 
 test('the price comes from the server: nights/labels from the client are ignored, a wrong total is refused', async () => {
@@ -102,7 +106,10 @@ test('a hostile guest name cannot reach the attachment filenames', async () => {
   const res = await initiate(form({ name: '../../etc/passwd\r\nBcc: attacker@evil.test' }))
   assert.equal(res.status, 200)
   await settle()
-  for (const f of sent[0].attachments) assert.match(f, /^ID-(front|back)-[A-Za-z0-9-]+\.jpg$/, f)
+  // Only the ID pages carry the guest's name — the receipt and invite use the ref.
+  const ids = sent[0].attachments.filter((f) => f.startsWith('ID-'))
+  assert.equal(ids.length, 2)
+  for (const f of ids) assert.match(f, /^ID-(front|back)-[A-Za-z0-9-]+\.jpg$/, f)
 })
 
 test('invalid input is rejected with the step and field to fix', async () => {

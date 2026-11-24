@@ -4,7 +4,9 @@ const jwt          = require('jsonwebtoken')
 const rateLimit    = require('express-rate-limit')
 const store        = require('../store')
 const { createTransporter } = require('../lib/mailer')
-const { notify } = require('./booking')
+const { notify, sendCancellationEmail, sendGuestMessage } = require('./booking')
+const { buildReceiptPdf, receiptFilename } = require('../lib/receiptPdf')
+const { getSiteData } = require('../lib/siteData')
 
 const router = express.Router()
 
@@ -110,6 +112,85 @@ router.post('/bookings/:ref/resend-emails', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('Admin resend error:', err)
     res.status(500).json({ message: 'Could not resend the emails.' })
+  }
+})
+
+// ── GET /api/admin/bookings/:ref/receipt ─────────────────────────────────────
+// The guest's own PDF receipt, for when someone calls and asks for another copy.
+// Same renderer as the emailed attachment, so the two can never differ.
+router.get('/bookings/:ref/receipt', requireAdmin, async (req, res) => {
+  try {
+    const record = await store.getByRef(req.params.ref)
+    if (!record) return res.status(404).json({ message: 'Booking not found.' })
+    if (!['success', 'reservation', 'cancelled'].includes(record.status)) {
+      return res.status(409).json({ message: 'This booking was never completed, so there is no receipt.' })
+    }
+    const { settings } = await getSiteData()
+    const pdf = buildReceiptPdf(record, { settings })
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${receiptFilename(record.b.ref)}"`,
+      'Cache-Control': 'private, no-store',
+    })
+    res.send(pdf)
+  } catch (err) {
+    console.error('Admin receipt error:', err)
+    res.status(500).json({ message: 'Could not prepare the receipt.' })
+  }
+})
+
+// ── POST /api/admin/bookings/:ref/cancel ─────────────────────────────────────
+// The room is released and the guest is told, in one action. The status changes
+// first and the email second: if the email fails the booking is still correctly
+// cancelled (staff see the error and can send the note again), whereas emailing
+// first could tell a guest they were cancelled while the room stayed booked.
+router.post('/bookings/:ref/cancel', requireAdmin, async (req, res) => {
+  try {
+    const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim().slice(0, 400) : ''
+    const record = await store.getByRef(req.params.ref)
+    if (!record) return res.status(404).json({ message: 'Booking not found.' })
+    if (record.status === 'cancelled') return res.status(409).json({ message: 'This booking is already cancelled.' })
+    if (!store.CANCELLABLE_STATUSES.includes(record.status)) {
+      return res.status(409).json({ message: 'Only a confirmed or paid booking can be cancelled — this one never completed.' })
+    }
+
+    // Snapshot the status before the compare-and-set. The in-memory store mutates
+    // the very object `record` points at, so reading record.status afterwards
+    // would say "cancelled" and the guest would be told nothing was charged.
+    const wasPaid = record.status === 'success'
+    const cancelled = await store.cancel(record.b.ref, { reason })
+    if (!cancelled) return res.status(409).json({ message: 'This booking changed while you were cancelling it. Refresh to see its current status.' })
+
+    // A paid booking is still recognised as paid, so the refund sentence is included.
+    const email = await sendCancellationEmail({ ...record, status: wasPaid ? 'success' : 'reservation' }, { reason })
+    res.json({ status: 'cancelled', cancelledAt: new Date().toISOString(), email })
+  } catch (err) {
+    console.error('Admin cancel error:', err)
+    res.status(500).json({ message: 'Could not cancel the booking.' })
+  }
+})
+
+// ── POST /api/admin/bookings/:ref/message ────────────────────────────────────
+// A note to the guest in the hotel's own email layout — the usual way to confirm
+// a change agreed on the phone. The subject is optional; the body is required.
+router.post('/bookings/:ref/message', requireAdmin, async (req, res) => {
+  try {
+    const message = typeof req.body?.message === 'string' ? req.body.message.trim() : ''
+    const subject = typeof req.body?.subject === 'string' ? req.body.subject.trim().slice(0, 140) : ''
+    if (message.length < 5) return res.status(400).json({ message: 'Write a message of at least a few words.' })
+    if (message.length > 2000) return res.status(400).json({ message: 'That message is too long. Please keep it under 2000 characters.' })
+
+    const record = await store.getByRef(req.params.ref)
+    if (!record) return res.status(404).json({ message: 'Booking not found.' })
+    if (!['reservation', 'success', 'cancelled'].includes(record.status)) {
+      return res.status(409).json({ message: 'This booking never completed, so there is no guest to email.' })
+    }
+
+    const email = await sendGuestMessage(record, { message, subject })
+    res.json({ email })
+  } catch (err) {
+    console.error('Admin guest message error:', err)
+    res.status(500).json({ message: 'Could not send the message.' })
   }
 })
 

@@ -7,6 +7,7 @@ const COLUMNS = [
   ['nights', 'Nights'], ['guests', 'Guests'], ['currency', 'Currency'], ['amount', 'Amount'],
   ['mpesaPhone', 'M-Pesa phone'], ['mpesaRef', 'M-Pesa ref'], ['requests', 'Special requests'],
   ['emailHotel', 'Hotel email'], ['emailGuest', 'Guest email'],
+  ['cancelledAt', 'Cancelled at'], ['cancelReason', 'Cancellation reason'],
 ]
 
 function cell(value) {

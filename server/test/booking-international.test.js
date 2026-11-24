@@ -198,7 +198,9 @@ test('emails show the currency, guest type and meal plan, and attach just the pa
   assert.match(hotel.html, /USD 248/)                                  // 2 nights x USD 124
   assert.match(hotel.html, /Half Board/)
   assert.match(hotel.html, /International visitor \(USD\)/)
-  assert.deepEqual(hotel.attachments, ['ID-front-Anna-Visitor.jpg'])
+  // The passport page is the only image; the receipt and invite travel with it.
+  assert.equal(hotel.attachments.length, 3)
+  assert.deepEqual(hotel.attachments.filter((f) => f.startsWith('ID-')), ['ID-front-Anna-Visitor.jpg'])
   assert.match(guest.html, /USD 248/)
   assert.doesNotMatch(guest.html, /M-Pesa/)                            // no mention of a payment method we do not offer them
 })

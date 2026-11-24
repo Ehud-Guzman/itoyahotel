@@ -1,5 +1,7 @@
 /* Footer — minimal premium footer */
+import { useState } from 'react'
 import FestiveSwitch from './season/FestiveSwitch'
+import FindReceipt from './FindReceipt'
 import { useHotel } from '../lib/hotel'
 import { telHref } from '../lib/hotelData'
 
@@ -23,6 +25,7 @@ const footerLinks = {
 
 export default function Footer() {
   const { settings } = useHotel()
+  const [receiptOpen, setReceiptOpen] = useState(false)
   const year = new Date().getFullYear()
 
   return (
@@ -163,6 +166,15 @@ export default function Footer() {
               Privacy Policy
             </a>
             <span aria-hidden="true" className="hidden sm:inline text-white/20">|</span>
+            {/* The way back to a receipt without asking the front desk. */}
+            <button
+              type="button"
+              onClick={() => setReceiptOpen(true)}
+              className="font-sans text-xs text-white/90 hover:text-gold transition-colors duration-150"
+            >
+              Booking receipt
+            </button>
+            <span aria-hidden="true" className="hidden sm:inline text-white/20">|</span>
             <span className="font-sans text-xs text-white/90">
               Created &amp; managed by{' '}
               <a
@@ -179,6 +191,8 @@ export default function Footer() {
           </div>
         </div>
       </div>
+
+      {receiptOpen && <FindReceipt onClose={() => setReceiptOpen(false)} />}
     </footer>
   )
 }

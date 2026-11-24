@@ -47,6 +47,10 @@ const SCHEMA = `
   ALTER TABLE bookings ADD COLUMN IF NOT EXISTS email_attempts     INTEGER NOT NULL DEFAULT 0;
   ALTER TABLE bookings ADD COLUMN IF NOT EXISTS email_error        TEXT;
   ALTER TABLE bookings ADD COLUMN IF NOT EXISTS email_last_attempt TIMESTAMPTZ;
+  -- A booking the hotel cancelled from the admin dashboard: when, and the note
+  -- that was emailed to the guest.
+  ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancelled_at     TIMESTAMPTZ;
+  ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancel_reason    TEXT;
   -- Contact form enquiries, tracked so a failed email can be retried instead of lost.
   CREATE TABLE IF NOT EXISTS contact_enquiries (
     id             SERIAL PRIMARY KEY,
@@ -116,6 +120,8 @@ function rowToRecord(row) {
     idFrontName: row.id_front_name, idBackName: row.id_back_name,
     status: row.status, checkoutRequestId: row.checkout_request_id,
     stkRequestedAt: row.stk_requested_at ? row.stk_requested_at.getTime() : null,
+    cancelledAt: row.cancelled_at ? row.cancelled_at.toISOString() : null,
+    cancelReason: row.cancel_reason || null,
   }
 }
 
@@ -155,7 +161,8 @@ async function listAll() {
               status, (id_front IS NOT NULL) AS has_id_front,
               (id_back IS NOT NULL) AS has_id_back, created_at,
               currency, plan, residency,
-              hotel_email_status, guest_email_status, email_attempts, email_error
+              hotel_email_status, guest_email_status, email_attempts, email_error,
+              cancelled_at, cancel_reason
        FROM bookings ORDER BY created_at DESC`,
     )
     return rows.map((row) => ({
@@ -170,6 +177,8 @@ async function listAll() {
       emailAttempts: row.email_attempts, emailError: row.email_error,
       hasIdFront: row.has_id_front, hasIdBack: row.has_id_back,
       createdAt: row.created_at.toISOString(),
+      cancelledAt: row.cancelled_at ? row.cancelled_at.toISOString() : null,
+      cancelReason: row.cancel_reason || null,
     }))
   }
   return [...memory.values()]
@@ -180,6 +189,7 @@ async function listAll() {
       emailAttempts: record.email?.attempts, emailError: record.email?.error,
       hasIdFront: !!record.idFrontBuffer, hasIdBack: !!record.idBackBuffer,
       createdAt: record.createdAt,
+      cancelledAt: record.cancelledAt || null, cancelReason: record.cancelReason || null,
     }))
 }
 
@@ -250,6 +260,35 @@ async function transitionStatus(ref, from, status, extra = {}) {
   if (!record || !from.includes(record.status)) return false
   record.status = status
   if (extra.mpesaRef) record.b.mpesaRef = extra.mpesaRef
+  return true
+}
+
+// ── Cancellation ──────────────────────────────────────────────────────────────
+// A booking can only be cancelled once it is settled (paid, or reserved to pay at
+// the hotel). An abandoned payment attempt is not a booking anyone is holding, so
+// it is not cancellable — there is nothing to release and no one to tell.
+const CANCELLABLE_STATUSES = ['reservation', 'success']
+
+// Compare-and-set like transitionStatus: exactly one caller can cancel a given
+// booking, so the guest never receives two cancellation emails.
+async function cancel(ref, { reason = '' } = {}) {
+  const note = String(reason || '').trim().slice(0, 400) || null
+  if (pool) {
+    const { rowCount } = await pool.query(
+      `UPDATE bookings
+       SET status = 'cancelled', cancelled_at = now(), cancel_reason = $3
+       WHERE ref = $1 AND status = ANY($2::text[])`,
+      [ref, CANCELLABLE_STATUSES, note],
+    )
+    return rowCount === 1
+  }
+  const record = memory.get(ref)
+  if (!record || !CANCELLABLE_STATUSES.includes(record.status)) return false
+  // Mutates in place: a caller holding this record will see the new status, so
+  // read anything needed for the email (e.g. "was this paid?") BEFORE cancelling.
+  record.status = 'cancelled'
+  record.cancelledAt = new Date().toISOString()
+  record.cancelReason = note
   return true
 }
 
@@ -504,6 +543,7 @@ async function close() {
 
 module.exports = {
   close, init, create, getByRef, getByCheckoutRequestId, updateStatus, transitionStatus,
+  cancel, CANCELLABLE_STATUSES,
   deleteByRef, listAll, purgeIdDocuments,
   recordEmailResult, findEmailsToRetry, resetEmailAttempts, MAX_EMAIL_ATTEMPTS,
   createContactEnquiry, getContactEnquiry, recordContactEmailResult,

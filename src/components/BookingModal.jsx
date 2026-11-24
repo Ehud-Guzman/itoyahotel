@@ -8,7 +8,7 @@ import {
   telHref, waLink, formatMoney, currencyOf, planLabel, rateFor, lowestRate, availablePlans, RESIDENCIES,
 } from '../lib/hotelData'
 import { useFocusTrap } from '../lib/useFocusTrap'
-import { downloadReceipt } from '../lib/generateReceipt'
+import { downloadReceipt } from '../lib/bookingReceipt'
 
 const STEPS = ['Room & Dates', 'Your Details', 'Upload ID', 'Review', 'Payment', 'Confirmed']
 
@@ -501,7 +501,7 @@ export default function BookingModal({ isOpen, onClose, preselected = {} }) {
           {step === 2 && <StepId       data={data} handleFile={handleFile} errors={errors} international={international} />}
           {step === 3 && <StepReview   data={data} room={room} nights={nights} total={total} currency={currency} />}
           {step === 4 && <StepPayment  data={data} set={set} errors={errors} clearErr={clearErr} total={total} currency={currency} international={international} payState={payState} slowConnect={slowConnect} paymentsLive={payOnline} />}
-          {step === 5 && <StepDone     bookingRef={bookingRef} data={data} room={room} nights={nights} total={total} paid={paidOnline} onClose={onClose} hotel={settings} currency={currency} />}
+          {step === 5 && <StepDone     bookingRef={bookingRef} data={data} total={total} paid={paidOnline} onClose={onClose} currency={currency} />}
         </div>
 
         {/* ── Footer ──────────────────────────────────────────────── */}
@@ -1031,20 +1031,20 @@ function StepPayment({ data, set, errors, clearErr, total, currency, internation
 }
 
 // ─── Step 5 — Confirmation ────────────────────────────────────────────────────
-function StepDone({ bookingRef, data, room, nights, total, paid, onClose, hotel, currency }) {
+function StepDone({ bookingRef, data, total, paid, onClose, currency }) {
   const [downloading, setDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState('')
 
   const handleDownload = async () => {
     setDownloading(true)
+    setDownloadError('')
     try {
-      await downloadReceipt({
-        ref: bookingRef, roomLabel: room?.label || '—',
-        checkIn: data.checkIn, checkOut: data.checkOut, nights, guests: data.guests,
-        name: data.name, phone: data.phone, email: data.email,
-        total, paid, hotel, currency, plan: data.plan, residency: data.residency,
-      })
+      // The server renders the PDF — the same file that was emailed to the guest.
+      // The reference plus the phone number on the booking is what unlocks it.
+      await downloadReceipt({ ref: bookingRef, phone: data.phone })
     } catch (e) {
-      console.error('Receipt generation failed:', e)
+      console.error('Receipt download failed:', e)
+      setDownloadError(e.message || 'Could not download your receipt. A copy is attached to your confirmation email.')
     } finally {
       setDownloading(false)
     }
@@ -1064,7 +1064,7 @@ function StepDone({ bookingRef, data, room, nights, total, paid, onClose, hotel,
         <p className="text-[13px] text-ink/75 leading-relaxed max-w-[20rem] mx-auto">
           {paid
             ? 'Payment confirmed. Hotel Itoya will review your booking and contact you to finalise your stay.'
-            : `Hotel Itoya will review your reservation and contact you to confirm. Please have ${money(total, currency)} ready to pay at check-in${data.residency === 'international' ? '' : ' MPESA OR CREDIT CARDS)'}.`}
+            : `Hotel Itoya will review your reservation and contact you to confirm. Please have ${money(total, currency)} ready to pay at check-in${data.residency === 'international' ? ' in cash or by card.' : ' — M-Pesa or card.'}`}
         </p>
       </div>
 
@@ -1077,7 +1077,7 @@ function StepDone({ bookingRef, data, room, nights, total, paid, onClose, hotel,
       {/* Checklist */}
       <div className="w-full text-left space-y-3">
         {[
-          `Confirmation sent to ${data.email}`,
+          `Confirmation, receipt and calendar invite sent to ${data.email}`,
           `Hotel will contact you on ${data.phone}`,
           `Keep your reference for any enquiries`,
         ].map(msg => (
@@ -1098,6 +1098,11 @@ function StepDone({ bookingRef, data, room, nights, total, paid, onClose, hotel,
             ? <><FiLoader size={12} className="animate-spin" /> Preparing…</>
             : <><FiDownload size={12} /> Download Receipt</>}
         </button>
+        {downloadError && (
+          <p className="flex items-start gap-1.5 text-left text-[11px] text-red-500" role="alert">
+            <FiAlertCircle size={11} className="shrink-0 mt-0.5" /> {downloadError}
+          </p>
+        )}
         <button
           onClick={onClose}
           className="w-full bg-ink text-white py-4 text-[10px] tracking-[0.28em] uppercase hover:bg-ink/80 transition-colors"
