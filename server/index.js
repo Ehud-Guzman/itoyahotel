@@ -9,6 +9,7 @@ const mpesaRouter   = require('./routes/mpesa')
 const contactRouter = require('./routes/contact')
 const adminRouter   = require('./routes/admin')
 const { runEmailRetries } = require('./routes/booking')
+const { runContactEmailRetries } = require('./routes/contact')
 const { createTransporter } = require('./lib/mailer')
 
 const app  = express()
@@ -110,11 +111,26 @@ function startEmailRetries() {
     .catch((err) => console.error(`Email: BREVO CHECK FAILED, bookings will not be emailed until fixed (${err.response?.data?.message || err.message}).`))
 }
 
+// Contact enquiries get the same retry treatment as booking emails: a failed
+// hotel alert is retried every minute with exponential backoff instead of being lost.
+function startContactEmailRetries() {
+  const tick = async () => {
+    try {
+      const n = await runContactEmailRetries()
+      if (n > 0) console.log(`Contact email retries: tried ${n} enquiry(ies).`)
+    } catch (err) {
+      console.error('Contact email retry run failed:', err.message)
+    }
+  }
+  setInterval(tick, 60_000).unref()
+}
+
 store.init()
   .then(() => {
     app.listen(PORT, () => console.log(`Hotel Itoya server running on :${PORT}`))
     startIdRetention()
     startEmailRetries()
+    startContactEmailRetries()
   })
   .catch((err) => {
     console.error('Failed to initialize booking store:', err.message)

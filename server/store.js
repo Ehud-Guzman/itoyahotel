@@ -7,6 +7,7 @@ const { Pool } = require('pg')
 
 let pool = null
 let memory = null
+let memoryContact = null
 
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS bookings (
@@ -46,6 +47,25 @@ const SCHEMA = `
   ALTER TABLE bookings ADD COLUMN IF NOT EXISTS email_attempts     INTEGER NOT NULL DEFAULT 0;
   ALTER TABLE bookings ADD COLUMN IF NOT EXISTS email_error        TEXT;
   ALTER TABLE bookings ADD COLUMN IF NOT EXISTS email_last_attempt TIMESTAMPTZ;
+  -- Contact form enquiries, tracked so a failed email can be retried instead of lost.
+  CREATE TABLE IF NOT EXISTS contact_enquiries (
+    id             SERIAL PRIMARY KEY,
+    ref            TEXT UNIQUE NOT NULL,
+    name           TEXT NOT NULL,
+    email          TEXT NOT NULL,
+    phone          TEXT,
+    type           TEXT,
+    checkin        TEXT,
+    checkout       TEXT,
+    guests         TEXT,
+    message        TEXT NOT NULL,
+    email_status   TEXT NOT NULL DEFAULT 'pending',
+    email_attempts INTEGER NOT NULL DEFAULT 0,
+    email_error    TEXT,
+    email_last_attempt TIMESTAMPTZ,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_contact_enquiries_created_at ON contact_enquiries (created_at);
 `
 
 async function init() {
@@ -68,6 +88,7 @@ async function init() {
     )
   } else {
     memory = new Map()
+    memoryContact = new Map()
     console.warn(
       'Booking store: DATABASE_URL not set — using in-memory storage. ' +
       'Bookings will be LOST on restart/redeploy. Set DATABASE_URL before taking real payments.',
@@ -322,6 +343,119 @@ async function resetEmailAttempts(ref) {
   else { const r = memory.get(ref); if (r) { r.email.attempts = 0; r.email.lastAttempt = null } }
 }
 
+// ── Contact enquiry email tracking ─────────────────────────────────────────────
+// A contact enquiry is only "handled" once the hotel alert email has actually gone out.
+// Until then it is retried with backoff so a failed email can never silently lose
+// an enquiry — same pattern as bookings, just a single email instead of two.
+
+const CONTACT_MAX_EMAIL_ATTEMPTS = 5
+const CONTACT_RETRY_WINDOW_HOURS = 48
+const CONTACT_FIRST_RETRY_AFTER_MS = 2 * 60 * 1000
+
+async function createContactEnquiry(record) {
+  const { ref, name, email, phone, type, checkin, checkout, guests, message } = record
+  if (pool) {
+    await pool.query(
+      `INSERT INTO contact_enquiries
+         (ref, name, email, phone, type, checkin, checkout, guests, message, email_status, email_attempts)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pending',0)`,
+      [ref, name, email, phone || null, type || null, checkin || null, checkout || null, guests || null, message]
+    )
+  } else {
+    memoryContact.set(ref, {
+      ...record, createdAt: new Date().toISOString(),
+      email: { status: 'pending', attempts: 0, error: null, lastAttempt: null },
+    })
+  }
+}
+
+async function getContactEnquiry(ref) {
+  if (pool) {
+    const { rows } = await pool.query('SELECT * FROM contact_enquiries WHERE ref = $1', [ref])
+    return rows[0] || null
+  }
+  const r = memoryContact.get(ref)
+  if (!r) return null
+  return {
+    ref: r.ref, name: r.name, email: r.email, phone: r.phone, type: r.type,
+    checkin: r.checkin, checkout: r.checkout, guests: r.guests, message: r.message,
+    email_status: r.email.status, email_attempts: r.email.attempts,
+    email_error: r.email.error, email_last_attempt: r.email.lastAttempt,
+    created_at: r.createdAt,
+  }
+}
+
+async function recordContactEmailResult(ref, { sent, error }) {
+  if (pool) {
+    await pool.query(
+      `UPDATE contact_enquiries
+       SET email_status = $2,
+           email_attempts = email_attempts + 1,
+           email_last_attempt = now(),
+           email_error = CASE WHEN $2 = 'sent' THEN NULL ELSE COALESCE($3, email_error) END
+       WHERE ref = $1`,
+      [ref, sent ? 'sent' : 'failed', error ? String(error).slice(0, 300) : null]
+    )
+    return
+  }
+  const record = memoryContact.get(ref)
+  if (!record) return
+  const e = record.email
+  e.attempts += 1
+  e.lastAttempt = Date.now()
+  e.status = sent ? 'sent' : 'failed'
+  e.error = sent ? null : (error ? String(error).slice(0, 300) : e.error)
+}
+
+function contactDueForRetry({ createdAt, attempts, lastAttempt }, now) {
+  if (attempts >= CONTACT_MAX_EMAIL_ATTEMPTS) return false
+  if (createdAt < now - CONTACT_RETRY_WINDOW_HOURS * 3_600_000) return false
+  return lastAttempt == null
+    ? createdAt < now - CONTACT_FIRST_RETRY_AFTER_MS
+    : lastAttempt < now - (2 ** attempts) * 60_000
+}
+
+async function findContactEmailsToRetry({ limit = 20 } = {}) {
+  const now = Date.now()
+  if (pool) {
+    const { rows } = await pool.query(
+      `SELECT ref, created_at, email_attempts, email_last_attempt FROM contact_enquiries
+       WHERE email_status <> 'sent'
+         AND email_attempts < $1
+         AND created_at > $2
+       ORDER BY created_at
+       LIMIT 200`,
+      [CONTACT_MAX_EMAIL_ATTEMPTS, new Date(now - CONTACT_RETRY_WINDOW_HOURS * 3_600_000)]
+    )
+    return rows
+      .filter((r) => contactDueForRetry({
+        createdAt: r.created_at.getTime(),
+        attempts: r.email_attempts,
+        lastAttempt: r.email_last_attempt ? r.email_last_attempt.getTime() : null,
+      }, now))
+      .slice(0, limit)
+      .map((r) => r.ref)
+  }
+  return [...memoryContact.values()]
+    .filter((r) => {
+      const e = r.email
+      if (!e || e.status === 'sent') return false
+      return contactDueForRetry({
+        createdAt: new Date(r.createdAt).getTime(),
+        attempts: e.attempts,
+        lastAttempt: e.lastAttempt,
+      }, now)
+    })
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .slice(0, limit)
+    .map((r) => r.ref)
+}
+
+async function resetContactEmailAttempts(ref) {
+  if (pool) await pool.query('UPDATE contact_enquiries SET email_attempts = 0, email_last_attempt = NULL WHERE ref = $1', [ref])
+  else { const r = memoryContact.get(ref); if (r) { r.email.attempts = 0; r.email.lastAttempt = null } }
+}
+
 // Data minimisation: removes the stored ID images (the booking record itself
 // stays) once they have served their purpose.
 //   - settled bookings (paid / reserved): `retentionDays` after check-out
@@ -372,4 +506,6 @@ module.exports = {
   close, init, create, getByRef, getByCheckoutRequestId, updateStatus, transitionStatus,
   deleteByRef, listAll, purgeIdDocuments,
   recordEmailResult, findEmailsToRetry, resetEmailAttempts, MAX_EMAIL_ATTEMPTS,
+  createContactEnquiry, getContactEnquiry, recordContactEmailResult,
+  findContactEmailsToRetry, resetContactEmailAttempts, CONTACT_MAX_EMAIL_ATTEMPTS,
 }

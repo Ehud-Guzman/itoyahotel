@@ -14,7 +14,7 @@ const initialForm = {
   checkout: '',
   guests: '',
   message: '',
-  company: '', // honeypot — real visitors never see or fill this
+  website_url: '', // honeypot — real visitors never see or fill this
 }
 
 function Field({ label, children }) {
@@ -171,11 +171,13 @@ export default function ContactSection() {
                 <form onSubmit={handleSubmit} className="space-y-5">
 
                   {/* Honeypot — hidden from sighted and screen-reader users alike;
-                      bots that auto-fill every field trip it. */}
+                      bots that auto-fill every field trip it.
+                      Named "website_url" so browsers don't autofill it with
+                      saved personal/company info. */}
                   <input
                     type="text"
-                    name="company"
-                    value={formData.company}
+                    name="website_url"
+                    value={formData.website_url}
                     onChange={handleChange}
                     tabIndex={-1}
                     autoComplete="off"
