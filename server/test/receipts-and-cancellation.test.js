@@ -82,6 +82,33 @@ test('the receipt is a real PDF, for both a paid booking and one paying at the h
   }
 })
 
+// The state of a booking is printed as words, and the colour dot only reinforces
+// them: a receipt photocopied, faxed or printed greyscale has to still say
+// whether money is owed. Cancelled is its own state — it must never ask a guest
+// who is not coming to settle anything at the hotel.
+test('the receipt says paid, payable and cancelled in words', async () => {
+  const textOf = async (opts) => buildReceiptPdf(await recordOf(await newBooking(opts))).toString('latin1')
+
+  const payable = await textOf({ status: 'reservation' })
+  assert.match(payable, /PAYABLE AT THE HOTEL/)
+  assert.match(payable, /AMOUNT DUE AT CHECK-IN/)
+  assert.match(payable, /not proof of payment/)
+  assert.doesNotMatch(payable, /PAID IN FULL/)
+
+  const paid = await textOf({ status: 'success', paid: true })
+  assert.match(paid, /PAID IN FULL/)
+  assert.match(paid, /Received with thanks/)
+  assert.doesNotMatch(paid, /settle the amount above/)
+
+  const cancelled = await textOf({ status: 'cancelled', paid: true })
+  assert.match(cancelled, /CANCELLED/)
+  assert.match(cancelled, /nothing to settle at the hotel/)
+  assert.doesNotMatch(cancelled, /PAYABLE AT THE HOTEL/)
+  assert.doesNotMatch(cancelled, /settle the amount above/)
+  // The M-Pesa code survives cancellation — it is the refund reference.
+  assert.match(cancelled, /SJ41ABC9XZ/)
+})
+
 test('the receipt needs a booking record', () => {
   assert.throws(() => buildReceiptPdf({}), /reference/)
   assert.throws(() => buildReceiptPdf(null), /reference/)

@@ -27,7 +27,6 @@ const BODY  = [70, 64, 58]
 const RULE  = [230, 226, 218]
 const CREAM = [249, 245, 239]
 const GREEN = [30, 112, 66]
-const BLUE  = [37, 89, 133]
 
 /** "KES 24,000" / "USD 62" — the currency is always spelled out. */
 function money(amount, currency = 'KES') {
@@ -76,14 +75,28 @@ function buildReceiptPdf(record, { settings = {}, issuedAt = new Date() } = {}) 
   }
 
   const paid          = record.status === 'success'
+  const cancelled     = record.status === 'cancelled'
   const international = b.residency === 'international'
   const currency      = b.currency || (international ? 'USD' : 'KES')
   const stayNights    = Number(b.nights) || 0
   const total         = Number(b.amount) || 0
   const perNight      = stayNights > 0 ? total / stayNights : total
-  const status = paid
-    ? 'PAID IN FULL'
-    : international ? 'PAYABLE AT THE HOTEL (USD)' : 'PAYABLE AT THE HOTEL — M-PESA OR CARD'
+
+  // What the guest has to know about money, stated in words first. The dot that
+  // carries this onto the page only reinforces the label, so the wording has to
+  // stand alone — printed greyscale, faxed, or read by someone who can't tell
+  // green from gold. A cancelled booking is its own state: it must never tell
+  // anyone to pay at the hotel.
+  const state = paid
+    ? { label: 'PAID IN FULL', dot: GREEN, boxLabel: 'AMOUNT PAID', boxNote: 'Received with thanks' }
+    : cancelled
+      ? { label: 'CANCELLED', dot: GREY, boxLabel: 'BOOKING TOTAL', boxNote: 'No payment due' }
+      : {
+          label: international ? 'PAYABLE AT THE HOTEL (USD)' : 'PAYABLE AT THE HOTEL',
+          dot: GOLD,
+          boxLabel: 'AMOUNT DUE AT CHECK-IN',
+          boxNote: international ? 'Pay in cash or by card on arrival' : 'M-Pesa or card at the hotel',
+        }
 
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -125,12 +138,17 @@ function buildReceiptPdf(record, { settings = {}, issuedAt = new Date() } = {}) 
   doc.setFont('times', 'bold'); doc.setFontSize(18); doc.setTextColor(...INK)
   doc.text(b.ref, margin, y + 21)
 
+  // The state shares a baseline with the reference: label right-aligned to the
+  // margin, a 4.4 pt dot in front of it. No filled block — the page is cream,
+  // gold and ink, and a solid green or blue slab was the only thing shouting.
   doc.setFont('helvetica', 'bold'); doc.setFontSize(8)
-  const statusWidth = doc.getTextWidth(status) + 22
+  const statusTrack = 1
+  const statusWidth = doc.getTextWidth(state.label) + statusTrack * Math.max(0, state.label.length - 1)
   const statusX = pageWidth - margin - statusWidth
-  doc.setFillColor(...(paid ? GREEN : BLUE))
-  doc.roundedRect(statusX, y + 6, statusWidth, 18, 3, 3, 'F')
-  doc.setTextColor(255, 255, 255)
+  doc.setFillColor(...state.dot)
+  doc.circle(statusX - 7.5, y + 18.2, 2.2, 'F')
+  doc.setTextColor(...INK)
+  doc.text(state.label, statusX, y + 21, { charSpace: statusTrack })
 
   y += 46
   doc.setDrawColor(...RULE); doc.setLineWidth(0.75)
@@ -163,7 +181,7 @@ function buildReceiptPdf(record, { settings = {}, issuedAt = new Date() } = {}) 
     ['Check-out', longDate(b.checkOut)],
     ['Duration', nightsLabel(stayNights)],
     ['Guests', String(b.guests ?? '—')],
-    ...(paid && b.mpesaRef ? [['M-Pesa code', b.mpesaRef]] : []),
+    ...(b.mpesaRef ? [['M-Pesa code', b.mpesaRef]] : []),
     ...(record.status === 'cancelled' ? [['Status', 'Cancelled']] : []),
   ]
 
@@ -191,7 +209,7 @@ function buildReceiptPdf(record, { settings = {}, issuedAt = new Date() } = {}) 
   const breakdown = [
     ['Rate per night', money(perNight, currency)],
     [nightsLabel(stayNights), ''],
-    [paid ? 'Total paid' : 'Total due', money(total, currency)],
+    [paid ? 'Total paid' : cancelled ? 'Total' : 'Total due', money(total, currency)],
   ]
   const colX = pageWidth - margin - 190
   breakdown.forEach(([key, value], index) => {
@@ -216,18 +234,16 @@ function buildReceiptPdf(record, { settings = {}, issuedAt = new Date() } = {}) 
   doc.setFillColor(...GOLD);  doc.rect(margin, boxY, 3, boxHeight, 'F')
 
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GREY)
-  doc.text(paid ? 'AMOUNT PAID' : 'AMOUNT DUE AT CHECK-IN', margin + 20, boxY + 22, { charSpace: 1.1 })
+  doc.text(state.boxLabel, margin + 20, boxY + 22, { charSpace: 1.1 })
   doc.setFont('times', 'bold'); doc.setFontSize(24); doc.setTextColor(...INK)
   doc.text(money(total, currency), margin + 20, boxY + 48)
 
+  // Instructions for settling, in body ink rather than a signal colour: the
+  // label above already says whether money is owed, so this line only explains
+  // how — and on a cancelled or paid receipt it drops out of the way entirely.
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8)
-  doc.setTextColor(...(paid ? GREEN : BLUE))
-  doc.text(
-    paid
-      ? 'Received with thanks'
-      : international ? 'Pay in cash or by card on arrival' : 'M-Pesa or card at the hotel',
-    pageWidth - margin - 20, boxY + 34, { align: 'right' },
-  )
+  doc.setTextColor(...BODY)
+  doc.text(state.boxNote, pageWidth - margin - 20, boxY + 34, { align: 'right' })
 
   y = boxY + boxHeight + 26
 
@@ -235,7 +251,9 @@ function buildReceiptPdf(record, { settings = {}, issuedAt = new Date() } = {}) 
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...GREY)
   const note = paid
     ? 'This receipt confirms payment was received for this booking. Please present it, with your ID or passport, at check-in.'
-    : 'This is a reservation receipt, not proof of payment. Please settle the amount above at the hotel on arrival.'
+    : cancelled
+      ? 'This booking was cancelled, so there is nothing to settle at the hotel. Keep this receipt for your records.'
+      : 'This is a reservation receipt, not proof of payment. Please settle the amount above at the hotel on arrival.'
   doc.text(doc.splitTextToSize(note, pageWidth - margin * 2), margin, y)
 
   // ── Footer ──
