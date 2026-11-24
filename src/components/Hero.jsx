@@ -11,8 +11,11 @@ import { mergeHeroSlides } from '../lib/heroSlides'
 // built-ins fill whatever slots are left, up to MAX_HERO_SLIDES. So adding a
 // photo pushes the last built-in out of the show, and deleting one lets it back
 // in. The slideshow is never empty, and it can never exceed the cap.
-const HERO_QUERY = `*[_id == "siteSettings"][0]{
-  "slides": heroSlides[defined(image.asset)]{ alt, headline, "src": image.asset->url }
+// Homepage Photos → Homepage Slideshow, in the Studio. One page for the hero and
+// the Events gallery, so the slideshow is easy to find (it was buried in Site
+// Settings before) and the Studio itself caps it at 10.
+const HERO_QUERY = `*[_id == "homepagePhotos"][0]{
+  "slides": slides[defined(image.asset)]{ alt, headline, "src": image.asset->url }
 }`
 
 const FALLBACK_SLIDES = HERO_SLIDES.map((src, i) => ({
@@ -30,9 +33,9 @@ export default function Hero() {
   // Studio slides lead, then the built-in photos fill the remaining slots (the
   // 10-photo cap lives in mergeHeroSlides). Image URLs are sized at render time
   // (below) so the browser never fetches the original.
-  const settingsDoc = useSanityObject(HERO_QUERY, null)
-  const studioSlides = Array.isArray(settingsDoc?.slides)
-    ? settingsDoc.slides
+  const photosDoc = useSanityObject(HERO_QUERY, null)
+  const studioSlides = Array.isArray(photosDoc?.slides)
+    ? photosDoc.slides
         .filter((s) => s?.src)
         .map((s) => ({ src: s.src, alt: s.alt || 'Hotel Itoya', headline: s.headline || '' }))
     : []

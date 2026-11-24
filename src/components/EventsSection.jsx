@@ -9,10 +9,10 @@ const EVENTS_QUERY = `*[_type == "specialEvent" && active == true] | order(date 
   "image": image.asset->url
 }`
 
-// The decorative bento photos live in Site Settings → Events Gallery Images,
-// where the hotel can add, delete and reorder them. Until they upload any,
-// these built-in photos are shown so the section never goes blank.
-const EVENT_GALLERY_QUERY = `*[_type == "siteSettings"][0]{ "images": eventGallery[].asset->url }`
+// The decorative bento photos live in Studio → Homepage Photos → Events Gallery
+// Images, where the hotel can add, delete and reorder them. Until they upload
+// any, these built-in photos are shown so the section never goes blank.
+const EVENT_GALLERY_QUERY = `*[_id == "homepagePhotos"][0]{ "images": eventGallery[].asset->url }`
 
 const FALLBACK_EVENT_IMAGES = [
   { src: '/images/events/homeland-1.webp',      alt: 'Homeland Itoya Event' },

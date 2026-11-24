@@ -5,6 +5,10 @@ import { schemas } from './schemas'
 
 const PROJECT_ID = 'okmatxt0'
 
+// Documents that exist exactly once and are edited in place: they can be edited
+// but not created a second time, deleted, unpublished or duplicated.
+const SINGLETONS = ['siteSettings', 'homepagePhotos']
+
 export default defineConfig({
   name:       'hotel-itoya',
   title:      'Hotel Itoya CMS',
@@ -20,9 +24,6 @@ export default defineConfig({
           .title('Hotel Itoya')
           .items([
             // One page of facts (phones, hours, booking switch...), not a list.
-            // Homepage photos live here too, under "Homepage photos": the hero
-            // slideshow (an array, so the Studio itself enforces the 10-photo
-            // limit and drag-reorders them) and the Events gallery.
             S.listItem()
               .title('Site Settings')
               .icon(() => '⚙️')
@@ -31,6 +32,19 @@ export default defineConfig({
                   .schemaType('siteSettings')
                   .documentId('siteSettings')
                   .title('Site Settings'),
+              ),
+
+            // The photos at the top of the homepage: the hero slideshow and the
+            // Events gallery. Their own entry, on purpose — they are the most
+            // edited thing on the site and must not be buried in Site Settings.
+            S.listItem()
+              .title('Homepage Photos')
+              .icon(() => '🌄')
+              .child(
+                S.document()
+                  .schemaType('homepagePhotos')
+                  .documentId('homepagePhotos')
+                  .title('Homepage Photos'),
               ),
 
             S.divider(),
@@ -83,12 +97,14 @@ export default defineConfig({
   },
 
   document: {
-    // Site Settings is a single page: it can be edited, but not created twice,
-    // deleted, unpublished or duplicated.
+    // Singleton pages: edited in place, never created twice, deleted,
+    // unpublished or duplicated.
     newDocumentOptions: (prev, { creationContext }) =>
-      creationContext.type === 'global' ? prev.filter((t) => t.templateId !== 'siteSettings') : prev,
+      creationContext.type === 'global'
+        ? prev.filter((t) => !SINGLETONS.includes(t.templateId))
+        : prev,
     actions: (prev, { schemaType }) =>
-      schemaType === 'siteSettings'
+      SINGLETONS.includes(schemaType)
         ? prev.filter(({ action }) => !['unpublish', 'delete', 'duplicate'].includes(action))
         : prev,
   },

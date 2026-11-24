@@ -67,13 +67,20 @@ test('hero: Studio slides lead, built-ins fill the gaps, and the show is capped 
   assert.ok(mergeHeroSlides([], builtIn).length > 0)
 })
 
-test('hero: the slideshow lives in Site Settings, with no second copy to drift', () => {
+test('hero: the slideshow lives on the Homepage Photos page, with no second copy to drift', () => {
   const schemaIndex = fs.readFileSync(new URL('../studio/schemas/index.js', import.meta.url), 'utf8')
   const hero = fs.readFileSync(new URL('../src/components/Hero.jsx', import.meta.url), 'utf8')
 
-  // heroSlide is an object inside siteSettings.heroSlides now — if it ever
+  // The slides are an array on the homepagePhotos singleton — if heroSlide ever
   // becomes a document type again, the Studio would no longer cap it at 10.
   assert.ok(!/from '\.\/heroSlide'/.test(schemaIndex), 'heroSlide should not be a document type')
-  assert.ok(hero.includes('siteSettings'), 'Hero should read Site Settings')
-  assert.ok(hero.includes('heroSlides'), 'Hero should read the heroSlides array')
+  assert.ok(schemaIndex.includes('homepagePhotos'), 'homepagePhotos should be registered')
+  assert.ok(hero.includes('"homepagePhotos"'), 'Hero should read the Homepage Photos page')
+  assert.ok(hero.includes('slides[defined(image.asset)]'), 'Hero should read the slides array')
+
+  // The Events gallery shares that page; nothing may still point at the old spot.
+  const events = fs.readFileSync(new URL('../src/components/EventsSection.jsx', import.meta.url), 'utf8')
+  assert.ok(events.includes('"homepagePhotos"'), 'EventsSection should read the Homepage Photos page')
+  assert.ok(!hero.includes('"siteSettings"'), 'Hero must not query the old siteSettings location')
+  assert.ok(!events.includes('"siteSettings"'), 'EventsSection must not query the old siteSettings location')
 })
