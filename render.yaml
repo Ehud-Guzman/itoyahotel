@@ -6,17 +6,14 @@
 # no PUBLIC_API_URL, no receipt signing key). The website itself is on
 # Netlify and described by netlify.toml; this file covers only the API.
 #
-# Before the first sync, check three values against the live service
-# (Dashboard → the service → Settings), because a Blueprint applies exactly
-# what it says and a mismatch silently reconfigures production:
-#
-#   name    Must match the existing service exactly. A matching name is how
-#           Render knows to adopt that service; a different name creates a
-#           second, unrelated service with a new onrender.com URL — which the
-#           CSP in netlify.toml and PUBLIC_API_URL below would not know about.
-#   plan    'free' spins the API down after 15 minutes idle (~50 s cold start
-#           on the next booking). Use 'starter' if that's what it runs on now.
-#   region  Moving the service is rarely what you want; match the dashboard.
+# The identity block below was read off the dashboard (Settings → General /
+# Build) and is the load-bearing part of this file. `name` is the only handle
+# Render has for linking a definition to an existing service: a name that
+# doesn't match doesn't adopt it, it silently provisions a second service with
+# a new onrender.com URL that the CSP in netlify.toml and PUBLIC_API_URL below
+# know nothing about. `plan: free` spins the API down after 15 minutes idle
+# (~50 s cold start on the next booking) — that is the plan it actually runs
+# on, not an optimisation.
 #
 # Secret values are deliberately absent: Render preserves any environment
 # variable a Blueprint doesn't mention, so the existing dashboard values
@@ -26,7 +23,7 @@
 # ─────────────────────────────────────────────────────────────
 services:
   - type: web
-    name: hotel-itoya-api
+    name: itoyahotel
     runtime: node
     plan: free
     region: oregon
