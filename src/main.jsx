@@ -6,6 +6,7 @@ import App from './App.jsx'
 import PrivacyPolicy from './legal/PrivacyPolicy.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { HotelProvider } from './lib/hotel.jsx'
+import { syncHolidays } from './lib/holidays'
 
 // Staff-only dashboard: kept out of the public bundle so guests don't download it.
 const AdminApp = lazy(() => import('./admin/AdminApp.jsx'))
@@ -25,6 +26,11 @@ if (isAdmin) {
   document.querySelector('meta[name="robots"]')?.setAttribute('content', 'noindex, nofollow')
   document.querySelector('link[rel="canonical"]')?.remove()
 }
+
+// Holidays the hotel added in the Studio (see src/lib/holidays.js). Public site
+// only, and never waited on: the boot script has already applied this season,
+// this only corrects it if the hotel has changed something since the last visit.
+if (!isAdmin) syncHolidays()
 
 // Copy deterrents for the public site (styles in index.css). Staff /admin is
 // left alone so uploads and previews behave normally.

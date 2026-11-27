@@ -47,6 +47,13 @@ test('every phase of every season has copy, and the copy promises no price or di
   }
 })
 
+test('a season names the theme the CSS keys on, not its own name', () => {
+  // src/season.css keys on data-season="christmas" | "sparkle" | "simple", so any
+  // holiday the hotel adds can reuse a look without new CSS.
+  assert.equal(at('2026-12-10T12:00:00').theme, 'christmas')
+  assert.equal(at('2026-10-31T12:00:00', 'christmas').theme, 'christmas')
+})
+
 test('resolveSeason is self-contained (it is inlined into /season-boot.js)', () => {
   // Rebuild it from its own source in an empty scope: it must not reference module-level names.
   const standalone = new Function(`return (${resolveSeason.toString()})`)()

@@ -49,6 +49,15 @@ export default defineConfig({
 
             S.divider(),
 
+            // Holidays & greetings: the hotel adds the dates and the wording, and
+            // the website greets guests by itself from the start date to the end
+            // date. No deploy, no developer.
+            S.listItem()
+              .title('Holidays & Greetings')
+              .icon(() => '🎉')
+              .schemaType('holiday')
+              .child(S.documentTypeList('holiday').title('Holidays & Greetings')),
+
             S.listItem()
               .title('Gallery Images')
               .icon(() => '🖼')

@@ -21,8 +21,10 @@ const random = (min, max) => min + Math.random() * (max - min)
 
 function makeFlake(crystal) {
   // Bigger flakes are "closer": they fall faster, sway wider and look brighter.
-  const size = crystal ? random(11, 20) : random(2.5, 6.8)
-  const depth = crystal ? (size - 11) / 9 : (size - 2.5) / 4.3
+  // Crystals are held back a little: they land on headlines and body copy in the
+  // festive section, and at their old size they competed with the words.
+  const size = crystal ? random(10, 16.5) : random(2.5, 6.8)
+  const depth = crystal ? (size - 10) / 6.5 : (size - 2.5) / 4.3
   return {
     crystal,
     near: !crystal && size > 5.4,
@@ -33,7 +35,7 @@ function makeFlake(crystal) {
     spin: `${random(9, 18).toFixed(1)}s`,
     delay: `${(-random(0, 30)).toFixed(1)}s`,
     drift: `${(14 + depth * 26 + random(0, 14)).toFixed(0)}px`,
-    opacity: (crystal ? 0.55 + depth * 0.4 : 0.4 + depth * 0.5).toFixed(2),
+    opacity: (crystal ? 0.42 + depth * 0.32 : 0.4 + depth * 0.5).toFixed(2),
   }
 }
 

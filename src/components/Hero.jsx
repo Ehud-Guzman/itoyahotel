@@ -164,6 +164,13 @@ export default function Hero() {
       {/* Main Content */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center w-full px-6 lg:px-10">
 
+        {/* Festive greeting: only while the Christmas theme is on. It lives
+            outside the motto block on purpose — the motto is hidden on desktop
+            photo slides, which hid the greeting for two slides in three. */}
+        {season.active && season.copy?.hero && (
+          <p className="season-hero-greeting">{season.copy.hero}</p>
+        )}
+
         {/* Shared text area — Motto defines the space, Welcome overlays it */}
         <div className="relative max-w-2xl w-full">
 
@@ -195,11 +202,6 @@ export default function Hero() {
               ${showWelcome ? '' : 'max-lg:opacity-100 max-lg:translate-y-0 max-lg:pointer-events-auto max-lg:delay-[600ms]'}
             `}
           >
-            {/* Festive greeting: only while the Christmas theme is on */}
-            {season.active && season.copy?.hero && (
-              <p className="season-hero-greeting">{season.copy.hero}</p>
-            )}
-
             <div className="flex justify-center mb-6">
               <div className="h-[2px] w-16 bg-gold/80" />
             </div>

@@ -1,3 +1,5 @@
+import { currentSeason } from "../lib/season";
+
 import { useState, useRef, useEffect } from "react";
 import {
   FaComments,
@@ -54,7 +56,12 @@ const rateFor = (tag) => {
   return `Kenyan residents: ${H.planSummary(r, "local")} per night.` + (intl ? ` International visitors: ${intl} per night.` : "");
 };
 
+// A season running on the page wins over the time of day: "Merry Christmas,
+// welcome to Hotel Itoya" is better in December than "Good evening". The
+// holiday's own greeting comes from the Studio via src/lib/season.js.
 const getGreeting = () => {
+  const season = currentSeason();
+  if (season?.copy?.hero) return season.copy.hero;
   const h = new Date().getHours();
   if (h < 12) return "Good morning";
   if (h < 17) return "Good afternoon";

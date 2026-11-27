@@ -5,6 +5,8 @@ import { useSanity, imgUrl, imgSrcSet } from '../lib/sanity'
 import { srcSet } from '../lib/responsive'
 import { useHotel } from '../lib/hotel'
 import { DEFAULT_ROOMS, availablePlans, formatMoney, lowestRate } from '../lib/hotelData'
+import SeasonEyebrow from './season/SeasonEyebrow'
+
 
 const ROOMS_QUERY = `*[_type == "room"] | order(order asc) {
   _id, roomType, title, tag, description, longDescription,
@@ -157,6 +159,7 @@ export default function RoomsPreview({ onBookRoom }) {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
             <div>
+              <SeasonEyebrow className="mb-3" />
               <p className="section-label mb-4">Accommodation</p>
               <div className="gold-divider mb-6" />
               <h2 className="section-heading">

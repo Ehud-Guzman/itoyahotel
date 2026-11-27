@@ -1,7 +1,20 @@
-import { LuArrowRight, LuGift, LuPartyPopper, LuSnowflake, LuTreePine, LuX } from 'react-icons/lu'
+import { LuArrowRight, LuCakeSlice, LuFlower2, LuGift, LuHeart, LuMoon, LuPartyPopper, LuSnowflake, LuSparkles, LuStar, LuTreePine, LuX } from 'react-icons/lu'
 import { closeBar, setSnow, useSeason } from '../../lib/season'
 
-const icons = { tree: LuTreePine, gift: LuGift, party: LuPartyPopper }
+// The icons a holiday can use (the Studio offers the same list). Sparkles is
+// the fallback because it reads as "celebration" at 14px, where a tree reads as
+// a warning sign.
+const icons = {
+  sparkles: LuSparkles,
+  star: LuStar,
+  tree: LuTreePine,
+  gift: LuGift,
+  party: LuPartyPopper,
+  moon: LuMoon,
+  flower: LuFlower2,
+  heart: LuHeart,
+  cake: LuCakeSlice,
+}
 
 // Slim festive strip at the top of the fixed header. It is always in the
 // markup and season.css only gives it height while a season is running, so
@@ -9,7 +22,7 @@ const icons = { tree: LuTreePine, gift: LuGift, party: LuPartyPopper }
 export default function SeasonBar({ onBookNow }) {
   const { active, copy, barClosed, snowOn, features } = useSeason()
   const show = active && Boolean(copy) && !barClosed
-  const Icon = copy ? (icons[copy.icon] ?? LuTreePine) : LuTreePine
+  const Icon = copy ? (icons[copy.icon] ?? LuSparkles) : LuSparkles
 
   return (
     <div className="season-bar" {...(!show ? { 'aria-hidden': 'true', inert: '' } : {})}>

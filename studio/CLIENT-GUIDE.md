@@ -62,10 +62,30 @@ You cannot create a fifth room type or a second entry for the same room. The Stu
 | Menu item | What it is |
 |---|---|
 | **Homepage Photos** | The slideshow at the top of the homepage, and the decorative photos in the Events section. Described below. |
+| **Holidays & Greetings** | The holidays the website greets guests for. Described below. |
 | **Gallery Images** | Photos in the gallery. They appear first, ahead of the built-in ones. |
 | **Dining Menu** | Dishes and their prices. The menu on the website shows exactly what you add here. |
 | **Special Events** | Events and offers shown in the Events section. |
 | **Testimonials** | Guest reviews. The section stays hidden until you add at least one. |
+
+## Holidays & Greetings (third item in the left menu)
+
+The website can greet guests for as many holidays in a year as you like — Christmas, Eid, Easter, Madaraka Day, Diwali, your anniversary. You set the dates once and the website does the rest: it appears on the first day, and on the day after the last day the site is exactly as plain as it always was.
+
+**To add one**, press **Create new → Holiday** and fill in:
+
+- **Holiday name** and **First day / Last day**. These three are the whole schedule.
+- **Greeting** — the line above the big homepage headline, and the chatbot's hello. Keep it short: "Merry Christmas", "Eid Mubarak".
+- **Strip message** — the line in the thin strip at the top of every page, with the booking button beside it. **On phones** takes a shorter version if you write one.
+- **Invitation under the hero** — the warm "stay, dine or celebrate with us" section. Switch it off for a solemn day, or if you would rather keep to the strip.
+- **Decoration** — pick a look: **Christmas** (garland, baubles and snow), **Celebration** (gold, no artwork) or **Just a greeting** (the strip only).
+
+Two things worth knowing:
+
+- The dates repeat on the same day every year, so **Christmas only needs entering once**. Holidays that move — Eid, Easter — need their dates updated for each year; add a new holiday for the new dates and switch the old one off.
+- Guests who do not want the greeting can switch it off themselves (there is a link in the footer), and they will not be asked again for that holiday.
+
+To stop everything, including any holiday you have added, choose **Never show them** under **Site Settings → Website look → Seasonal greetings**.
 
 ## Homepage Photos (second item in the left menu)
 

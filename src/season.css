@@ -308,7 +308,9 @@ html[data-season="christmas"] #home::after {
 }
 
 .season-hero-greeting {
-  margin-bottom: 0.9rem;
+  display: block;
+  margin: 0 0 1.15rem;
+  padding: 0 1rem;
   text-align: center;
   font-family: "Playfair Display", Georgia, serif;
   font-style: italic;
@@ -321,6 +323,7 @@ html[data-season="christmas"] #home::after {
     0 0 2px rgb(40 8 12 / 0.85),
     0 1px 3px rgb(40 8 12 / 0.7),
     0 2px 22px rgb(40 8 12 / 0.85);
+  animation: season-fade-in 1.2s ease both;
 }
 
 .season-hero-greeting::before,
@@ -334,7 +337,67 @@ html[data-season="christmas"] #home::after {
   opacity: 0.85;
 }
 
-/* ---- Soft burgundy / pine glow along the top of the viewport ---- */
+/* ---- Phases: the run-up, the day itself, and the new year ----
+   data-season-phase is set before first paint by /season-boot.js, so the theme
+   can change character without any JavaScript. The run-up (greeting) is the
+   base look above; these fill in the two moments that deserve to feel different. */
+
+/* Christmas Eve to Boxing Day: deeper red, warmer gold, a quicker twinkle. */
+html[data-season="christmas"][data-season-phase="christmas"] {
+  --season-gold: #f0d9a2;
+  --season-bar-bg: linear-gradient(90deg, #4a0d13 0%, #8a1c26 42%, #a8331f 58%, #4a0d13 100%);
+}
+
+html[data-season="christmas"][data-season-phase="christmas"] .season-garland::before,
+html[data-season="christmas"][data-season-phase="christmas"] .season-garland::after {
+  animation-duration: 1.9s;
+}
+
+html[data-season="christmas"][data-season-phase="christmas"] #home::after {
+  background:
+    radial-gradient(ellipse 75% 65% at 50% 45%, transparent 45%, rgb(90 17 25 / 0.42) 100%),
+    linear-gradient(to bottom, rgb(90 17 25 / 0.3), transparent 34%);
+}
+
+html[data-season="christmas"][data-season-phase="christmas"] .season-hero-greeting {
+  color: #fbecc4;
+  text-shadow:
+    0 0 2px rgb(40 8 12 / 0.9),
+    0 1px 3px rgb(40 8 12 / 0.75),
+    0 0 28px rgb(230 200 135 / 0.45),
+    0 2px 22px rgb(40 8 12 / 0.85);
+}
+
+/* New Year: pine and gold instead of burgundy, so the site turns over with the
+   calendar. The garland stays — it is the season's signature — but the light
+   and the tint underneath it do not. */
+html[data-season="christmas"][data-season-phase="newyear"] {
+  --season-gold: #edd9a3;
+  --season-bar-bg: linear-gradient(90deg, #123d28 0%, #1f5a3d 50%, #123d28 100%);
+  --season-bar-line: rgb(230 200 135 / 0.45);
+}
+
+html[data-season="christmas"][data-season-phase="newyear"] ::selection {
+  background: rgb(230 200 135 / 0.3);
+}
+
+html[data-season="christmas"][data-season-phase="newyear"] #home::after {
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 45%, transparent 50%, rgb(18 61 40 / 0.34) 100%),
+    linear-gradient(to bottom, rgb(230 200 135 / 0.14), transparent 30%);
+}
+
+html[data-season="christmas"][data-season-phase="newyear"] .season-hero-greeting {
+  color: #f4e7c2;
+}
+
+html[data-season="christmas"][data-season-phase="newyear"] body::before {
+  background:
+    radial-gradient(ellipse 55% 100% at 12% 0%, rgb(230 200 135 / 0.09), transparent 70%),
+    radial-gradient(ellipse 55% 100% at 88% 0%, rgb(31 90 61 / 0.08), transparent 70%);
+}
+
+
 
 html[data-season="christmas"] body::before {
   content: "";
@@ -522,6 +585,115 @@ html[data-season="christmas"] body::before {
   }
   html[data-season="christmas"] body::before,
   html[data-season="christmas"] #home::after {
+    display: none;
+  }
+}
+
+/* ---- Themes -------------------------------------------------------------
+   A season names a theme (data-season, set by /season-boot.js):
+
+     christmas  the original look — garland, baubles, holly, snow (season-art.css)
+     sparkle    a gold celebration for any holiday the hotel adds: the bar, the
+                hero greeting and the invitation, no Christmas artwork
+     simple     the bar and the greeting only, for dates that should be marked
+                without decoration
+
+   Nothing below knows a season by name, so any number of holidays can share a
+   theme. Colors are the hotel's brown and gold, deepened so white text holds up.
+*/
+
+html[data-season] {
+  --season-ink: #3f0d14;
+}
+
+html[data-season="sparkle"],
+html[data-season="simple"] {
+  --season-gold: #eed6a2;
+  --season-bar-line: rgb(238 214 162 / 0.5);
+  --season-bar-bg: linear-gradient(90deg, #4a3108 0%, #6b4310 50%, #4a3108 100%);
+}
+
+html[data-season="simple"] {
+  --season-ink: #2b241b;
+  --season-bar-bg: linear-gradient(90deg, #33291f 0%, #5b4a33 50%, #33291f 100%);
+}
+
+html[data-season="sparkle"] ::selection {
+  background: rgb(230 200 135 / 0.28);
+}
+
+/* The homepage wash and vignette, in gold rather than Christmas red. */
+html[data-season="sparkle"] body::before,
+html[data-season="simple"] body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 260px;
+  z-index: 30;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 100% at 50% 0%, rgb(230 200 135 / 0.10), transparent 72%);
+}
+
+html[data-season="sparkle"] #home::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 45%, transparent 58%, rgb(74 49 8 / 0.26) 100%),
+    linear-gradient(to bottom, rgb(74 49 8 / 0.16), transparent 30%);
+}
+
+/* The invitation section takes the theme's colour instead of burgundy. */
+.festive-section[data-theme="sparkle"] {
+  background-image: linear-gradient(135deg, #3a2606 0%, #6b4310 55%, #7d5a1b 100%);
+}
+
+.festive-section[data-theme="simple"] {
+  background-image: linear-gradient(135deg, #241d15 0%, #3c3125 55%, #4a3e2e 100%);
+}
+
+/* ---- The greeting, carried past the header ----
+   Above the Rooms and Dining headings (components/season/SeasonEyebrow.jsx) and
+   in the footer. Deliberately a single line in the brand's gold-brown, no
+   artwork: the decoration belongs in the header, not on every section. */
+
+.season-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: #a3762f;
+}
+
+.season-eyebrow::before {
+  content: "\2726";
+  font-size: 9px;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.season-signoff {
+  margin: -1.1rem 0 1.6rem;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--season-gold, #e6c887);
+}
+
+@media print {
+  html[data-season="sparkle"] body::before,
+  html[data-season="simple"] body::before,
+  html[data-season="sparkle"] #home::after {
     display: none;
   }
 }

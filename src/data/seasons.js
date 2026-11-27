@@ -1,16 +1,35 @@
 // Seasonal themes. Add an entry to SEASONS (and its copy in SEASON_COPY) to
-// theme another occasion; nothing else needs to change.
+// theme another occasion in code; the hotel can also add holidays of their own
+// from the Studio (Holidays & Greetings) without a deploy — see
+// src/data/holidays.js, which turns those documents into the same shape.
 //
 // Dates are MM-DD, inclusive, in the visitor's local time. A phase whose `to`
 // is earlier than its `from` wraps over New Year. A season is active while any
 // of its phases matches; the first phase is also its start.
 //
+// `theme` chooses the look (CSS in src/season.css). A holiday added in the
+// Studio picks one too; nothing about a season's name is in the CSS, so any
+// number of holidays can share a theme.
+//
 // Preview out of season with  ?season=christmas  (optionally  &phase=newyear),
 // switch it off with  ?season=off . The choice lasts for the browser session.
+
+// chrome = the colour the browser's own address bar takes while the theme is
+// on (the <meta name="theme-color"> the boot script swaps). Deep and muted on
+// purpose: it sits next to the real UI on a phone.
+export const SEASON_THEMES = {
+  christmas: { chrome: '#5a1119', label: 'Christmas' },
+  sparkle:   { chrome: '#6b4310', label: 'Celebration' },
+  simple:    { chrome: '#5b4a33', label: 'Greeting' },
+}
 
 export const SEASONS = [
   {
     name: 'christmas',
+    theme: 'christmas',
+    label: 'Christmas',
+    // What the season switches on besides the announcement bar.
+    features: { snow: true, themeName: 'festive theme' },
     phases: [
       { id: 'greeting',  from: '12-01', to: '12-23' },
       { id: 'christmas', from: '12-24', to: '12-26' },
@@ -18,11 +37,6 @@ export const SEASONS = [
     ],
   },
 ]
-
-// What each season switches on besides the announcement bar.
-export const SEASON_FEATURES = {
-  christmas: { snow: true, themeName: 'festive theme' },
-}
 
 // Tokens: {next} is the year a season that began in December leads into
 // (Dec 2026 and Jan 2027 -> 2027).
@@ -33,11 +47,12 @@ export const SEASON_FEATURES = {
 export const SEASON_COPY = {
   christmas: {
     greeting: {
-      icon: 'tree',
-      text: "Season's greetings from Hotel Itoya. Spend the festive season with us in Busia.",
-      short: "Season's greetings from Hotel Itoya",
+      // A sparkle rather than a tree: at 14px a tree reads as a warning sign.
+      icon: 'sparkles',
+      text: 'Season’s greetings from Hotel Itoya. Spend the festive season with us in Busia.',
+      short: 'Season’s greetings from Hotel Itoya',
       cta: { label: 'Book a festive stay' },
-      hero: "Season's Greetings",
+      hero: 'Season’s Greetings',
       festive: {
         eyebrow: 'The Festive Season',
         title: 'Celebrate Christmas in Busia',
@@ -77,10 +92,10 @@ export const SEASON_COPY = {
  * before first paint, which means it must not reference anything outside itself
  * (and is written in plain ES5 for the same reason).
  *
- * @param seasons  the SEASONS array
+ * @param seasons  the SEASONS array (built-in plus any holidays from the Studio)
  * @param now      a Date
  * @param preview  "off", "<season>" or "<season>:<phase>", or a falsy value
- * @returns {{ name, phase, year, key } | null}  `year` is the year the season began
+ * @returns {{ name, phase, year, key, theme } | null}  `year` is the year the season began
  */
 export function resolveSeason(seasons, now, preview) {
   var mmdd = function (text) {
@@ -93,7 +108,13 @@ export function resolveSeason(seasons, now, preview) {
     return from <= to ? value >= from && value <= to : value >= from || value <= to
   }
   var result = function (season, phase, year) {
-    return { name: season.name, phase: phase.id, year: year, key: season.name + '-' + year }
+    return {
+      name: season.name,
+      phase: phase.id,
+      year: year,
+      key: season.name + '-' + year,
+      theme: season.theme || season.name,
+    }
   }
 
   var parts = preview ? String(preview).split(':') : []

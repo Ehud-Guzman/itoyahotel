@@ -1,6 +1,8 @@
 /* Footer — minimal premium footer */
 import { useState } from 'react'
 import FestiveSwitch from './season/FestiveSwitch'
+import { SeasonSignoff } from './season/SeasonEyebrow'
+
 import FindReceipt from './FindReceipt'
 import { useHotel } from '../lib/hotel'
 import { telHref } from '../lib/hotelData'
@@ -54,6 +56,9 @@ export default function Footer() {
             <p className="font-sans font-light text-white text-sm leading-relaxed mb-6 max-w-xs">
               Where Hospitality Meets Value.
             </p>
+
+            {/* Nothing outside a season */}
+            <SeasonSignoff />
 
             {/* Homeland Itoya partnership */}
             <div className="mb-6">

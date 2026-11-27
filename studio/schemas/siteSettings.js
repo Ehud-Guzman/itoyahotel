@@ -65,15 +65,15 @@ export const siteSettings = {
     },
 
     {
-      name: 'festiveTheme', title: 'Festive Christmas theme', type: 'string', fieldset: 'look', initialValue: 'auto',
+      name: 'festiveTheme', title: 'Seasonal greetings', type: 'string', fieldset: 'look', initialValue: 'auto',
       options: {
         layout: 'radio',
         list: [
-          { title: 'Automatic: appears 1 December and ends 5 January', value: 'auto' },
-          { title: 'Never show it', value: 'off' },
+          { title: 'Automatic: show each holiday on its dates', value: 'auto' },
+          { title: 'Never show them', value: 'off' },
         ],
       },
-      description: 'The theme starts and ends by itself. Choose "Never show it" if you would rather not have it this year.',
+      description: 'Automatic shows the Christmas theme from 1 December to 5 January, and every holiday you add under "Holidays & Greetings" on its own dates. Choose "Never show them" to keep the website plain — the holidays you have added are kept either way.',
     },
 
   ],

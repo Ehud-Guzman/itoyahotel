@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { useSanity, imgUrl } from '../lib/sanity'
 import { srcSet } from '../lib/responsive'
 import { useHotel } from '../lib/hotel'
+import SeasonEyebrow from './season/SeasonEyebrow'
+
 
 const MENU_QUERY = `*[_type == "menuItem" && available == true] | order(category asc, order asc) {
   _id, name, description, price, category,
@@ -43,6 +45,7 @@ export default function DiningSection() {
         {/* Header */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end mb-16">
           <div>
+            <SeasonEyebrow className="mb-3" />
             <p className="section-label mb-4">Culinary Experience</p>
             <div className="gold-divider mb-8" />
             <h2 className="section-heading">
