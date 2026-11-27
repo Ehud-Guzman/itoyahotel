@@ -1,5 +1,5 @@
 // Runs before `vite build` (see package.json). Fails the build, and therefore
-// the Netlify deploy, if public/_redirects would loop or hide a page.
+// the deploy, if public/_redirects would loop or hide a page.
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'

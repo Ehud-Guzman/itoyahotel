@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/check-redirects.mjs && vite build && node scripts/prerender-privacy.mjs",
+    "build": "node scripts/check-redirects.mjs && node scripts/check-headers.mjs && vite build && node scripts/prerender-privacy.mjs",
     "preview": "vite preview",
     "smoke": "node scripts/smoke.mjs",
     "test": "node --test tests/*.test.mjs && npm --prefix server test",
     "images": "node scripts/generate-image-variants.mjs",
-    "images:hero": "node scripts/import-hero-images.mjs"
+    "images:hero": "node scripts/import-hero-images.mjs",
+    "headers:sync": "node scripts/check-headers.mjs --write"
   },
   "dependencies": {
     "@sanity/client": "^7.23.0",
